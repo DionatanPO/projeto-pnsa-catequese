@@ -38,7 +38,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   bool _possuiRestricao = false;
   bool _aceiteTermos = false;
   bool _submitting = false;
-  final Map<String, PlatformFile?> _documentosAnexados = {};
+  final List<PlatformFile> _arquivosAnexados = [];
 
   final _stepLabels = [
     'Identificação',
@@ -121,10 +121,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       possuiRestricao: _possuiRestricao,
       detalheRestricao: _possuiRestricao ? detalheRestricaoCtrl.text.trim() : null,
       aceiteTermos: _aceiteTermos,
-      documentosAnexados: _documentosAnexados.entries
-          .where((e) => e.value != null)
-          .map((e) => '${e.key}: ${e.value!.name}')
-          .toList(),
+      documentosAnexados: _arquivosAnexados.map((f) => '${f.name} (${(f.extension ?? '').toUpperCase()}, ${_formatBytes(f.size)})').toList(),
     );
 
     widget.vm.addCatequizando(c);
@@ -146,32 +143,59 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Novo Catequizando'),
-          leading: IconButton(
-            icon: const Icon(Icons.close_rounded),
-            onPressed: () => Navigator.pop(context),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            _stepIndicator(theme),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                child: SingleChildScrollView(
-                  child: _buildStepContent(theme),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isLarge = constraints.maxWidth > 720;
+            final contentWidth = isLarge ? 640.0 : constraints.maxWidth;
+
+            return Column(
+              children: [
+                _stepIndicator(theme, isLarge),
+                Expanded(
+                  child: isLarge
+                      ? Center(
+                          child: SizedBox(
+                            width: contentWidth,
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(vertical: 24),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(32, 8, 32, 8),
+                                child: SingleChildScrollView(
+                                  child: _buildStepContent(theme),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                          child: SingleChildScrollView(
+                            child: _buildStepContent(theme),
+                          ),
+                        ),
                 ),
-              ),
-            ),
-            _buildBottomBar(theme),
-          ],
+                _buildBottomBar(theme, isLarge),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _stepIndicator(ThemeData theme) {
+  Widget _stepIndicator(ThemeData theme, bool isLarge) {
     final total = _stepLabels.length;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -179,56 +203,67 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         color: theme.colorScheme.surface,
         border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
-      child: Row(
-        children: List.generate(total, (i) {
-          final isActive = i == _currentStep;
-          final isDone = i < _currentStep;
-          return Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isActive
-                        ? theme.colorScheme.primary
-                        : isDone
-                            ? theme.colorScheme.primaryContainer
-                            : theme.colorScheme.surfaceContainerHighest,
-                  ),
-                  child: Center(
-                    child: isDone
-                        ? Icon(Icons.check_rounded, size: 18, color: theme.colorScheme.primary)
-                        : Text(
-                            '${i + 1}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: isActive
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
+      child: isLarge
+          ? Center(
+              child: SizedBox(
+                width: 640,
+                child: _stepIndicatorContent(total, theme),
+              ),
+            )
+          : _stepIndicatorContent(total, theme),
+    );
+  }
+
+  Widget _stepIndicatorContent(int total, ThemeData theme) {
+    return Row(
+      children: List.generate(total, (i) {
+        final isActive = i == _currentStep;
+        final isDone = i < _currentStep;
+        return Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : isDone
+                          ? theme.colorScheme.primaryContainer
+                          : theme.colorScheme.surfaceContainerHighest,
+                ),
+                child: Center(
+                  child: isDone
+                      ? Icon(Icons.check_rounded, size: 18, color: theme.colorScheme.primary)
+                      : Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isActive
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurfaceVariant,
                           ),
-                  ),
+                        ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  _stepLabels[i],
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                    color: isActive
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _stepLabels[i],
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
-              ],
-            ),
-          );
-        }),
-      ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -524,8 +559,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       docs.insert(3, 'Certidão de Primeira Eucaristia');
     }
 
-    final todosAnexados = docs.every((d) => _documentosAnexados[d] != null);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -534,9 +567,9 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            onPressed: () => _selecionarTodosDocumentos(docs),
-            icon: Icon(todosAnexados ? Icons.checklist_rounded : Icons.cloud_upload_rounded),
-            label: Text(todosAnexados ? 'Reanexar documentações' : 'Adicionar documentações'),
+            onPressed: () => _selecionarTodosDocumentos(),
+            icon: Icon(Icons.cloud_upload_rounded),
+            label: Text('Adicionar documentações'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -546,48 +579,83 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         const SizedBox(height: 24),
         Text('Documentos necessários:', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
-        ...docs.map((doc) {
-          final anexado = _documentosAnexados[doc] != null;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  anexado ? Icons.check_circle_rounded : Icons.circle,
-                  size: anexado ? 20 : 6,
-                  color: anexado ? theme.colorScheme.primary : theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    doc,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: anexado ? FontWeight.w500 : FontWeight.w400,
-                      color: anexado ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+        ...docs.map((doc) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.circle, size: 6, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(child: Text(doc, style: TextStyle(fontSize: 14))),
+            ],
+          ),
+        )),
+        if (_arquivosAnexados.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text('Arquivos anexados:', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          ..._arquivosAnexados.asMap().entries.map((entry) {
+            final i = entry.key;
+            final f = entry.value;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              elevation: 0,
+              color: theme.colorScheme.primaryContainer.withOpacity(0.25),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.insert_drive_file_rounded, size: 22, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            f.name,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${(f.extension ?? '').toUpperCase()}  ·  ${_formatBytes(f.size)}',
+                            style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, size: 18, color: theme.colorScheme.error),
+                      onPressed: () => setState(() => _arquivosAnexados.removeAt(i)),
+                      tooltip: 'Remover arquivo',
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
 
-  Future<void> _selecionarTodosDocumentos(List<String> docs) async {
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _selecionarTodosDocumentos() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: true,
     );
     if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        for (int i = 0; i < result.files.length && i < docs.length; i++) {
-          _documentosAnexados[docs[i]] = result.files[i];
-        }
-      });
+      setState(() => _arquivosAnexados.addAll(result.files));
     }
   }
 
@@ -699,7 +767,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     );
   }
 
-  Widget _buildBottomBar(ThemeData theme) {
+  Widget _buildBottomBar(ThemeData theme, bool isLarge) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       decoration: BoxDecoration(
@@ -707,47 +775,58 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            if (_currentStep > 0)
-              OutlinedButton.icon(
-                onPressed: _voltar,
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('Voltar'),
-              )
-            else
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-            const Spacer(),
-            if (_currentStep < 5)
-              FilledButton.icon(
-                onPressed: _avancar,
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: const Text('Avançar'),
-              )
-            else
-              FilledButton.icon(
-                onPressed: _submitting ? null : _finalizar,
-                icon: _submitting
-                    ? SizedBox(
-                        width: 18, height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2, color: theme.colorScheme.onPrimary,
-                        ),
-                      )
-                    : const Icon(Icons.check_rounded, size: 18),
-                label: Text(_submitting ? 'Salvando...' : 'Finalizar Inscrição'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        child: isLarge
+            ? Center(
+                child: SizedBox(
+                  width: 640,
+                  child: _bottomBarContent(theme),
                 ),
-              ),
-          ],
-        ),
+              )
+            : _bottomBarContent(theme),
       ),
+    );
+  }
+
+  Widget _bottomBarContent(ThemeData theme) {
+    return Row(
+      children: [
+        if (_currentStep > 0)
+          OutlinedButton.icon(
+            onPressed: _voltar,
+            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            label: const Text('Voltar'),
+          )
+        else
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        const Spacer(),
+        if (_currentStep < 5)
+          FilledButton.icon(
+            onPressed: _avancar,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            label: const Text('Avançar'),
+          )
+        else
+          FilledButton.icon(
+            onPressed: _submitting ? null : _finalizar,
+            icon: _submitting
+                ? SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2, color: theme.colorScheme.onPrimary,
+                    ),
+                  )
+                : const Icon(Icons.check_rounded, size: 18),
+            label: Text(_submitting ? 'Salvando...' : 'Finalizar Inscrição'),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            ),
+          ),
+      ],
     );
   }
 
