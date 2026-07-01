@@ -34,6 +34,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   get: ^4.6.6
   file_picker: ^6.0.0
+  mask_text_input_formatter: ^2.9.0
+  flutter_localizations:
+    sdk: flutter
+  pdf: ^3.11.3
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:

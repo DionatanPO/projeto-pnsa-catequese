@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 
@@ -28,6 +30,17 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   final numeroCtrl = TextEditingController();
   final bairroCtrl = TextEditingController();
 
+  final telefoneFormatter = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+  
+  // Assumindo que precisa de um CPF, se não for CPF, ajuste a máscara.
+  // Como não vi CPF no formulário mas você pediu, vou adicionar a máscara caso adicione o campo.
+  final cpfFormatter = MaskTextInputFormatter(
+    mask: '###.###.###-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
 
   String _sexo = 'Masculino';
   DateTime? _dataNascimento;
@@ -64,7 +77,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   bool get _podeAvancar {
     if (!_formKey.currentState!.validate()) return false;
     if (_currentStep == 0 && _dataNascimento == null) return false;
-    if (_currentStep == 0 && _turmaSelecionada == null) return false;
     return true;
   }
 
@@ -96,10 +108,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       Get.snackbar('Erro', 'Data de nascimento não informada');
       return;
     }
-    if (_turmaSelecionada == null) {
-      Get.snackbar('Erro', 'Selecione uma turma');
-      return;
-    }
     setState(() => _submitting = true);
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -127,6 +135,24 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     widget.vm.addCatequizando(c);
     setState(() => _submitting = false);
     if (!mounted) return;
+    
+    // Pergunta se deseja emitir o certificado
+    final emitir = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sucesso'),
+        content: Text('${c.nome} foi cadastrado(a) com sucesso. Deseja emitir o certificado de cadastro?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Não')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sim')),
+        ],
+      ),
+    );
+
+    if (emitir == true) {
+      await CertificateGenerator.generate(c);
+    }
+    
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -139,6 +165,35 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isLarge = MediaQuery.of(context).size.width > 900;
+
+    if (isLarge) {
+      return Scaffold(
+        appBar: _buildDesktopAppBar(theme),
+        body: Form(
+          key: _formKey,
+          child: Row(
+            children: [
+              _desktopSidebar(theme),
+              Container(width: 1, color: theme.dividerColor.withOpacity(0.5)),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(40, 32, 40, 8),
+                        child: _buildStepContent(theme),
+                      ),
+                    ),
+                    _buildBottomBar(theme, true),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -150,47 +205,152 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       ),
       body: Form(
         key: _formKey,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLarge = constraints.maxWidth > 720;
-            final contentWidth = isLarge ? 640.0 : constraints.maxWidth;
+        child: Column(
+          children: [
+            _stepIndicator(theme, false),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: SingleChildScrollView(
+                  child: _buildStepContent(theme),
+                ),
+              ),
+            ),
+            _buildBottomBar(theme, false),
+          ],
+        ),
+      ),
+    );
+  }
 
-            return Column(
-              children: [
-                _stepIndicator(theme, isLarge),
-                Expanded(
-                  child: isLarge
-                      ? Center(
-                          child: SizedBox(
-                            width: contentWidth,
-                            child: Card(
-                              margin: const EdgeInsets.symmetric(vertical: 24),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(32, 8, 32, 8),
-                                child: SingleChildScrollView(
-                                  child: _buildStepContent(theme),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                          child: SingleChildScrollView(
-                            child: _buildStepContent(theme),
+  PreferredSizeWidget _buildDesktopAppBar(ThemeData theme) {
+    return AppBar(
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.person_add_rounded, size: 22, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Text('Novo Catequizando'),
+        ],
+      ),
+      leading: IconButton(
+        icon: const Icon(Icons.close_rounded),
+        onPressed: () => Navigator.pop(context),
+      ),
+    );
+  }
+
+  Widget _desktopSidebar(ThemeData theme) {
+    return Container(
+      width: 200,
+      color: theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(_stepLabels.length, (i) {
+          final isActive = i == _currentStep;
+          final isDone = i < _currentStep;
+          return _sidebarStepItem(
+            number: i + 1,
+            label: _stepLabels[i],
+            isActive: isActive,
+            isDone: isDone,
+            isLast: i == _stepLabels.length - 1,
+            theme: theme,
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _sidebarStepItem({
+    required int number,
+    required String label,
+    required bool isActive,
+    required bool isDone,
+    required bool isLast,
+    required ThemeData theme,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : isDone
+                          ? theme.colorScheme.primaryContainer
+                          : theme.colorScheme.surfaceContainerHighest,
+                ),
+                child: Center(
+                  child: isDone
+                      ? Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.primary)
+                      : Text(
+                          '$number',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isActive
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                 ),
-                _buildBottomBar(theme, isLarge),
-              ],
-            );
-          },
-        ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDone
+                          ? theme.colorScheme.primary.withOpacity(0.4)
+                          : theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 5, bottom: isLast ? 0 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : isDone
+                              ? theme.colorScheme.onSurface
+                              : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (isActive) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Passo atual',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.primary.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -198,19 +358,12 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   Widget _stepIndicator(ThemeData theme, bool isLarge) {
     final total = _stepLabels.length;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      padding: EdgeInsets.symmetric(vertical: 20, horizontal: isLarge ? 40 : 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(bottom: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
-      child: isLarge
-          ? Center(
-              child: SizedBox(
-                width: 640,
-                child: _stepIndicatorContent(total, theme),
-              ),
-            )
-          : _stepIndicatorContent(total, theme),
+      child: _stepIndicatorContent(total, theme),
     );
   }
 
@@ -250,14 +403,20 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
-                _stepLabels[i],
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+              SizedBox(
+                height: 32, // Fixed height for the title area to ensure alignment
+                child: Text(
+                  _stepLabels[i],
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -347,7 +506,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
               if (!_requerEucaristia) _fezPrimeiraEucaristia = null;
             });
           },
-          validator: (v) => v == null ? 'Selecione uma turma' : null,
+          validator: (v) => null, // Opcional, sem validação
         ),
       ],
     );
@@ -455,6 +614,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: telefoneCtrl,
+          inputFormatters: [telefoneFormatter],
           autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: const InputDecoration(
             labelText: 'Telefone / WhatsApp',
@@ -769,25 +929,19 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
 
   Widget _buildBottomBar(ThemeData theme, bool isLarge) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      padding: EdgeInsets.fromLTRB(isLarge ? 40 : 24, 12, isLarge ? 40 : 24, isLarge ? 24 : 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
       ),
-      child: SafeArea(
-        child: isLarge
-            ? Center(
-                child: SizedBox(
-                  width: 640,
-                  child: _bottomBarContent(theme),
-                ),
-              )
-            : _bottomBarContent(theme),
-      ),
+      child: isLarge
+          ? _bottomBarContent(theme, isLarge)
+          : SafeArea(child: _bottomBarContent(theme, isLarge)),
     );
   }
 
-  Widget _bottomBarContent(ThemeData theme) {
+  Widget _bottomBarContent(ThemeData theme, bool isLarge) {
+    final btnPad = isLarge ? 20.0 : 14.0;
     return Row(
       children: [
         if (_currentStep > 0)
@@ -795,10 +949,17 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             onPressed: _voltar,
             icon: const Icon(Icons.arrow_back_rounded, size: 18),
             label: const Text('Voltar'),
+            style: OutlinedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: btnPad),
+              textStyle: TextStyle(fontSize: isLarge ? 14 : 13),
+            ),
           )
         else
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: btnPad),
+            ),
             child: const Text('Cancelar'),
           ),
         const Spacer(),
@@ -807,6 +968,10 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             onPressed: _avancar,
             icon: const Icon(Icons.arrow_forward_rounded, size: 18),
             label: const Text('Avançar'),
+            style: FilledButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: btnPad),
+              textStyle: TextStyle(fontSize: isLarge ? 14 : 13),
+            ),
           )
         else
           FilledButton.icon(
@@ -823,7 +988,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: EdgeInsets.symmetric(horizontal: 28, vertical: btnPad),
+              textStyle: TextStyle(fontSize: isLarge ? 14 : 13),
             ),
           ),
       ],
@@ -932,9 +1098,10 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   Future<void> _selecionarData(ThemeData theme) async {
     final data = await showDatePicker(
       context: context,
-      initialDate: _dataNascimento ?? DateTime(2016),
-      firstDate: DateTime(2000),
+      initialDate: _dataNascimento ?? DateTime(2010),
+      firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      locale: const Locale('pt', 'BR'),
     );
     if (data != null) {
       setState(() {
