@@ -41,4 +41,21 @@ class CatequistaViewModel extends GetxController {
       val.catequistas.add(c);
     });
   }
+
+  void updateCatequista(Catequista c) {
+    data.update((val) {
+      if (val == null) return;
+      final idx = val.catequistas.indexWhere((x) => x.id == c.id);
+      if (idx != -1) {
+        val.catequistas[idx] = c;
+      }
+    });
+  }
+
+  void removeCatequista(String id) {
+    data.update((val) {
+      if (val == null) return;
+      val.catequistas.removeWhere((x) => x.id == id);
+    });
+  }
 }

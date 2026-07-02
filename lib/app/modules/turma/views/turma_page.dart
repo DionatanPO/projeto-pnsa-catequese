@@ -1,13 +1,374 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../catequizandos/models/catequizando_model.dart';
+import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../viewmodels/turma_viewmodel.dart';
 import '../models/turma_model.dart';
+void showGerenciarCatequizandosDialog(BuildContext context, TurmaModel turma, CatequizandoViewModel catequizandoVm) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
 
-void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
-  final nomeCtrl = TextEditingController();
-  final catequistaCtrl = TextEditingController();
-  final horarioCtrl = TextEditingController();
-  final catequizandosCtrl = TextEditingController();
+  final catequizandosDaTurma = catequizandoVm.catequizandos.where((a) => a.turmaNome == turma.nome).toList();
+  final catequizandosFora = catequizandoVm.catequizandos.where((a) => a.turmaNome != turma.nome).toList();
+
+  showDialog(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 650),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: colorScheme.surface,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    gradient: LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: colorScheme.onPrimary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.people_rounded, color: colorScheme.onPrimary, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Gerenciar Catequizandos',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '${turma.nome} — ${catequizandosDaTurma.length} catequizandos',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onPrimary.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (catequizandosDaTurma.isEmpty)
+                  const Expanded(
+                    child: Center(child: Text('Nenhum catequizando nesta turma')),
+                  )
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: catequizandosDaTurma.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final catequizando = catequizandosDaTurma[i];
+                        return Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: colorScheme.secondaryContainer,
+                                  child: Text(
+                                    catequizando.nome.trim().isNotEmpty
+                                        ? catequizando.nome.trim()[0].toUpperCase()
+                                        : '?',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      color: colorScheme.onSecondaryContainer,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        catequizando.nome,
+                                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.phone_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            catequizando.telefone,
+                                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(Icons.remove_circle_outline, size: 20, color: colorScheme.error),
+                                    onPressed: () {
+                                      final updated = Catequizando(
+                                        id: catequizando.id,
+                                        nome: catequizando.nome,
+                                        sexo: catequizando.sexo,
+                                        dataNascimento: catequizando.dataNascimento,
+                                        turmaNome: '',
+                                        batizado: catequizando.batizado,
+                                        localBatismo: catequizando.localBatismo,
+                                        fezPrimeiraEucaristia: catequizando.fezPrimeiraEucaristia,
+                                        responsavel: catequizando.responsavel,
+                                        parentesco: catequizando.parentesco,
+                                        telefone: catequizando.telefone,
+                                        cep: catequizando.cep,
+                                        endereco: catequizando.endereco,
+                                        numero: catequizando.numero,
+                                        bairro: catequizando.bairro,
+                                        possuiRestricao: catequizando.possuiRestricao,
+                                        detalheRestricao: catequizando.detalheRestricao,
+                                        aceiteTermos: catequizando.aceiteTermos,
+                                        assinaturaResponsavel: catequizando.assinaturaResponsavel,
+                                        dataAssinatura: catequizando.dataAssinatura,
+                                        documentosAnexados: catequizando.documentosAnexados,
+                                      );
+                                      catequizandoVm.updateCatequizando(updated);
+                                      setState(() {
+                                        catequizandosDaTurma.removeAt(i);
+                                      });
+                                    },
+                                    tooltip: 'Remover da turma',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
+                  ),
+                  child: Row(
+                    children: [
+                      if (catequizandosFora.isNotEmpty)
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: ctx,
+                              builder: (ctx2) {
+                                final selecionados = <String>{};
+
+                                return StatefulBuilder(
+                                  builder: (context2, setState2) => Dialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    insetPadding: const EdgeInsets.all(16),
+                                    child: Container(
+                                      constraints: const BoxConstraints(maxWidth: 480, maxHeight: 500),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        color: colorScheme.surface,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                                            decoration: BoxDecoration(
+                                              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                              gradient: LinearGradient(
+                                                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    color: colorScheme.onPrimary.withOpacity(0.2),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Icon(Icons.person_add_rounded, color: colorScheme.onPrimary, size: 24),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Text(
+                                                  'Adicionar Catequizandos',
+                                                  style: theme.textTheme.titleMedium?.copyWith(
+                                                    color: colorScheme.onPrimary,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (catequizandosFora.isEmpty)
+                                              const Expanded(
+                                                child: Center(child: Text('Nenhum catequizando disponível')),
+                                            )
+                                          else
+                                            Expanded(
+                                              child: ListView.separated(
+                                                padding: const EdgeInsets.all(16),
+                                                itemCount: catequizandosFora.length,
+                                                separatorBuilder: (_, __) => const Divider(height: 1),
+                                                itemBuilder: (_, i) {
+                                                  final a = catequizandosFora[i];
+                                                  final selected = selecionados.contains(a.id);
+                                                  return CheckboxListTile(
+                                                    value: selected,
+                                                    onChanged: (v) {
+                                                      setState2(() {
+                                                        if (v == true) {
+                                                          selecionados.add(a.id);
+                                                        } else {
+                                                          selecionados.remove(a.id);
+                                                        }
+                                                      });
+                                                    },
+                                                    title: Text(a.nome, style: const TextStyle(fontSize: 14)),
+                                                    subtitle: Text(a.responsavel, style: theme.textTheme.bodySmall),
+                                                    secondary: CircleAvatar(
+                                                      radius: 16,
+                                                      backgroundColor: colorScheme.secondaryContainer,
+                                                      child: Text(
+                                                        a.nome[0].toUpperCase(),
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.w600,
+                                                          color: colorScheme.onSecondaryContainer,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          Container(
+                                            padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                                            decoration: BoxDecoration(
+                                              border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx2).pop(),
+                                                  child: const Text('Cancelar'),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                FilledButton.icon(
+                                                  onPressed: () {
+                                                    for (final id in selecionados) {
+                                                      final original = catequizandoVm.catequizandos.firstWhere((a) => a.id == id);
+                                                      final updated = Catequizando(
+                                                        id: original.id,
+                                                        nome: original.nome,
+                                                        sexo: original.sexo,
+                                                        dataNascimento: original.dataNascimento,
+                                                        turmaNome: turma.nome,
+                                                        batizado: original.batizado,
+                                                        localBatismo: original.localBatismo,
+                                                        fezPrimeiraEucaristia: original.fezPrimeiraEucaristia,
+                                                        responsavel: original.responsavel,
+                                                        parentesco: original.parentesco,
+                                                        telefone: original.telefone,
+                                                        cep: original.cep,
+                                                        endereco: original.endereco,
+                                                        numero: original.numero,
+                                                        bairro: original.bairro,
+                                                        possuiRestricao: original.possuiRestricao,
+                                                        detalheRestricao: original.detalheRestricao,
+                                                        aceiteTermos: original.aceiteTermos,
+                                                        assinaturaResponsavel: original.assinaturaResponsavel,
+                                                        dataAssinatura: original.dataAssinatura,
+                                                        documentosAnexados: original.documentosAnexados,
+                                                      );
+                                                      catequizandoVm.updateCatequizando(updated);
+                                                    }
+                                                    Navigator.of(ctx2).pop();
+                                                    Navigator.of(ctx).pop();
+                                                    showGerenciarCatequizandosDialog(context, turma, catequizandoVm);
+                                                  },
+                                                  icon: const Icon(Icons.add_rounded, size: 18),
+                                                  label: Text('Adicionar (${selecionados.length})'),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.person_add_rounded, size: 18),
+                          label: const Text('Adicionar Catequizando'),
+                        ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Fechar'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+void showTurmaDialog(BuildContext context, TurmaViewModel vm, {TurmaModel? turma}) {
+  final isEditing = turma != null;
+  
+  final nomeCtrl = TextEditingController(text: turma?.nome ?? '');
+  final anoCtrl = TextEditingController(text: turma?.ano.toString() ?? '');
+  final etapaCtrl = TextEditingController(text: turma?.etapa ?? '');
+  final diaHorarioCtrl = TextEditingController(text: turma?.diaHorario ?? '');
+  final localSalaCtrl = TextEditingController(text: turma?.localSala ?? '');
+  final capacidadeCtrl = TextEditingController(text: turma?.capacidade.toString() ?? '');
+  final observacoesCtrl = TextEditingController(text: turma?.observacoes ?? '');
+  
+  // Lista fictícia de catequistas - idealmente viria do seu ViewModel/Backend
+  final List<String> catequistas = ['Maria José Silva', 'João Pereira', 'Ana Souza'];
+  final List<String> statusOptions = ['Ativa', 'Concluída', 'Suspensa'];
+
+  String? selectedCatequista = catequistas.contains(turma?.catequista) ? turma!.catequista : null;
+  String selectedStatus = turma?.status ?? 'Ativa';
 
   final formKey = GlobalKey<FormState>();
 
@@ -53,11 +414,13 @@ void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.group_add_rounded, color: Theme.of(context).colorScheme.onPrimary),
+                        child: Icon(
+                          isEditing ? Icons.edit_rounded : Icons.group_add_rounded, 
+                          color: Theme.of(context).colorScheme.onPrimary),
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Nova Turma',
+                        isEditing ? 'Editar Turma' : 'Nova Turma',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -65,39 +428,77 @@ void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: nomeCtrl,
-                    decoration: const InputDecoration(labelText: 'Nome da turma', hintText: 'Ex: 1ª Eucaristia - A'),
+                    decoration: const InputDecoration(labelText: 'Nome da turma', hintText: 'Ex: Turma A'),
                     validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                   ),
-                    const SizedBox(height: 20),
-                  TextFormField(
-                    controller: catequistaCtrl,
-                    decoration: const InputDecoration(labelText: 'Catequista', hintText: 'Ex: Maria José Silva'),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                  ),
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: horarioCtrl,
-                          decoration: const InputDecoration(labelText: 'Horário', hintText: 'Ex: Sábado 08:00'),
+                          controller: anoCtrl,
+                          decoration: const InputDecoration(labelText: 'Ano Letivo', hintText: 'Ex: 2026'),
+                          keyboardType: TextInputType.number,
                           validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
-                          controller: catequizandosCtrl,
-                          decoration: const InputDecoration(labelText: 'Catequizandos', hintText: 'Ex: 20'),
-                          keyboardType: TextInputType.number,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-                            if (int.tryParse(v.trim()) == null) return 'Informe um número válido';
-                            return null;
-                          },
+                          controller: etapaCtrl,
+                          decoration: const InputDecoration(labelText: 'Etapa', hintText: 'Ex: Eucaristia'),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    value: selectedCatequista,
+                    decoration: const InputDecoration(labelText: 'Catequista', hintText: 'Selecione o catequista'),
+                    items: catequistas.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    onChanged: (v) => selectedCatequista = v,
+                    validator: (v) => v == null ? 'Selecione um catequista' : null,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: diaHorarioCtrl,
+                    decoration: const InputDecoration(labelText: 'Dia e Horário', hintText: 'Ex: Sábados, 08:00'),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: localSalaCtrl,
+                          decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: capacidadeCtrl,
+                          decoration: const InputDecoration(labelText: 'Quantidade', hintText: 'Ex: 25'),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatus,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => selectedStatus = v!,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: observacoesCtrl,
+                    decoration: const InputDecoration(labelText: 'Observações'),
+                    maxLines: 3,
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -111,15 +512,26 @@ void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
                       FilledButton(
                         onPressed: () {
                           if (!formKey.currentState!.validate()) return;
-                          vm.addTurma(TurmaModel(
+                          final model = TurmaModel(
+                            id: turma?.id ?? DateTime.now().toString(),
                             nome: nomeCtrl.text.trim(),
-                            catequista: catequistaCtrl.text.trim(),
-                            horario: horarioCtrl.text.trim(),
-                            totalCatequizandos: int.parse(catequizandosCtrl.text.trim()),
-                          ));
+                            ano: int.parse(anoCtrl.text.trim()),
+                            etapa: etapaCtrl.text.trim(),
+                            diaHorario: diaHorarioCtrl.text.trim(),
+                            localSala: localSalaCtrl.text.trim(),
+                            capacidade: int.parse(capacidadeCtrl.text.trim()),
+                            status: selectedStatus,
+                            catequista: selectedCatequista!,
+                            observacoes: observacoesCtrl.text.trim(),
+                          );
+                          if (isEditing) {
+                            vm.updateTurma(model);
+                          } else {
+                            vm.addTurma(model);
+                          }
                           Navigator.of(ctx).pop();
                         },
-                        child: const Text('Salvar'),
+                        child: Text(isEditing ? 'Salvar Alterações' : 'Salvar'),
                       ),
                     ],
                   ),
@@ -133,9 +545,14 @@ void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
   );
 }
 
+void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
+  showTurmaDialog(context, vm);
+}
+
 class TurmaPage extends StatelessWidget {
   final TurmaViewModel vm;
-  const TurmaPage({super.key, required this.vm});
+  final CatequizandoViewModel catequizandoVm;
+  const TurmaPage({super.key, required this.vm, required this.catequizandoVm});
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +602,7 @@ class TurmaPage extends StatelessWidget {
                 if (constraints.maxWidth < 600) {
                   return _TurmaListMobile(list: list, theme: theme);
                 }
-                return _TurmaTable(list: list, theme: theme);
+                return _TurmaTable(list: list, theme: theme, vm: vm, catequizandoVm: catequizandoVm);
               },
             );
           },
@@ -198,8 +615,10 @@ class TurmaPage extends StatelessWidget {
 class _TurmaTable extends StatelessWidget {
   final List<TurmaModel> list;
   final ThemeData theme;
+  final TurmaViewModel vm;
+  final CatequizandoViewModel catequizandoVm;
 
-  const _TurmaTable({required this.list, required this.theme});
+  const _TurmaTable({required this.list, required this.theme, required this.vm, required this.catequizandoVm});
 
   @override
   Widget build(BuildContext context) {
@@ -213,10 +632,11 @@ class _TurmaTable extends StatelessWidget {
       child: Table(
         columnWidths: const {
           0: FlexColumnWidth(3),
-          1: FlexColumnWidth(3),
+          1: FlexColumnWidth(2),
           2: FlexColumnWidth(2),
-          3: FixedColumnWidth(90),
-          4: FixedColumnWidth(100),
+          3: FlexColumnWidth(1),
+          4: FlexColumnWidth(1),
+          5: FixedColumnWidth(100),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -237,7 +657,8 @@ class _TurmaTable extends StatelessWidget {
               _headerCell('Turma', Icons.group_rounded),
               _headerCell('Catequista', Icons.person_rounded),
               _headerCell('Horário', Icons.access_time_rounded),
-              _headerCell('Alunos', Icons.people_rounded),
+              _headerCell('Quantidade', Icons.people_rounded),
+              _headerCell('Status', Icons.info_outline_rounded),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
@@ -273,66 +694,70 @@ class _TurmaTable extends StatelessWidget {
                     ),
                   ),
                   _bodyCell(t.catequista),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondaryContainer.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        t.horario,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiaryContainer.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${t.totalCatequizandos}',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.tertiary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _bodyCell(t.diaHorario),
+                  _bodyCell('${t.capacidade}'),
+                  _bodyCell(t.status),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () {},
-                            tooltip: 'Editar',
+                        Flexible(
+                          child: SizedBox(
+                            width: 30,
+                            height: 36,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: Icon(Icons.people_outline, size: 18, color: theme.colorScheme.tertiary),
+                            onPressed: () {
+                              showGerenciarCatequizandosDialog(context, t, catequizandoVm);
+                            },
+                              tooltip: 'Ver Catequizandos',
+                            ),
                           ),
                         ),
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
-                            onPressed: () {},
-                            tooltip: 'Excluir',
+Flexible(
+                          child: SizedBox(
+                            width: 30,
+                            height: 36,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
+                              onPressed: () {
+                                showTurmaDialog(context, vm, turma: t);
+                              },
+                              tooltip: 'Editar',
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: SizedBox(
+                            width: 30,
+                            height: 36,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+                              onPressed: () {
+                                Get.dialog(
+                                  AlertDialog(
+                                    title: const Text('Confirmar Exclusão'),
+                                    content: Text('Deseja excluir a turma "${t.nome}"?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+                                      FilledButton(
+                                        onPressed: () {
+                                          vm.removeTurma(t.id);
+                                          Get.back();
+                                        },
+                                        style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
+                                        child: const Text('Excluir'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              tooltip: 'Excluir',
+                            ),
                           ),
                         ),
                       ],
@@ -435,7 +860,7 @@ class _TurmaListMobile extends StatelessWidget {
                               children: [
                                 Icon(Icons.access_time_rounded, size: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
                                 const SizedBox(width: 4),
-                                Text(t.horario, style: theme.textTheme.bodySmall),
+                                Text(t.diaHorario, style: theme.textTheme.bodySmall),
                               ],
                             ),
                           ],

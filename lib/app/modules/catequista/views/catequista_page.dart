@@ -3,11 +3,12 @@ import 'package:get/get.dart';
 import '../viewmodels/catequista_viewmodel.dart';
 import '../models/catequista_model.dart';
 
-void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
-  final nomeCtrl = TextEditingController();
-  final emailCtrl = TextEditingController();
-  final telefoneCtrl = TextEditingController();
-  final turmaCtrl = TextEditingController();
+void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequista? catequista}) {
+  final isEditing = catequista != null;
+  final nomeCtrl = TextEditingController(text: catequista?.nome ?? '');
+  final emailCtrl = TextEditingController(text: catequista?.email ?? '');
+  final telefoneCtrl = TextEditingController(text: catequista?.telefone ?? '');
+  final turmaCtrl = TextEditingController(text: catequista?.turma ?? '');
   final formKey = GlobalKey<FormState>();
 
   final screenWidth = MediaQuery.of(context).size.width;
@@ -52,11 +53,11 @@ void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.person_add_rounded, color: Theme.of(context).colorScheme.onPrimary),
+                        child: Icon(isEditing ? Icons.edit_rounded : Icons.person_add_rounded, color: Theme.of(context).colorScheme.onPrimary),
                       ),
                       const SizedBox(width: 16),
                       Text(
-                        'Novo Catequista',
+                        isEditing ? 'Editar Catequista' : 'Novo Catequista',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -107,15 +108,21 @@ void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
                       FilledButton(
                         onPressed: () {
                           if (!formKey.currentState!.validate()) return;
-                          vm.addCatequista(Catequista(
+                          final model = Catequista(
+                            id: catequista?.id ?? DateTime.now().toString(),
                             nome: nomeCtrl.text.trim(),
                             email: emailCtrl.text.trim(),
                             telefone: telefoneCtrl.text.trim(),
                             turma: turmaCtrl.text.trim(),
-                          ));
+                          );
+                          if (isEditing) {
+                            vm.updateCatequista(model);
+                          } else {
+                            vm.addCatequista(model);
+                          }
                           Navigator.of(ctx).pop();
                         },
-                        child: const Text('Salvar'),
+                        child: Text(isEditing ? 'Salvar Alterações' : 'Salvar'),
                       ),
                     ],
                   ),
@@ -127,6 +134,10 @@ void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
       ),
     ),
   );
+}
+
+void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
+  showCatequistaDialog(context, vm);
 }
 
 class CatequistaPage extends StatelessWidget {
@@ -177,10 +188,10 @@ class CatequistaPage extends StatelessWidget {
             builder: (context, constraints) {
               if (constraints.maxWidth < 600) {
                 return Column(
-                  children: list.map((c) => _CatequistaCard(catequista: c, theme: theme)).toList(),
+                  children: list.map((c) => _CatequistaCard(catequista: c, theme: theme, vm: vm)).toList(),
                 );
               }
-              return _CatequistaTable(catequistas: list, theme: theme);
+              return _CatequistaTable(catequistas: list, theme: theme, vm: vm);
             },
           );
         }),
@@ -192,8 +203,9 @@ class CatequistaPage extends StatelessWidget {
 class _CatequistaCard extends StatelessWidget {
   final Catequista catequista;
   final ThemeData theme;
+  final CatequistaViewModel vm;
 
-  const _CatequistaCard({required this.catequista, required this.theme});
+  const _CatequistaCard({required this.catequista, required this.theme, required this.vm});
 
   @override
   Widget build(BuildContext context) {
@@ -269,9 +281,27 @@ class _CatequistaCard extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _smallIconButton(Icons.edit_outlined, theme.colorScheme.primary, 'Editar'),
+                      _smallIconButton(Icons.edit_outlined, theme.colorScheme.primary, 'Editar', () => showCatequistaDialog(context, vm, catequista: catequista)),
                       const SizedBox(width: 4),
-                      _smallIconButton(Icons.delete_outline, theme.colorScheme.error, 'Excluir'),
+                      _smallIconButton(Icons.delete_outline, theme.colorScheme.error, 'Excluir', () {
+                        Get.dialog(
+                          AlertDialog(
+                            title: const Text('Confirmar Exclusão'),
+                            content: Text('Deseja excluir "${catequista.nome}"?'),
+                            actions: [
+                              TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+                              FilledButton(
+                                onPressed: () {
+                                  vm.removeCatequista(catequista.id);
+                                  Get.back();
+                                },
+                                style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
+                                child: const Text('Excluir'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ],
@@ -294,7 +324,7 @@ class _CatequistaCard extends StatelessWidget {
     );
   }
 
-  Widget _smallIconButton(IconData icon, Color color, String tooltip) {
+  Widget _smallIconButton(IconData icon, Color color, String tooltip, VoidCallback onPressed) {
     return SizedBox(
       width: 32,
       height: 32,
@@ -302,7 +332,7 @@ class _CatequistaCard extends StatelessWidget {
         padding: EdgeInsets.zero,
         iconSize: 17,
         icon: Icon(icon, color: color),
-        onPressed: () {},
+        onPressed: onPressed,
         tooltip: tooltip,
       ),
     );
@@ -312,8 +342,9 @@ class _CatequistaCard extends StatelessWidget {
 class _CatequistaTable extends StatelessWidget {
   final List<Catequista> catequistas;
   final ThemeData theme;
+  final CatequistaViewModel vm;
 
-  const _CatequistaTable({required this.catequistas, required this.theme});
+  const _CatequistaTable({required this.catequistas, required this.theme, required this.vm});
 
   @override
   Widget build(BuildContext context) {
@@ -430,7 +461,7 @@ class _CatequistaTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () {},
+                            onPressed: () => showCatequistaDialog(context, vm, catequista: c),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -440,7 +471,25 @@ class _CatequistaTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
-                            onPressed: () {},
+                            onPressed: () {
+                              Get.dialog(
+                                AlertDialog(
+                                  title: const Text('Confirmar Exclusão'),
+                                  content: Text('Deseja excluir "${c.nome}"?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+                                    FilledButton(
+                                      onPressed: () {
+                                        vm.removeCatequista(c.id);
+                                        Get.back();
+                                      },
+                                      style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
+                                      child: const Text('Excluir'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                             tooltip: 'Excluir',
                           ),
                         ),

@@ -962,7 +962,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             ),
             child: const Text('Cancelar'),
           ),
-        const Spacer(),
+        const SizedBox(width: 12),
         if (_currentStep < 5)
           FilledButton.icon(
             onPressed: _avancar,

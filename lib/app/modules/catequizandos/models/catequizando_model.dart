@@ -1,4 +1,5 @@
 class Catequizando {
+  final String id;
   final String nome;
   final String sexo;
   final DateTime dataNascimento;
@@ -25,6 +26,7 @@ class Catequizando {
   final List<String> documentosAnexados;
 
   Catequizando({
+    String? id,
     required this.nome,
     this.sexo = 'Masculino',
     required this.dataNascimento,
@@ -45,7 +47,7 @@ class Catequizando {
     this.assinaturaResponsavel,
     this.dataAssinatura,
     this.documentosAnexados = const [],
-  });
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   int get idade {
     final hoje = DateTime.now();

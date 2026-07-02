@@ -114,4 +114,15 @@ class CatequizandoViewModel extends GetxController {
   void addCatequizando(Catequizando c) {
     catequizandos.add(c);
   }
+
+  void removeCatequizando(String id) {
+    catequizandos.removeWhere((a) => a.id == id);
+  }
+
+  void updateCatequizando(Catequizando c) {
+    final idx = catequizandos.indexWhere((a) => a.id == c.id);
+    if (idx != -1) {
+      catequizandos[idx] = c;
+    }
+  }
 }

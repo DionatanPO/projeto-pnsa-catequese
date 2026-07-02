@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../../catequista/views/catequista_page.dart';
 import '../../turma/views/turma_page.dart';
+import '../../encontros/views/encontro_page.dart';
+import '../../encontros/views/encontros_page.dart';
 import '../../catequizandos/views/catequizando_page.dart';
 import '../../catequizandos/views/catequizando_wizard.dart';
 import '../../relatorio/views/relatorio_page.dart';
@@ -31,7 +33,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Relatórios', 'Perfil'];
+const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Perfil'];
 
 const _destinations = [
   NavigationRailDestination(
@@ -53,6 +55,11 @@ const _destinations = [
     icon: Icon(Icons.school_outlined),
     selectedIcon: Icon(Icons.school_rounded),
     label: Text('Catequizandos'),
+  ),
+  NavigationRailDestination(
+    icon: Icon(Icons.event_outlined),
+    selectedIcon: Icon(Icons.event_rounded),
+    label: Text('Encontros'),
   ),
   NavigationRailDestination(
     icon: Icon(Icons.bar_chart_outlined),
@@ -93,6 +100,12 @@ Widget? _buildFab(BuildContext context, HomeViewModel vm) {
         },
         icon: const Icon(Icons.add),
         label: const Text('Novo Catequizando'),
+      );
+    case 4:
+      return FloatingActionButton.extended(
+        onPressed: () => showNovoEncontroDialog(context, vm.encontrosVm, turmas: vm.turmaVm.turmas),
+        icon: const Icon(Icons.add),
+        label: const Text('Novo Encontro'),
       );
     default:
       return null;
@@ -137,6 +150,7 @@ class _SideMenu extends StatelessWidget {
         labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
         extended: extended,
         minExtendedWidth: 200,
+        groupAlignment: -1.0,
         leading: Padding(
           padding: EdgeInsets.only(top: extended ? 16 : 8, bottom: extended ? 24 : 8),
           child: Column(
@@ -284,6 +298,7 @@ const _menuIcons = [
   Icons.menu_book_rounded,
   Icons.group_rounded,
   Icons.school_rounded,
+  Icons.event_rounded,
   Icons.bar_chart_rounded,
   Icons.person_rounded,
 ];
@@ -298,12 +313,14 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 1:
           return CatequistaPage(vm: vm.catequistaVm);
         case 2:
-          return TurmaPage(vm: vm.turmaVm);
+          return TurmaPage(vm: vm.turmaVm, catequizandoVm: vm.catequizandoVm);
         case 3:
-          return CatequizandoPage(vm: vm.catequizandoVm);
+          return CatequizandoPage(vm: vm.catequizandoVm, turmas: vm.turmaVm.turmas.map((t) => t.nome).toList());
         case 4:
-          return RelatorioPage(vm: vm.relatorioVm);
+          return EncontrosPage(encontrosVm: vm.encontrosVm, turmas: vm.turmaVm.turmas, catequizandoVm: vm.catequizandoVm);
         case 5:
+          return RelatorioPage(vm: vm.relatorioVm);
+        case 6:
           return ProfilePage(vm: vm.profileVm);
         default:
           return const SizedBox.shrink();
@@ -353,7 +370,7 @@ class _InicioContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sistema de Gestão de Catequistas',
+                          'Gestão de Catequese',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withOpacity(0.5),
                           ),
