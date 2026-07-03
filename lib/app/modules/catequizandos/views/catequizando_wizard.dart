@@ -243,7 +243,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   Widget _desktopSidebar(ThemeData theme) {
     return Container(
       width: 200,
-      color: theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
+      color: theme.colorScheme.primary,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,14 +283,14 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isActive
-                      ? theme.colorScheme.primary
+                      ? theme.colorScheme.onPrimary.withOpacity(0.25)
                       : isDone
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.surfaceContainerHighest,
+                          ? theme.colorScheme.onPrimary.withOpacity(0.25)
+                          : theme.colorScheme.onPrimary.withOpacity(0.15),
                 ),
                 child: Center(
                   child: isDone
-                      ? Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.primary)
+                      ? Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.onPrimary)
                       : Text(
                           '$number',
                           style: TextStyle(
@@ -310,8 +310,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
                       color: isDone
-                          ? theme.colorScheme.primary.withOpacity(0.4)
-                          : theme.colorScheme.surfaceContainerHighest,
+                          ? theme.colorScheme.onPrimary.withOpacity(0.4)
+                          : theme.colorScheme.onPrimary.withOpacity(0.15),
                     ),
                   ),
                 ),
@@ -330,10 +330,10 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                       fontSize: 13,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       color: isActive
-                          ? theme.colorScheme.primary
+                          ? theme.colorScheme.onPrimary
                           : isDone
-                              ? theme.colorScheme.onSurface
-                              : theme.colorScheme.onSurfaceVariant,
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onPrimary.withOpacity(0.6),
                     ),
                   ),
                   if (isActive) ...[
@@ -342,7 +342,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                       'Passo atual',
                       style: TextStyle(
                         fontSize: 11,
-                        color: theme.colorScheme.primary.withOpacity(0.6),
+                        color: theme.colorScheme.onPrimary.withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -368,61 +368,65 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   }
 
   Widget _stepIndicatorContent(int total, ThemeData theme) {
-    return Row(
-      children: List.generate(total, (i) {
-        final isActive = i == _currentStep;
-        final isDone = i < _currentStep;
-        return Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : isDone
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.surfaceContainerHighest,
-                ),
-                child: Center(
-                  child: isDone
-                      ? Icon(Icons.check_rounded, size: 18, color: theme.colorScheme.primary)
-                      : Text(
-                          '${i + 1}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: isActive
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 32, // Fixed height for the title area to ensure alignment
-                child: Text(
-                  _stepLabels[i],
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+    return Container(
+      color: theme.colorScheme.primary,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      child: Row(
+        children: List.generate(total, (i) {
+          final isActive = i == _currentStep;
+          final isDone = i < _currentStep;
+          return Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
                     color: isActive
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
+                        ? theme.colorScheme.onPrimary.withOpacity(0.25)
+                        : isDone
+                            ? theme.colorScheme.onPrimary.withOpacity(0.25)
+                            : theme.colorScheme.onPrimary.withOpacity(0.15),
+                  ),
+                  child: Center(
+                    child: isDone
+                        ? Icon(Icons.check_rounded, size: 18, color: theme.colorScheme.onPrimary)
+                        : Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isActive
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onPrimary.withOpacity(0.7),
+                            ),
+                          ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      }),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 32,
+                  child: Text(
+                    _stepLabels[i],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimary.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 

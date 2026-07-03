@@ -389,13 +389,20 @@ class EncontrosPage extends StatelessWidget {
                 onChanged: encontrosVm.setSearch,
                 decoration: InputDecoration(
                   hintText: 'Buscar por turma, descrição ou data...',
-                  prefixIcon: const Icon(Icons.search_rounded),
+                  prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
                   suffixIcon: encontrosVm.searchQuery.value.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded),
+                          icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
                           onPressed: () => encontrosVm.setSearch(''),
                         )
                       : null,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
               ),
             ),
