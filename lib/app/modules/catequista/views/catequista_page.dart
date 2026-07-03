@@ -10,6 +10,7 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
   final emailCtrl = TextEditingController(text: catequista?.email ?? '');
   final telefoneCtrl = TextEditingController(text: catequista?.telefone ?? '');
   final turmaCtrl = TextEditingController(text: catequista?.turma ?? '');
+  var currentStatus = catequista?.status ?? 'Ativo';
   final formKey = GlobalKey<FormState>();
   
   final phoneMask = MaskTextInputFormatter(
@@ -23,7 +24,8 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
 
   showDialog(
     context: context,
-    builder: (ctx) => Dialog(
+    builder: (ctx) => StatefulBuilder(
+      builder: (context, setState) => Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         decoration: BoxDecoration(
@@ -100,10 +102,25 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
                     ],
                   ),
                   const SizedBox(height: 20),
-                  TextFormField(
-                    controller: turmaCtrl,
-                    decoration: const InputDecoration(labelText: 'Turma', hintText: 'Ex: 1ª Eucaristia - A'),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: turmaCtrl,
+                          decoration: const InputDecoration(labelText: 'Turma', hintText: 'Ex: 1ª Eucaristia - A'),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: currentStatus,
+                          decoration: const InputDecoration(labelText: 'Status'),
+                          items: ['Ativo', 'Inativo'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (v) => setState(() => currentStatus = v!),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -123,6 +140,7 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
                             email: emailCtrl.text.trim(),
                             telefone: telefoneCtrl.text.trim(),
                             turma: turmaCtrl.text.trim(),
+                            status: currentStatus,
                           );
                           if (isEditing) {
                             vm.updateCatequista(model);
@@ -140,6 +158,7 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
             ),
           ),
         ),
+      ),
       ),
     ),
   );
@@ -264,6 +283,7 @@ class _CatequistaCard extends StatelessWidget {
                       children: [
                         _infoChip(Icons.menu_book_rounded, catequista.turma, theme),
                         _infoChip(Icons.email_outlined, catequista.email, theme),
+                        _infoChip(Icons.info_outline_rounded, catequista.status, theme),
                       ],
                     ),
                   ],
@@ -376,9 +396,10 @@ class _CatequistaTable extends StatelessWidget {
           0: FlexColumnWidth(0.6),
           1: FlexColumnWidth(3),
           2: FlexColumnWidth(2),
-          3: FlexColumnWidth(2.5),
-          4: FlexColumnWidth(2),
-          5: FixedColumnWidth(90),
+          3: FlexColumnWidth(1.5),
+          4: FlexColumnWidth(2.5),
+          5: FlexColumnWidth(2),
+          6: FixedColumnWidth(90),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -399,6 +420,7 @@ class _CatequistaTable extends StatelessWidget {
               const SizedBox.shrink(),
               _headerCell('Nome', Icons.person_rounded),
               _headerCell('Turma', Icons.menu_book_rounded),
+              _headerCell('Status', Icons.info_outline_rounded),
               _headerCell('Email', Icons.email_rounded),
               _headerCell('Telefone', Icons.phone_rounded),
               _headerCell('Ações', Icons.touch_app_rounded),
@@ -449,6 +471,7 @@ class _CatequistaTable extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _bodyCell(c.status),
                   _bodyCell(c.email),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
