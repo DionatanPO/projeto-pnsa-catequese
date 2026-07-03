@@ -4,6 +4,7 @@ class Coordenador {
   final String email;
   final String telefone;
   final String area;
+  final String status;
 
   Coordenador({
     String? id,
@@ -11,6 +12,7 @@ class Coordenador {
     required this.email,
     required this.telefone,
     required this.area,
+    required this.status,
   }) : id = id ?? DateTime.now().toString();
 }
 

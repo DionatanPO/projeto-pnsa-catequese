@@ -5,9 +5,9 @@ class CoordenadorViewModel extends GetxController {
   final Rx<CoordenadorModel> data = CoordenadorModel(
     totalCoordenadores: 3,
     coordenadores: [
-      Coordenador(nome: 'Ana Silva', email: 'ana@pnsa.com', telefone: '(62) 99999-0001', area: 'Catequese Infantil'),
-      Coordenador(nome: 'Bruno Santos', email: 'bruno@pnsa.com', telefone: '(62) 99999-0002', area: 'Crisma'),
-      Coordenador(nome: 'Carla Oliveira', email: 'carla@pnsa.com', telefone: '(62) 99999-0003', area: 'Batismo'),
+      Coordenador(nome: 'Ana Silva', email: 'ana@pnsa.com', telefone: '(62) 99999-0001', area: 'Catequese Infantil', status: 'Ativo'),
+      Coordenador(nome: 'Bruno Santos', email: 'bruno@pnsa.com', telefone: '(62) 99999-0002', area: 'Crisma', status: 'Ativo'),
+      Coordenador(nome: 'Carla Oliveira', email: 'carla@pnsa.com', telefone: '(62) 99999-0003', area: 'Batismo', status: 'Inativo'),
     ],
   ).obs;
 

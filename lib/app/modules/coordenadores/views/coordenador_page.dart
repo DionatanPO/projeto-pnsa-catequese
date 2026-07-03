@@ -10,6 +10,7 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
   final emailCtrl = TextEditingController(text: coordenador?.email ?? '');
   final telefoneCtrl = TextEditingController(text: coordenador?.telefone ?? '');
   final areaCtrl = TextEditingController(text: coordenador?.area ?? '');
+  var currentStatus = coordenador?.status ?? 'Ativo';
   final formKey = GlobalKey<FormState>();
 
   final phoneMask = MaskTextInputFormatter(
@@ -23,71 +24,72 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
 
   showDialog(
     context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surfaceContainerLow,
-            ],
+    builder: (ctx) => StatefulBuilder(
+      builder: (context, setState) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surfaceContainerLow,
+              ],
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Form(
-            key: formKey,
-            child: SizedBox(
-              width: dialogWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(context).colorScheme.primary,
-                              Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                            ],
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Form(
+              key: formKey,
+              child: SizedBox(
+                width: dialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          child: Icon(isEditing ? Icons.edit_rounded : Icons.person_add_rounded, color: Theme.of(context).colorScheme.onPrimary),
                         ),
-                        child: Icon(isEditing ? Icons.edit_rounded : Icons.person_add_rounded, color: Theme.of(context).colorScheme.onPrimary),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        isEditing ? 'Editar Coordenador' : 'Novo Coordenador',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: nomeCtrl,
-                    decoration: const InputDecoration(labelText: 'Nome', hintText: 'Nome completo'),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: emailCtrl,
-                          decoration: const InputDecoration(labelText: 'E-mail', hintText: 'email@pnsa.com'),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                        const SizedBox(width: 16),
+                        Text(
+                          isEditing ? 'Editar Coordenador' : 'Novo Coordenador',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    TextFormField(
+                      controller: nomeCtrl,
+                      decoration: const InputDecoration(labelText: 'Nome', hintText: 'Nome completo'),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: emailCtrl,
+                            decoration: const InputDecoration(labelText: 'E-mail', hintText: 'email@pnsa.com'),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
                           child: TextFormField(
                             controller: telefoneCtrl,
                             decoration: const InputDecoration(labelText: 'Telefone', hintText: '(62) 99999-9999'),
@@ -95,35 +97,71 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
                             inputFormatters: [phoneMask],
                             validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: areaCtrl,
+                            decoration: const InputDecoration(labelText: 'Área', hintText: 'Ex: Catequese Infantil'),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: currentStatus,
+                            decoration: const InputDecoration(labelText: 'Status'),
+                            items: ['Ativo', 'Inativo'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                            onChanged: (v) => setState(() => currentStatus = v!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: () {
+                            if (!formKey.currentState!.validate()) return;
+                            final model = Coordenador(
+                              id: coordenador?.id ?? DateTime.now().toString(),
+                              nome: nomeCtrl.text.trim(),
+                              email: emailCtrl.text.trim(),
+                              telefone: telefoneCtrl.text.trim(),
+                              area: areaCtrl.text.trim(),
+                              status: currentStatus,
+                            );
+                            if (isEditing) {
+                              vm.updateCoordenador(model);
+                            } else {
+                              vm.addCoordenador(model);
+                            }
+                            Navigator.of(ctx).pop();
+                          },
+                          child: Text(isEditing ? 'Salvar Alterações' : 'Salvar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: areaCtrl,
-                    decoration: const InputDecoration(labelText: 'Área', hintText: 'Ex: Catequese Infantil'),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton(
-                        onPressed: () {
-                          if (!formKey.currentState!.validate()) return;
-                          final model = Coordenador(
-                            id: coordenador?.id ?? DateTime.now().toString(),
-                            nome: nomeCtrl.text.trim(),
-                            email: emailCtrl.text.trim(),
-                            telefone: telefoneCtrl.text.trim(),
-                            area: areaCtrl.text.trim(),
-                          );
                           if (isEditing) {
                             vm.updateCoordenador(model);
                           } else {
@@ -258,14 +296,16 @@ class _CoordenadorCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Wrap(
+                      Wrap(
                       spacing: 8,
                       runSpacing: 4,
                       children: [
                         _infoChip(Icons.work_outline_rounded, coordenador.area, theme),
                         _infoChip(Icons.email_outlined, coordenador.email, theme),
+                        _infoChip(Icons.info_outline_rounded, coordenador.status, theme),
                       ],
                     ),
+
                   ],
                 ),
               ),
@@ -376,9 +416,10 @@ class _CoordenadorTable extends StatelessWidget {
           0: FlexColumnWidth(0.6),
           1: FlexColumnWidth(3),
           2: FlexColumnWidth(2),
-          3: FlexColumnWidth(2.5),
+          3: FlexColumnWidth(2),
           4: FlexColumnWidth(2),
-          5: FixedColumnWidth(90),
+          5: FlexColumnWidth(2),
+          6: FixedColumnWidth(90),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -399,6 +440,7 @@ class _CoordenadorTable extends StatelessWidget {
               const SizedBox.shrink(),
               _headerCell('Nome', Icons.person_rounded),
               _headerCell('Área', Icons.work_outline_rounded),
+              _headerCell('Status', Icons.info_outline_rounded),
               _headerCell('Email', Icons.email_rounded),
               _headerCell('Telefone', Icons.phone_rounded),
               _headerCell('Ações', Icons.touch_app_rounded),
@@ -449,6 +491,7 @@ class _CoordenadorTable extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _bodyCell(c.status),
                   _bodyCell(c.email),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
