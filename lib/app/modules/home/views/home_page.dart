@@ -113,6 +113,12 @@ Widget? _buildFab(BuildContext context, HomeViewModel vm) {
         icon: const Icon(Icons.add),
         label: const Text('Novo Encontro'),
       );
+    case 6:
+      return FloatingActionButton.extended(
+        onPressed: () => showNovaCoordenadorDialog(context, vm.coordenadorVm),
+        icon: const Icon(Icons.add),
+        label: const Text('Novo Coordenador'),
+      );
     default:
       return null;
   }
