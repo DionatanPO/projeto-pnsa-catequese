@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../viewmodels/catequista_viewmodel.dart';
 import '../models/catequista_model.dart';
 
@@ -10,6 +11,12 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
   final telefoneCtrl = TextEditingController(text: catequista?.telefone ?? '');
   final turmaCtrl = TextEditingController(text: catequista?.turma ?? '');
   final formKey = GlobalKey<FormState>();
+  
+  final phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
 
   final screenWidth = MediaQuery.of(context).size.width;
   final dialogWidth = screenWidth > 900 ? 560.0 : screenWidth > 600 ? 480.0 : screenWidth * 0.92;
@@ -81,12 +88,14 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: TextFormField(
-                          controller: telefoneCtrl,
-                          decoration: const InputDecoration(labelText: 'Telefone', hintText: '(62) 99999-9999'),
-                          keyboardType: TextInputType.phone,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
+                          child: TextFormField(
+                            controller: telefoneCtrl,
+                            decoration: const InputDecoration(labelText: 'Telefone', hintText: '(62) 99999-9999'),
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [phoneMask],
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+
                       ),
                     ],
                   ),
@@ -158,13 +167,20 @@ class CatequistaPage extends StatelessWidget {
             onChanged: vm.setSearch,
             decoration: InputDecoration(
               hintText: 'Buscar catequista por nome ou turma...',
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
               suffixIcon: vm.searchQuery.value.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear_rounded),
+                      icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
                       onPressed: () => vm.setSearch(''),
                     )
                   : null,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
           ),
         ),

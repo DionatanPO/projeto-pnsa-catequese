@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../viewmodels/coordenador_viewmodel.dart';
 import '../models/coordenador_model.dart';
 
@@ -10,6 +11,12 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
   final telefoneCtrl = TextEditingController(text: coordenador?.telefone ?? '');
   final areaCtrl = TextEditingController(text: coordenador?.area ?? '');
   final formKey = GlobalKey<FormState>();
+
+  final phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
 
   final screenWidth = MediaQuery.of(context).size.width;
   final dialogWidth = screenWidth > 900 ? 560.0 : screenWidth > 600 ? 480.0 : screenWidth * 0.92;
@@ -81,12 +88,14 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: TextFormField(
-                          controller: telefoneCtrl,
-                          decoration: const InputDecoration(labelText: 'Telefone', hintText: '(62) 99999-9999'),
-                          keyboardType: TextInputType.phone,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
+                          child: TextFormField(
+                            controller: telefoneCtrl,
+                            decoration: const InputDecoration(labelText: 'Telefone', hintText: '(62) 99999-9999'),
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [phoneMask],
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+
                       ),
                     ],
                   ),
