@@ -9,7 +9,6 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
   final nomeCtrl = TextEditingController(text: catequista?.nome ?? '');
   final emailCtrl = TextEditingController(text: catequista?.email ?? '');
   final telefoneCtrl = TextEditingController(text: catequista?.telefone ?? '');
-  final turmaCtrl = TextEditingController(text: catequista?.turma ?? '');
   var currentStatus = catequista?.status ?? 'Ativo';
   final formKey = GlobalKey<FormState>();
   
@@ -102,25 +101,11 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: turmaCtrl,
-                          decoration: const InputDecoration(labelText: 'Turma', hintText: 'Ex: 1ª Eucaristia - A'),
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: currentStatus,
-                          decoration: const InputDecoration(labelText: 'Status'),
-                          items: ['Ativo', 'Inativo'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                          onChanged: (v) => setState(() => currentStatus = v!),
-                        ),
-                      ),
-                    ],
+                  DropdownButtonFormField<String>(
+                    value: currentStatus,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    items: ['Ativo', 'Inativo'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => currentStatus = v!),
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -139,7 +124,6 @@ void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequi
                             nome: nomeCtrl.text.trim(),
                             email: emailCtrl.text.trim(),
                             telefone: telefoneCtrl.text.trim(),
-                            turma: turmaCtrl.text.trim(),
                             status: currentStatus,
                           );
                           if (isEditing) {
@@ -185,7 +169,7 @@ class CatequistaPage extends StatelessWidget {
           () => TextField(
             onChanged: vm.setSearch,
             decoration: InputDecoration(
-              hintText: 'Buscar catequista por nome ou turma...',
+              hintText: 'Buscar catequista por nome...',
               prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
               suffixIcon: vm.searchQuery.value.isNotEmpty
                   ? IconButton(
@@ -281,7 +265,6 @@ class _CatequistaCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        _infoChip(Icons.menu_book_rounded, catequista.turma, theme),
                         _infoChip(Icons.email_outlined, catequista.email, theme),
                         _infoChip(Icons.info_outline_rounded, catequista.status, theme),
                       ],
@@ -395,11 +378,10 @@ class _CatequistaTable extends StatelessWidget {
         columnWidths: const {
           0: FlexColumnWidth(0.6),
           1: FlexColumnWidth(3),
-          2: FlexColumnWidth(2),
-          3: FlexColumnWidth(1.5),
-          4: FlexColumnWidth(2.5),
-          5: FlexColumnWidth(2),
-          6: FixedColumnWidth(90),
+          2: FlexColumnWidth(1.5),
+          3: FlexColumnWidth(2.5),
+          4: FlexColumnWidth(2),
+          5: FixedColumnWidth(90),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -419,7 +401,6 @@ class _CatequistaTable extends StatelessWidget {
             children: [
               const SizedBox.shrink(),
               _headerCell('Nome', Icons.person_rounded),
-              _headerCell('Turma', Icons.menu_book_rounded),
               _headerCell('Status', Icons.info_outline_rounded),
               _headerCell('Email', Icons.email_rounded),
               _headerCell('Telefone', Icons.phone_rounded),
@@ -453,24 +434,6 @@ class _CatequistaTable extends StatelessWidget {
                     ),
                   ),
                   _bodyCell(c.nome, isBold: true),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        c.turma,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
                   _bodyCell(c.status),
                   _bodyCell(c.email),
                   Padding(

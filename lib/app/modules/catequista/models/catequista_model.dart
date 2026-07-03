@@ -3,7 +3,6 @@ class Catequista {
   final String nome;
   final String email;
   final String telefone;
-  final String turma;
   final String status;
 
   Catequista({
@@ -11,7 +10,6 @@ class Catequista {
     required this.nome,
     required this.email,
     required this.telefone,
-    required this.turma,
     required this.status,
   }) : id = id ?? DateTime.now().toString();
 }
