@@ -5,6 +5,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
+import 'catequizando_form.dart';
 
 class CatequizandoWizardPage extends StatefulWidget {
   final CatequizandoViewModel vm;
@@ -45,7 +46,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   String _sexo = 'Masculino';
   DateTime? _dataNascimento;
   String? _turmaSelecionada;
-  bool _batizado = true;
+  bool _batizado = false;
   bool? _fezPrimeiraEucaristia;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
@@ -523,7 +524,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       children: [
         _stepHeader('Histórico Sacramental', 'Batismo e Primeira Eucaristia', Icons.check_circle_outline_rounded, theme),
         const SizedBox(height: 24),
-        _radioGroup<bool>(
+        radioGroup<bool>(
           label: 'Já é Batizado(a)?',
           value: _batizado,
           options: const [true, false],
@@ -545,7 +546,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         ],
         if (_batizado && _requerEucaristia) ...[
           const SizedBox(height: 20),
-          _radioGroup<bool>(
+          radioGroup<bool>(
             label: 'Já fez a Primeira Eucaristia?',
             value: _fezPrimeiraEucaristia ?? false,
             options: const [true, false],
@@ -685,7 +686,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       children: [
         _stepHeader('Saúde e Cuidados', 'Informações médicas importantes', Icons.healing_rounded, theme),
         const SizedBox(height: 24),
-        _radioGroup<bool>(
+        radioGroup<bool>(
           label: 'Possui alergia, problema de saúde ou restrição?',
           value: _possuiRestricao,
           options: const [true, false],
@@ -1022,68 +1023,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
               Text(subtitle, style: theme.textTheme.bodySmall),
             ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _radioGroup<T>({
-    required String label,
-    required T value,
-    required List<T> options,
-    required List<String> labels,
-    required ThemeData theme,
-    required ValueChanged<T> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        Row(
-          children: List.generate(options.length, (i) {
-            final selected = value == options[i];
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: i < options.length - 1 ? 12 : 0),
-                child: InkWell(
-                  onTap: () => onChanged(options[i]),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: selected ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.3),
-                        width: selected ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                          size: 18,
-                          color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          labels[i],
-                          style: TextStyle(
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                            color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
         ),
       ],
     );

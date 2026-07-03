@@ -6,6 +6,7 @@ import '../../turma/viewmodels/turma_viewmodel.dart';
 import '../models/encontro_model.dart';
 import '../viewmodels/encontro_viewmodel.dart';
 import '../viewmodels/encontros_viewmodel.dart';
+import 'encontro_form.dart';
 
 void showEncontroDialog(BuildContext context, EncontrosViewModel encontrosVm, CatequizandoViewModel catequizandoVm, {TurmaModel? turma, RxList<TurmaModel>? turmas}) {
   final vm = EncontroViewModel(encontrosVm: encontrosVm);
@@ -64,146 +65,14 @@ void showEncontroDialog(BuildContext context, EncontrosViewModel encontrosVm, Ca
 
 void showNovoEncontroDialog(BuildContext context, EncontrosViewModel encontrosVm, {RxList<TurmaModel>? turmas}) {
   final todosTurmas = turmas ?? <TurmaModel>[].obs;
-  final dataCtrl = DateTime.now().obs;
-  final descCtrl = TextEditingController();
-  final turmaSelecionada = Rx<TurmaModel?>(null);
 
   showDialog(
     context: context,
-    builder: (ctx) {
-      final theme = Theme.of(context);
-      final colorScheme = theme.colorScheme;
-
-      return Obx(
-        () => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.all(16),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: colorScheme.surface,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    gradient: LinearGradient(
-                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: colorScheme.onPrimary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.event_rounded, color: colorScheme.onPrimary, size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Novo Encontro',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                  child: DropdownButtonFormField<TurmaModel>(
-                    value: turmaSelecionada.value,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Turma',
-                      prefixIcon: Icon(Icons.group_rounded),
-                    ),
-                    items: todosTurmas.map((t) => DropdownMenuItem(value: t, child: Text(t.nome))).toList(),
-                    onChanged: (v) => turmaSelecionada.value = v,
-                    validator: (v) => v == null ? 'Selecione uma turma' : null,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: InkWell(
-                    onTap: () async {
-                      final d = await showDatePicker(
-                        context: ctx,
-                        initialDate: dataCtrl.value,
-                        firstDate: DateTime(2025),
-                        lastDate: DateTime.now(),
-                        locale: const Locale('pt', 'BR'),
-                      );
-                      if (d != null) dataCtrl.value = d;
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Data',
-                        prefixIcon: Icon(Icons.calendar_month_rounded, color: colorScheme.primary),
-                        filled: true,
-                        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      child: Obx(() => Text(
-                        '${dataCtrl.value.day.toString().padLeft(2, '0')}/'
-                        '${dataCtrl.value.month.toString().padLeft(2, '0')}/'
-                        '${dataCtrl.value.year}',
-                      )),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: TextField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Descrição',
-                      hintText: 'Tema, atividade...',
-                      prefixIcon: Icon(Icons.notes_rounded),
-                    ),
-                    maxLines: 3,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
-                        onPressed: () {
-                          final turma = turmaSelecionada.value;
-                          if (turma == null) return;
-                          encontrosVm.criarEncontro(turma.id, dataCtrl.value, descCtrl.text.trim());
-                          Navigator.of(ctx).pop();
-                        },
-                        icon: const Icon(Icons.save_rounded, size: 18),
-                        label: const Text('Salvar'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.all(16),
+      child: EncontroForm(encontrosVm: encontrosVm, turmas: todosTurmas),
+    ),
   );
 }
 

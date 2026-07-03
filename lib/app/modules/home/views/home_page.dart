@@ -197,7 +197,57 @@ if (extended) ...[
         ),
       ),
     );
+  }
 }
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 22, color: color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.3)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ExtraWideLayout extends StatelessWidget {
@@ -368,8 +418,18 @@ class _InicioContent extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(hPad, 8, hPad, hPad),
       children: [
-          Card(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(28),
               child: Row(
@@ -377,7 +437,7 @@ class _InicioContent extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
+                      color: theme.colorScheme.onPrimary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(Icons.church_rounded, size: 32, color: theme.colorScheme.onPrimary),
@@ -391,19 +451,20 @@ class _InicioContent extends StatelessWidget {
                           'Bem-vindo à PNSA',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Gestão de Catequese',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            color: theme.colorScheme.onPrimary.withOpacity(0.8),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary.withOpacity(0.5), size: 28),
+                  Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.onPrimary.withOpacity(0.5), size: 28),
                 ],
               ),
             ),
@@ -445,6 +506,68 @@ class _InicioContent extends StatelessWidget {
                   const SizedBox(height: 16),
                   _MetricCard(icon: Icons.school_rounded, label: 'Catequistas', value: '${data.totalCatequistas}', color: theme.colorScheme.secondary, iconBg: theme.colorScheme.secondaryContainer),
                 ],
+              );
+            },
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Ações Rápidas',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Atalhos para as tarefas mais comuns',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              final actions = [
+                _QuickAction(
+                  icon: Icons.person_add_alt_1_rounded,
+                  label: 'Novo Catequizando',
+                  color: theme.colorScheme.primary,
+                  onTap: () {
+                    final turmas = vm.turmaVm.turmas.map((t) => t.nome).toList();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CatequizandoWizardPage(vm: vm.catequizandoVm, turmas: turmas),
+                      ),
+                    );
+                  },
+                ),
+                _QuickAction(
+                  icon: Icons.group_add_rounded,
+                  label: 'Nova Turma',
+                  color: theme.colorScheme.tertiary,
+                  onTap: () => showNovaTurmaDialog(context, vm.turmaVm),
+                ),
+                _QuickAction(
+                  icon: Icons.calendar_month_rounded,
+                  label: 'Novo Encontro',
+                  color: theme.colorScheme.secondary,
+                  onTap: () => showNovoEncontroDialog(context, vm.encontrosVm, turmas: vm.turmaVm.turmas),
+                ),
+              ];
+              if (isWide) {
+                return Row(
+                  children: actions.map((a) => Expanded(child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: a,
+                  ))).toList(),
+                );
+              }
+              return Column(
+                children: actions.map((a) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: a,
+                )).toList(),
               );
             },
           ),
