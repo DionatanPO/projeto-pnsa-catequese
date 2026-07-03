@@ -6,6 +6,7 @@ import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../../relatorio/viewmodels/relatorio_viewmodel.dart';
 import '../../profile/viewmodels/profile_viewmodel.dart';
 import '../../encontros/viewmodels/encontros_viewmodel.dart';
+import '../../coordenadores/viewmodels/coordenador_viewmodel.dart';
 
 class HomeViewModel extends GetxController {
   final Rx<HomeModel> data = HomeModel(title: 'Início').obs;
@@ -17,6 +18,7 @@ class HomeViewModel extends GetxController {
   final encontrosVm = EncontrosViewModel();
   final relatorioVm = RelatorioViewModel();
   final profileVm = ProfileViewModel();
+  final coordenadorVm = CoordenadorViewModel();
 
   int get selectedIndex => _selectedIndex;
 

@@ -8,6 +8,7 @@ import '../../encontros/views/encontros_page.dart';
 import '../../catequizandos/views/catequizando_page.dart';
 import '../../catequizandos/views/catequizando_wizard.dart';
 import '../../relatorio/views/relatorio_page.dart';
+import '../../coordenadores/views/coordenador_page.dart';
 import '../../profile/views/profile_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -33,7 +34,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Perfil'];
+const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil'];
 
 const _destinations = [
   NavigationRailDestination(
@@ -65,6 +66,11 @@ const _destinations = [
     icon: Icon(Icons.bar_chart_outlined),
     selectedIcon: Icon(Icons.bar_chart_rounded),
     label: Text('Relatórios'),
+  ),
+  NavigationRailDestination(
+    icon: Icon(Icons.admin_panel_settings_outlined),
+    selectedIcon: Icon(Icons.admin_panel_settings_rounded),
+    label: Text('Coordenadores'),
   ),
   NavigationRailDestination(
     icon: Icon(Icons.person_outline),
@@ -144,36 +150,48 @@ class _SideMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<HomeViewModel>(
       id: 'selectedIndex',
-      builder: (_) => NavigationRail(
-        selectedIndex: vm.selectedIndex,
-        onDestinationSelected: (i) => vm.selectedIndex = i,
-        labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-        extended: extended,
-        minExtendedWidth: 200,
-        groupAlignment: -1.0,
-        leading: Padding(
-          padding: EdgeInsets.only(top: extended ? 16 : 8, bottom: extended ? 24 : 8),
-          child: Column(
-            children: [
-              Icon(Icons.church_rounded, size: extended ? 40 : 24, color: theme.colorScheme.primary),
-              if (extended) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'PNSA',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ],
+      builder: (_) => Theme(
+        data: theme.copyWith(
+          colorScheme: theme.colorScheme.copyWith(
+            onSurface: theme.colorScheme.onPrimary,
+            onSurfaceVariant: theme.colorScheme.onPrimary.withOpacity(0.7),
+          ),
+          navigationRailTheme: NavigationRailThemeData(
+            backgroundColor: theme.colorScheme.primary,
+            indicatorColor: theme.colorScheme.onPrimary.withOpacity(0.25),
           ),
         ),
-        destinations: _destinations,
+        child: NavigationRail(
+          selectedIndex: vm.selectedIndex,
+          onDestinationSelected: (i) => vm.selectedIndex = i,
+          labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+          extended: extended,
+          minExtendedWidth: 200,
+          groupAlignment: -1.0,
+          leading: Padding(
+            padding: EdgeInsets.only(top: extended ? 16 : 8, bottom: extended ? 24 : 8),
+            child: Column(
+              children: [
+                Icon(Icons.church_rounded, size: extended ? 40 : 24, color: theme.colorScheme.onPrimary),
+if (extended) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'PNSA',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          destinations: _destinations,
+        ),
       ),
     );
-  }
+}
 }
 
 class _ExtraWideLayout extends StatelessWidget {
@@ -187,7 +205,6 @@ class _ExtraWideLayout extends StatelessWidget {
     return GetBuilder<HomeViewModel>(
       id: 'selectedIndex',
       builder: (_) => Scaffold(
-        appBar: _buildAppBar(vm, theme),
         body: Row(
           children: [
             _SideMenu(vm: vm, theme: theme, extended: true),
@@ -214,7 +231,6 @@ class _WideLayout extends StatelessWidget {
     return GetBuilder<HomeViewModel>(
       id: 'selectedIndex',
       builder: (_) => Scaffold(
-        appBar: _buildAppBar(vm, theme),
         body: Row(
           children: [
             _SideMenu(vm: vm, theme: theme),
@@ -300,6 +316,7 @@ const _menuIcons = [
   Icons.school_rounded,
   Icons.event_rounded,
   Icons.bar_chart_rounded,
+  Icons.admin_panel_settings_rounded,
   Icons.person_rounded,
 ];
 
@@ -321,6 +338,8 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 5:
           return RelatorioPage(vm: vm.relatorioVm);
         case 6:
+          return CoordenadorPage(vm: vm.coordenadorVm);
+        case 7:
           return ProfilePage(vm: vm.profileVm);
         default:
           return const SizedBox.shrink();
