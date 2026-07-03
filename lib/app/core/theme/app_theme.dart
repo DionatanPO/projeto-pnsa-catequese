@@ -96,27 +96,27 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isLight
-            ? colorScheme.surfaceContainerLow
+            ? colorScheme.surfaceContainerLow.withOpacity(0.7)
             : colorScheme.surfaceContainerHigh,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_shapeSmall),
-          borderSide: BorderSide(color: colorScheme.outline),
+          borderRadius: BorderRadius.circular(_shapeMedium),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_shapeSmall),
-          borderSide: BorderSide(color: colorScheme.outline),
+          borderRadius: BorderRadius.circular(_shapeMedium),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_shapeSmall),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderRadius: BorderRadius.circular(_shapeMedium),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_shapeSmall),
-          borderSide: BorderSide(color: colorScheme.error),
+          borderRadius: BorderRadius.circular(_shapeMedium),
+          borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_shapeSmall),
-          borderSide: BorderSide(color: colorScheme.error, width: 2),
+          borderRadius: BorderRadius.circular(_shapeMedium),
+          borderSide: BorderSide(color: colorScheme.error, width: 1.5),
         ),
         prefixIconColor: colorScheme.primary,
         labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
