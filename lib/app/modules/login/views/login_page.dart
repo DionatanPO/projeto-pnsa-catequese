@@ -88,13 +88,35 @@ class _LoginForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {},
-            child: const Text('Esqueci a senha'),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                Get.dialog(
+                  AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
+                        const Text('Esqueci a Senha'),
+                      ],
+                    ),
+                    content: const Text(
+                      'Para redefinir suas credenciais de acesso, procure um coordenador responsável pelo sistema.',
+                    ),
+                    actions: [
+                      FilledButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('Entendi'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('Esqueci a senha'),
+            ),
           ),
-        ),
         const SizedBox(height: 8),
         Obx(
           () => FilledButton(
@@ -132,7 +154,16 @@ class _LargeScreen extends StatelessWidget {
           Expanded(
             flex: 5,
             child: Container(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withOpacity(0.75),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -140,7 +171,7 @@ class _LargeScreen extends StatelessWidget {
                     Icon(
                       Icons.church_rounded,
                       size: 72,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -148,14 +179,14 @@ class _LargeScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Sistema de Gestão de Catequese',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
                       ),
                     ),
                   ],
