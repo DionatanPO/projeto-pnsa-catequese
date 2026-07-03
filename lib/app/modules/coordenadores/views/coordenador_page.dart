@@ -161,26 +161,6 @@ void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coord
       ),
     ),
   );
-
-                          if (isEditing) {
-                            vm.updateCoordenador(model);
-                          } else {
-                            vm.addCoordenador(model);
-                          }
-                          Navigator.of(ctx).pop();
-                        },
-                        child: Text(isEditing ? 'Salvar Alterações' : 'Salvar'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 void showNovaCoordenadorDialog(BuildContext context, CoordenadorViewModel vm) {
