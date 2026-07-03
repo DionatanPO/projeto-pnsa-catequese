@@ -1,17 +1,25 @@
 import 'package:get/get.dart';
 import '../models/coordenador_model.dart';
+import '../repositories/coordenador_repository.dart';
 
 class CoordenadorViewModel extends GetxController {
-  final Rx<CoordenadorModel> data = CoordenadorModel(
-    totalCoordenadores: 3,
-    coordenadores: [
-      Coordenador(nome: 'Ana Silva', email: 'ana@pnsa.com', telefone: '(62) 99999-0001', area: 'Catequese Infantil', status: 'Ativo'),
-      Coordenador(nome: 'Bruno Santos', email: 'bruno@pnsa.com', telefone: '(62) 99999-0002', area: 'Crisma', status: 'Ativo'),
-      Coordenador(nome: 'Carla Oliveira', email: 'carla@pnsa.com', telefone: '(62) 99999-0003', area: 'Batismo', status: 'Inativo'),
-    ],
-  ).obs;
+  final CoordenadorRepository _repository;
 
+  final Rx<CoordenadorModel> data = CoordenadorModel().obs;
   final RxString searchQuery = ''.obs;
+
+  CoordenadorViewModel({CoordenadorRepository? repository})
+      : _repository = repository ?? CoordenadorRepository() {
+    _loadData();
+  }
+
+  void _loadData() {
+    final list = _repository.getAll();
+    data.value = CoordenadorModel(
+      totalCoordenadores: list.length,
+      coordenadores: list,
+    );
+  }
 
   List<Coordenador> get filteredCoordenadores {
     final query = searchQuery.value.toLowerCase().trim();
@@ -24,27 +32,18 @@ class CoordenadorViewModel extends GetxController {
 
   void setSearch(String value) => searchQuery.value = value;
 
-  void addCoordenador(Coordenador c) {
-    data.update((val) {
-      if (val == null) return;
-      val.coordenadores.add(c);
-    });
+  Future<void> addCoordenador(Coordenador c) async {
+    await _repository.add(c);
+    _loadData();
   }
 
-  void updateCoordenador(Coordenador c) {
-    data.update((val) {
-      if (val == null) return;
-      final idx = val.coordenadores.indexWhere((x) => x.id == c.id);
-      if (idx != -1) {
-        val.coordenadores[idx] = c;
-      }
-    });
+  Future<void> updateCoordenador(Coordenador c) async {
+    await _repository.update(c);
+    _loadData();
   }
 
-  void removeCoordenador(String id) {
-    data.update((val) {
-      if (val == null) return;
-      val.coordenadores.removeWhere((x) => x.id == id);
-    });
+  Future<void> removeCoordenador(String id) async {
+    await _repository.remove(id);
+    _loadData();
   }
 }

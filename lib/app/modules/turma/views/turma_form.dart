@@ -96,36 +96,36 @@ class _TurmaFormState extends State<TurmaForm> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surface,
-            theme.colorScheme.surfaceContainerLow,
-          ],
-        ),
+        color: theme.colorScheme.surface,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Form(
-          key: _formKey,
-          child: SizedBox(
-            width: widget.width,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      clipBehavior: Clip.antiAlias,
+      child: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: widget.width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.7),
-                          ],
-                        ),
+                        color: theme.colorScheme.onPrimary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -136,102 +136,113 @@ class _TurmaFormState extends State<TurmaForm> {
                     const SizedBox(width: 16),
                     Text(
                       _isEditing ? 'Editar Turma' : 'Nova Turma',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onPrimary,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nomeCtrl,
-                  decoration: const InputDecoration(labelText: 'Nome da turma', hintText: 'Ex: Turma A'),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 20),
-                Row(
+              ),
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _anoCtrl,
-                        decoration: const InputDecoration(labelText: 'Ano Letivo', hintText: 'Ex: 2026'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                      ),
+                    TextFormField(
+                      controller: _nomeCtrl,
+                      decoration: const InputDecoration(labelText: 'Nome da turma', hintText: 'Ex: Turma A'),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _etapaCtrl,
-                        decoration: const InputDecoration(labelText: 'Etapa', hintText: 'Ex: Eucaristia'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                      ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _anoCtrl,
+                            decoration: const InputDecoration(labelText: 'Ano Letivo', hintText: 'Ex: 2026'),
+                            keyboardType: TextInputType.number,
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _etapaCtrl,
+                            decoration: const InputDecoration(labelText: 'Etapa', hintText: 'Ex: Eucaristia'),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<String>(
+                      value: _selectedCatequista,
+                      decoration: const InputDecoration(labelText: 'Catequista', hintText: 'Selecione o catequista'),
+                      items: _catequistas.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                      onChanged: (v) => setState(() => _selectedCatequista = v),
+                      validator: (v) => v == null ? 'Selecione um catequista' : null,
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _diaHorarioCtrl,
+                      decoration: const InputDecoration(labelText: 'Dia e Horário', hintText: 'Ex: Sábados, 08:00'),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _localSalaCtrl,
+                            decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _capacidadeCtrl,
+                            decoration: const InputDecoration(labelText: 'Quantidade', hintText: 'Ex: 25'),
+                            keyboardType: TextInputType.number,
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<String>(
+                      value: _selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                      onChanged: (v) => setState(() => _selectedStatus = v!),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _observacoesCtrl,
+                      decoration: const InputDecoration(labelText: 'Observações'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: _save,
+                          child: Text(_isEditing ? 'Salvar Alterações' : 'Salvar'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  value: _selectedCatequista,
-                  decoration: const InputDecoration(labelText: 'Catequista', hintText: 'Selecione o catequista'),
-                  items: _catequistas.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                  onChanged: (v) => setState(() => _selectedCatequista = v),
-                  validator: (v) => v == null ? 'Selecione um catequista' : null,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _diaHorarioCtrl,
-                  decoration: const InputDecoration(labelText: 'Dia e Horário', hintText: 'Ex: Sábados, 08:00'),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _localSalaCtrl,
-                        decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _capacidadeCtrl,
-                        decoration: const InputDecoration(labelText: 'Quantidade', hintText: 'Ex: 25'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  value: _selectedStatus,
-                  decoration: const InputDecoration(labelText: 'Status'),
-                  items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                  onChanged: (v) => setState(() => _selectedStatus = v!),
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _observacoesCtrl,
-                  decoration: const InputDecoration(labelText: 'Observações'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton(
-                      onPressed: _save,
-                      child: Text(_isEditing ? 'Salvar Alterações' : 'Salvar'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
