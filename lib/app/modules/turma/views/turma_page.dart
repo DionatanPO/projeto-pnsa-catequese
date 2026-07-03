@@ -568,13 +568,20 @@ class TurmaPage extends StatelessWidget {
             onChanged: vm.setSearch,
             decoration: InputDecoration(
               hintText: 'Buscar por nome, catequista ou horário...',
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
               suffixIcon: vm.searchQuery.value.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear_rounded),
+                      icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
                       onPressed: () => vm.setSearch(''),
                     )
                   : null,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
           ),
         ),
@@ -634,9 +641,10 @@ class _TurmaTable extends StatelessWidget {
           0: FlexColumnWidth(3),
           1: FlexColumnWidth(2),
           2: FlexColumnWidth(2),
-          3: FlexColumnWidth(1),
-          4: FlexColumnWidth(1),
-          5: FixedColumnWidth(100),
+          3: FlexColumnWidth(0.8),
+          4: FlexColumnWidth(0.8),
+          5: FlexColumnWidth(2),
+          6: FixedColumnWidth(100),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -657,8 +665,9 @@ class _TurmaTable extends StatelessWidget {
               _headerCell('Turma', Icons.group_rounded),
               _headerCell('Catequista', Icons.person_rounded),
               _headerCell('Horário', Icons.access_time_rounded),
-              _headerCell('Quantidade', Icons.people_rounded),
+              _headerCell('Qtde', Icons.people_rounded),
               _headerCell('Status', Icons.info_outline_rounded),
+              _headerCell('Detalhes', Icons.description_outlined),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
@@ -686,9 +695,12 @@ class _TurmaTable extends StatelessWidget {
                           child: Icon(Icons.menu_book_rounded, size: 16, color: theme.colorScheme.primary),
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          t.nome,
-                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                        Expanded(
+                          child: Text(
+                            t.nome,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                          ),
                         ),
                       ],
                     ),
@@ -697,6 +709,7 @@ class _TurmaTable extends StatelessWidget {
                   _bodyCell(t.diaHorario),
                   _bodyCell('${t.capacidade}'),
                   _bodyCell(t.status),
+                  _bodyCell(t.observacoes != null && t.observacoes!.isNotEmpty ? t.observacoes! : '-', maxLines: 2),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
@@ -774,19 +787,22 @@ Flexible(
 
   Padding _headerCell(String label, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 15, color: theme.colorScheme.onPrimary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              color: theme.colorScheme.onPrimary,
-              letterSpacing: 0.5,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onPrimary,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ],
@@ -794,12 +810,13 @@ Flexible(
     );
   }
 
-  Padding _bodyCell(String text, {bool isBold = false}) {
+  Padding _bodyCell(String text, {bool isBold = false, int? maxLines}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Text(
         text,
         overflow: TextOverflow.ellipsis,
+        maxLines: maxLines,
         style: isBold
             ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
             : theme.textTheme.bodyMedium,
