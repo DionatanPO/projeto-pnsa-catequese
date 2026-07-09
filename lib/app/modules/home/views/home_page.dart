@@ -10,6 +10,7 @@ import '../../catequizandos/views/catequizando_wizard.dart';
 import '../../relatorio/views/relatorio_page.dart';
 import '../../coordenadores/views/coordenador_page.dart';
 import '../../profile/views/profile_page.dart';
+import '../../sobre/views/sobre_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -34,7 +35,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil'];
+const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre'];
 
 const _destinations = [
   NavigationRailDestination(
@@ -76,6 +77,11 @@ const _destinations = [
     icon: Icon(Icons.person_outline),
     selectedIcon: Icon(Icons.person_rounded),
     label: Text('Perfil'),
+  ),
+  NavigationRailDestination(
+    icon: Icon(Icons.info_outline_rounded),
+    selectedIcon: Icon(Icons.info_rounded),
+    label: Text('Sobre'),
   ),
 ];
 
@@ -329,6 +335,7 @@ const _menuIcons = [
   Icons.bar_chart_rounded,
   Icons.admin_panel_settings_rounded,
   Icons.person_rounded,
+  Icons.info_outline_rounded,
 ];
 
 Widget _buildBody(HomeViewModel vm, ThemeData theme) {
@@ -358,6 +365,8 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
           return CoordenadorPage(vm: vm.coordenadorVm);
         case 7:
           return ProfilePage(vm: vm.profileVm);
+        case 8:
+          return const SobrePage();
         default:
           return const SizedBox.shrink();
       }

@@ -104,6 +104,7 @@ class EncontrosViewModel extends GetxController {
       sortAscending.value = true;
     }
     currentPage.value = 0;
+    update(['encontros']);
   }
 
   void nextPage() {
