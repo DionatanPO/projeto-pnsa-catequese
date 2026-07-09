@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
@@ -297,6 +298,92 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     }
   }
 
+  void _showExportOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Apenas ficha de cadastro'),
+                subtitle: const Text('Exportar somente os dados cadastrais'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportPdf(withHistory: false);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.history),
+                title: const Text('Ficha completa com histórico'),
+                subtitle: const Text('Inclui o histórico de matrículas'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportPdf(withHistory: true);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _exportPdf({required bool withHistory}) async {
+    final dados = _buildModel();
+    if (dados == null) return;
+    await CertificateGenerator.generateFicha(dados, withHistory: withHistory);
+  }
+
+  void _showStatusLegenda() {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lightbulb_outline_rounded, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            const Text('Significado de cada status'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -437,40 +524,17 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                           ).toList(),
                           onChanged: (v) => setState(() => _status = v!),
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.lightbulb_outline_rounded, size: 16, color: theme.colorScheme.tertiary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Significado de cada status:',
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.colorScheme.onTertiaryContainer,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
-                              const SizedBox(height: 6),
-                              _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
-                              const SizedBox(height: 6),
-                              _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
-                              const SizedBox(height: 6),
-                              _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
-                              const SizedBox(height: 6),
-                              _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
-                            ],
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            height: 32,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: Icon(Icons.help_outline_rounded, size: 18, color: theme.colorScheme.primary),
+                              tooltip: 'Significado de cada status',
+                              onPressed: _showStatusLegenda,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -623,8 +687,16 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                 ),
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    if (_isEditing)
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                        label: const Text('Exportar PDF'),
+                        onPressed: _showExportOptions,
+                      )
+                    else
+                      const Spacer(),
+                    const Spacer(),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Cancelar'),

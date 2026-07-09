@@ -112,6 +112,41 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     setState(() => _currentStep--);
   }
 
+  void _showStatusLegenda() {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.lightbulb_outline_rounded, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            const Text('Significado de cada status'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
+            const SizedBox(height: 12),
+            _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
+        ],
+      ),
+    );
+  }
+
   Future<void> _finalizar() async {
     if (!_aceiteTermos) {
       Get.snackbar('Atenção', 'Aceite os termos para finalizar');
@@ -540,40 +575,17 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
           ).toList(),
           onChanged: (v) => setState(() => _status = v!),
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.lightbulb_outline_rounded, size: 16, color: theme.colorScheme.tertiary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Significado de cada status:',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onTertiaryContainer,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
-              const SizedBox(height: 6),
-              _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
-              const SizedBox(height: 6),
-              _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
-              const SizedBox(height: 6),
-              _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
-              const SizedBox(height: 6),
-              _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
-            ],
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            height: 32,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(Icons.help_outline_rounded, size: 18, color: theme.colorScheme.primary),
+              tooltip: 'Significado de cada status',
+              onPressed: _showStatusLegenda,
+            ),
           ),
         ),
       ],
