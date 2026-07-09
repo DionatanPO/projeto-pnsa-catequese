@@ -2,7 +2,11 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:get/get.dart';
 import '../../modules/catequizandos/models/catequizando_model.dart';
+import '../../modules/matricula/models/matricula_model.dart';
+import '../../modules/matricula/viewmodels/matricula_viewmodel.dart';
+import '../../modules/turma/viewmodels/turma_viewmodel.dart';
 
 class CertificateGenerator {
   static Future<void> generate(Catequizando catequizando) async {
@@ -73,7 +77,7 @@ class CertificateGenerator {
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                     children: [
-                      _buildDetail('Turma', catequizando.turmaNome, borderColor, font, fontBold),
+                      _buildDetail('Turma', Get.find<MatriculaViewModel>().getNomeTurmaAtual(catequizando.id, Get.find<TurmaViewModel>().turmas) ?? '', borderColor, font, fontBold),
                       _buildDetail('Responsável', catequizando.responsavel, borderColor, font, fontBold),
                     ],
                   ),
@@ -113,6 +117,83 @@ class CertificateGenerator {
     await Printing.sharePdf(
       bytes: await pdf.save(),
       filename: 'certificado_${catequizando.nome.replaceAll(' ', '_')}.pdf',
+    );
+  }
+
+  static Future<void> generateHistorico(
+    Catequizando catequizando,
+    List<({Matricula matricula, String? turmaNome})> historico,
+  ) async {
+    final pdf = pw.Document();
+    final font = await PdfGoogleFonts.latoRegular();
+    final fontBold = await PdfGoogleFonts.latoBold();
+    final textColor = PdfColor.fromHex('#2F4F4F');
+    final primaryColor = PdfColor.fromHex('#8B0000');
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => pw.Column(
+          children: [
+            pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
+                style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
+            pw.Text('PASTORAL CATEQUÉTICA',
+                style: pw.TextStyle(font: fontBold, fontSize: 14, color: primaryColor)),
+            pw.SizedBox(height: 8),
+            pw.Divider(color: primaryColor),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        build: (context) => [
+          pw.Text('Histórico de Matrículas',
+              style: pw.TextStyle(font: fontBold, fontSize: 22, color: textColor)),
+          pw.SizedBox(height: 4),
+          pw.Text(catequizando.nome.toUpperCase(),
+              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor)),
+          pw.SizedBox(height: 20),
+          if (historico.isEmpty)
+            pw.Text('Nenhum registro encontrado.',
+                style: pw.TextStyle(font: font, fontSize: 12, color: textColor))
+          else
+            pw.Table.fromTextArray(
+              headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
+              headerDecoration: pw.BoxDecoration(color: primaryColor),
+              cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
+              cellAlignments: {
+                0: pw.Alignment.centerLeft,
+                1: pw.Alignment.center,
+                2: pw.Alignment.center,
+                3: pw.Alignment.center,
+              },
+              headers: ['Turma', 'Ano', 'Status', 'Período'],
+              data: historico.map((item) {
+                final m = item.matricula;
+                final periodo = m.dataConclusao != null
+                    ? '${DateFormat('dd/MM/yyyy').format(m.dataMatricula)} a ${DateFormat('dd/MM/yyyy').format(m.dataConclusao!)}'
+                    : '${DateFormat('dd/MM/yyyy').format(m.dataMatricula)} - presente';
+                return [
+                  item.turmaNome ?? 'Turma removida',
+                  m.ano.toString(),
+                  m.status,
+                  periodo,
+                ];
+              }).toList(),
+            ),
+          pw.SizedBox(height: 30),
+          pw.Divider(color: PdfColor.fromHex('#8B00004D')),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
+            style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
+          ),
+        ],
+      ),
+    );
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'historico_${catequizando.nome.replaceAll(' ', '_')}.pdf',
     );
   }
 

@@ -1,12 +1,22 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../models/catequizando_model.dart';
 import '../repositories/catequizando_repository.dart';
+import '../../matricula/viewmodels/matricula_viewmodel.dart';
+import '../../turma/viewmodels/turma_viewmodel.dart';
+import '../../turma/models/turma_model.dart';
 
 class CatequizandoViewModel extends GetxController {
   final CatequizandoRepository _repository;
 
   final RxList<Catequizando> catequizandos = <Catequizando>[].obs;
   final RxString searchQuery = ''.obs;
+  final RxInt currentPage = 0.obs;
+  final RxInt sortColumn = (-1).obs;
+  final RxBool sortAscending = true.obs;
+
+  int pageSize = 25;
+  Timer? _debounce;
 
   CatequizandoViewModel({CatequizandoRepository? repository})
       : _repository = repository ?? CatequizandoRepository() {
@@ -17,18 +27,115 @@ class CatequizandoViewModel extends GetxController {
     catequizandos.value = _repository.getAll();
   }
 
-  List<Catequizando> get filteredCatequizandos {
+  List<Catequizando> get paginatedCatequizandos {
+    var list = catequizandos as List<Catequizando>;
+
     final query = searchQuery.value.toLowerCase().trim();
-    if (query.isEmpty) return catequizandos;
-    return catequizandos.where((a) =>
-      a.nome.toLowerCase().contains(query) ||
-      a.turmaNome.toLowerCase().contains(query) ||
-      a.responsavel.toLowerCase().contains(query)
-    ).toList();
+    if (query.isNotEmpty) {
+      final matriculaVm = Get.find<MatriculaViewModel>();
+      final turmas = Get.find<TurmaViewModel>().turmas;
+      list = list.where((a) {
+        final turmaAtual = matriculaVm.getNomeTurmaAtual(a.id, turmas) ?? '';
+        return a.nome.toLowerCase().contains(query) ||
+            turmaAtual.toLowerCase().contains(query) ||
+            a.responsavel.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    if (sortColumn.value >= 0) {
+      final matriculaVm = Get.find<MatriculaViewModel>();
+      final turmas = Get.find<TurmaViewModel>().turmas;
+      list = List<Catequizando>.from(list);
+      list.sort((a, b) {
+        final ka = _sortKey(a, matriculaVm, turmas);
+        final kb = _sortKey(b, matriculaVm, turmas);
+        return sortAscending.value ? ka.compareTo(kb) : kb.compareTo(ka);
+      });
+    }
+
+    final start = currentPage.value * pageSize;
+    final end = (start + pageSize).clamp(0, list.length);
+    if (start >= list.length) return [];
+    return list.sublist(start, end);
+  }
+
+  String _sortKey(Catequizando a, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
+    switch (sortColumn.value) {
+      case 1: return a.nome;
+      case 2: return matriculaVm.getNomeTurmaAtual(a.id, turmas) ?? '';
+      case 3: return a.status;
+      case 4: return a.responsavel;
+      case 5: return a.idade.toString().padLeft(3, '0');
+      default: return '';
+    }
+  }
+
+  int get totalPages {
+    final count = _totalCount;
+    if (count == 0) return 0;
+    return (count / pageSize).ceil();
+  }
+
+  int get _totalCount {
+    final query = searchQuery.value.toLowerCase().trim();
+    if (query.isEmpty) return catequizandos.length;
+    final matriculaVm = Get.find<MatriculaViewModel>();
+    final turmas = Get.find<TurmaViewModel>().turmas;
+    return catequizandos.where((a) {
+      final turmaAtual = matriculaVm.getNomeTurmaAtual(a.id, turmas) ?? '';
+      return a.nome.toLowerCase().contains(query) ||
+          turmaAtual.toLowerCase().contains(query) ||
+          a.responsavel.toLowerCase().contains(query);
+    }).length;
+  }
+
+  void sortBy(int column) {
+    if (sortColumn.value == column) {
+      sortAscending.value = !sortAscending.value;
+    } else {
+      sortColumn.value = column;
+      sortAscending.value = true;
+    }
+    currentPage.value = 0;
+  }
+
+  void nextPage() {
+    if (currentPage.value < totalPages - 1) {
+      currentPage.value++;
+    }
+  }
+
+  void prevPage() {
+    if (currentPage.value > 0) {
+      currentPage.value--;
+    }
+  }
+
+  void goToPage(int page) {
+    if (page >= 0 && page < totalPages) {
+      currentPage.value = page;
+    }
   }
 
   void setSearch(String value) {
-    searchQuery.value = value;
+    if (value.isEmpty) {
+      _debounce?.cancel();
+      searchQuery.value = '';
+      currentPage.value = 0;
+      return;
+    }
+    _debounce?.cancel();
+    final query = value;
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      searchQuery.value = query;
+      currentPage.value = 0;
+    });
+  }
+
+  @override
+  void onClose() {
+    _debounce?.cancel();
+    super.onClose();
   }
 
   Future<void> addCatequizando(Catequizando c) async {

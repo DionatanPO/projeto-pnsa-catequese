@@ -229,7 +229,7 @@ class _CoordenadorCard extends StatelessWidget {
   }
 }
 
-class _CoordenadorTable extends StatelessWidget {
+class _CoordenadorTable extends StatefulWidget {
   final List<Coordenador> coordenadores;
   final ThemeData theme;
   final CoordenadorViewModel vm;
@@ -237,7 +237,50 @@ class _CoordenadorTable extends StatelessWidget {
   const _CoordenadorTable({required this.coordenadores, required this.theme, required this.vm});
 
   @override
+  State<_CoordenadorTable> createState() => _CoordenadorTableState();
+}
+
+class _CoordenadorTableState extends State<_CoordenadorTable> {
+  int _sortColumn = -1;
+  bool _sortAscending = true;
+
+  String _getSortKey(Coordenador c, int col) {
+    switch (col) {
+      case 1: return c.nome;
+      case 2: return c.area;
+      case 3: return c.status;
+      case 4: return c.email;
+      case 5: return c.telefone;
+      default: return '';
+    }
+  }
+
+  void _sort(int col) {
+    setState(() {
+      if (_sortColumn == col) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = col;
+        _sortAscending = true;
+      }
+    });
+  }
+
+  List<Coordenador> get _sortedList {
+    if (_sortColumn < 0) return widget.coordenadores;
+    final sorted = List<Coordenador>.from(widget.coordenadores);
+    sorted.sort((a, b) {
+      final r = _getSortKey(a, _sortColumn).compareTo(_getSortKey(b, _sortColumn));
+      return _sortAscending ? r : -r;
+    });
+    return sorted;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final sorted = _sortedList;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -272,15 +315,15 @@ class _CoordenadorTable extends StatelessWidget {
             ),
             children: [
               const SizedBox.shrink(),
-              _headerCell('Nome', Icons.person_rounded),
-              _headerCell('Área', Icons.work_outline_rounded),
-              _headerCell('Status', Icons.info_outline_rounded),
-              _headerCell('Email', Icons.email_rounded),
-              _headerCell('Telefone', Icons.phone_rounded),
+              _sortableHeader('Nome', Icons.person_rounded, 1),
+              _sortableHeader('Área', Icons.work_outline_rounded, 2),
+              _sortableHeader('Status', Icons.info_outline_rounded, 3),
+              _sortableHeader('Email', Icons.email_rounded, 4),
+              _sortableHeader('Telefone', Icons.phone_rounded, 5),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
-          ...coordenadores.asMap().entries.map(
+          ...sorted.asMap().entries.map(
             (entry) {
               final i = entry.key;
               final c = entry.value;
@@ -354,7 +397,7 @@ class _CoordenadorTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () => showCoordenadorDialog(context, vm, coordenador: c),
+                            onPressed: () => showCoordenadorDialog(context, widget.vm, coordenador: c),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -373,7 +416,7 @@ class _CoordenadorTable extends StatelessWidget {
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
                                       onPressed: () {
-                                        vm.removeCoordenador(c.id);
+                                        widget.vm.removeCoordenador(c.id);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -398,7 +441,43 @@ class _CoordenadorTable extends StatelessWidget {
     );
   }
 
-  Padding _headerCell(String label, IconData icon) {
+  Widget _sortableHeader(String label, IconData icon, int col) {
+    final theme = widget.theme;
+    final isActive = _sortColumn == col;
+    return InkWell(
+      onTap: () => _sort(col),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: theme.colorScheme.onPrimary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 4),
+              Icon(
+                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 14,
+                color: theme.colorScheme.onPrimary,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String label, IconData icon) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Row(
@@ -421,6 +500,7 @@ class _CoordenadorTable extends StatelessWidget {
   }
 
   Padding _bodyCell(String text, {bool isBold = false}) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Text(

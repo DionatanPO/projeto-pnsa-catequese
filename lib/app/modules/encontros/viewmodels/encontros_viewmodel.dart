@@ -1,13 +1,25 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../models/encontro_model.dart';
 import '../models/frequencia_model.dart';
 import '../repositories/encontros_repository.dart';
+import '../../turma/models/turma_model.dart';
+
+typedef EncontroItem = ({Encontro encontro, String turmaNome});
 
 class EncontrosViewModel extends GetxController {
   final EncontrosRepository _repository;
 
   final RxList<Encontro> encontros = <Encontro>[].obs;
   final RxString searchQuery = ''.obs;
+  final RxList<EncontroItem> _allItems = <EncontroItem>[].obs;
+  List<EncontroItem> get allItems => _allItems;
+  final RxInt currentPage = 0.obs;
+  final RxInt sortColumn = (-1).obs;
+  final RxBool sortAscending = true.obs;
+
+  int pageSize = 25;
+  Timer? _debounce;
 
   EncontrosViewModel({EncontrosRepository? repository})
       : _repository = repository ?? EncontrosRepository() {
@@ -18,9 +30,121 @@ class EncontrosViewModel extends GetxController {
     encontros.value = _repository.getAll();
   }
 
+  void rebuildList(List<TurmaModel> turmas) {
+    final items = <EncontroItem>[];
+    for (final t in turmas) {
+      for (final e in _repository.encontrosDaTurma(t.id)) {
+        items.add((encontro: e, turmaNome: t.nome));
+      }
+    }
+    items.sort((a, b) => b.encontro.data.compareTo(a.encontro.data));
+    _allItems.value = items;
+    currentPage.value = 0;
+  }
+
+  List<EncontroItem> get paginatedItems {
+    var list = _allItems as List<EncontroItem>;
+
+    final query = searchQuery.value.toLowerCase().trim();
+    if (query.isNotEmpty) {
+      list = list.where((item) =>
+        item.turmaNome.toLowerCase().contains(query) ||
+        item.encontro.descricao.toLowerCase().contains(query) ||
+        '${item.encontro.data.day.toString().padLeft(2, '0')}/${item.encontro.data.month.toString().padLeft(2, '0')}/${item.encontro.data.year}'.contains(query)
+      ).toList();
+    }
+
+    if (sortColumn.value >= 0) {
+      list = List<EncontroItem>.from(list);
+      list.sort((a, b) {
+        final ka = _sortKey(a);
+        final kb = _sortKey(b);
+        return sortAscending.value ? ka.compareTo(kb) : kb.compareTo(ka);
+      });
+    }
+
+    final start = currentPage.value * pageSize;
+    final end = (start + pageSize).clamp(0, list.length);
+    if (start >= list.length) return [];
+    return list.sublist(start, end);
+  }
+
+  String _sortKey(EncontroItem item) {
+    switch (sortColumn.value) {
+      case 0:
+        final d = item.encontro.data;
+        return '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+      case 1: return item.turmaNome;
+      case 2: return item.encontro.descricao;
+      default: return '';
+    }
+  }
+
+  int get totalPages {
+    final count = _totalCount;
+    if (count == 0) return 0;
+    return (count / pageSize).ceil();
+  }
+
+  int get _totalCount {
+    final query = searchQuery.value.toLowerCase().trim();
+    if (query.isEmpty) return _allItems.length;
+    return _allItems.where((item) =>
+      item.turmaNome.toLowerCase().contains(query) ||
+      item.encontro.descricao.toLowerCase().contains(query) ||
+      '${item.encontro.data.day.toString().padLeft(2, '0')}/${item.encontro.data.month.toString().padLeft(2, '0')}/${item.encontro.data.year}'.contains(query)
+    ).length;
+  }
+
+  void sortBy(int column) {
+    if (sortColumn.value == column) {
+      sortAscending.value = !sortAscending.value;
+    } else {
+      sortColumn.value = column;
+      sortAscending.value = true;
+    }
+    currentPage.value = 0;
+  }
+
+  void nextPage() {
+    if (currentPage.value < totalPages - 1) {
+      currentPage.value++;
+    }
+  }
+
+  void prevPage() {
+    if (currentPage.value > 0) {
+      currentPage.value--;
+    }
+  }
+
+  void goToPage(int page) {
+    if (page >= 0 && page < totalPages) {
+      currentPage.value = page;
+    }
+  }
+
   void setSearch(String value) {
-    searchQuery.value = value;
-    update(['encontros']);
+    if (value.isEmpty) {
+      _debounce?.cancel();
+      searchQuery.value = '';
+      currentPage.value = 0;
+      update(['encontros']);
+      return;
+    }
+    _debounce?.cancel();
+    final query = value;
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      searchQuery.value = query;
+      currentPage.value = 0;
+      update(['encontros']);
+    });
+  }
+
+  @override
+  void onClose() {
+    _debounce?.cancel();
+    super.onClose();
   }
 
   List<Encontro> encontrosDaTurma(String turmaId) {

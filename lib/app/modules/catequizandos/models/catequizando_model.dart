@@ -3,7 +3,6 @@ class Catequizando {
   final String nome;
   final String sexo;
   final DateTime dataNascimento;
-  final String turmaNome;
 
   final bool batizado;
   final String? localBatismo;
@@ -20,17 +19,25 @@ class Catequizando {
   final bool possuiRestricao;
   final String? detalheRestricao;
 
+  final String status;
   final bool aceiteTermos;
   final String? assinaturaResponsavel;
   final String? dataAssinatura;
   final List<String> documentosAnexados;
+
+  static const List<String> statusOptions = [
+    'Em Andamento',
+    'Formado',
+    'Desistente',
+    'Transferido',
+    'Inativo',
+  ];
 
   Catequizando({
     String? id,
     required this.nome,
     this.sexo = 'Masculino',
     required this.dataNascimento,
-    required this.turmaNome,
     this.batizado = false,
     this.localBatismo,
     this.fezPrimeiraEucaristia,
@@ -43,6 +50,7 @@ class Catequizando {
     this.bairro = '',
     this.possuiRestricao = false,
     this.detalheRestricao,
+    this.status = 'Em Andamento',
     this.aceiteTermos = false,
     this.assinaturaResponsavel,
     this.dataAssinatura,
@@ -58,6 +66,4 @@ class Catequizando {
     }
     return age;
   }
-
-  String get turma => turmaNome;
 }

@@ -227,7 +227,7 @@ class _CatequistaCard extends StatelessWidget {
   }
 }
 
-class _CatequistaTable extends StatelessWidget {
+class _CatequistaTable extends StatefulWidget {
   final List<Catequista> catequistas;
   final ThemeData theme;
   final CatequistaViewModel vm;
@@ -235,7 +235,49 @@ class _CatequistaTable extends StatelessWidget {
   const _CatequistaTable({required this.catequistas, required this.theme, required this.vm});
 
   @override
+  State<_CatequistaTable> createState() => _CatequistaTableState();
+}
+
+class _CatequistaTableState extends State<_CatequistaTable> {
+  int _sortColumn = -1;
+  bool _sortAscending = true;
+
+  String _getSortKey(Catequista c, int col) {
+    switch (col) {
+      case 1: return c.nome;
+      case 2: return c.status;
+      case 3: return c.email;
+      case 4: return c.telefone;
+      default: return '';
+    }
+  }
+
+  void _sort(int col) {
+    setState(() {
+      if (_sortColumn == col) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = col;
+        _sortAscending = true;
+      }
+    });
+  }
+
+  List<Catequista> get _sortedList {
+    if (_sortColumn < 0) return widget.catequistas;
+    final sorted = List<Catequista>.from(widget.catequistas);
+    sorted.sort((a, b) {
+      final r = _getSortKey(a, _sortColumn).compareTo(_getSortKey(b, _sortColumn));
+      return _sortAscending ? r : -r;
+    });
+    return sorted;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final sorted = _sortedList;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -269,14 +311,14 @@ class _CatequistaTable extends StatelessWidget {
             ),
             children: [
               const SizedBox.shrink(),
-              _headerCell('Nome', Icons.person_rounded),
-              _headerCell('Status', Icons.info_outline_rounded),
-              _headerCell('Email', Icons.email_rounded),
-              _headerCell('Telefone', Icons.phone_rounded),
+              _sortableHeader('Nome', Icons.person_rounded, 1),
+              _sortableHeader('Status', Icons.info_outline_rounded, 2),
+              _sortableHeader('Email', Icons.email_rounded, 3),
+              _sortableHeader('Telefone', Icons.phone_rounded, 4),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
-          ...catequistas.asMap().entries.map(
+          ...sorted.asMap().entries.map(
             (entry) {
               final i = entry.key;
               final c = entry.value;
@@ -332,7 +374,7 @@ class _CatequistaTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () => showCatequistaDialog(context, vm, catequista: c),
+                            onPressed: () => showCatequistaDialog(context, widget.vm, catequista: c),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -351,7 +393,7 @@ class _CatequistaTable extends StatelessWidget {
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
                                       onPressed: () {
-                                        vm.removeCatequista(c.id);
+                                        widget.vm.removeCatequista(c.id);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -376,7 +418,43 @@ class _CatequistaTable extends StatelessWidget {
     );
   }
 
-  Padding _headerCell(String label, IconData icon) {
+  Widget _sortableHeader(String label, IconData icon, int col) {
+    final theme = widget.theme;
+    final isActive = _sortColumn == col;
+    return InkWell(
+      onTap: () => _sort(col),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: theme.colorScheme.onPrimary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 4),
+              Icon(
+                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 14,
+                color: theme.colorScheme.onPrimary,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String label, IconData icon) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Row(
@@ -399,6 +477,7 @@ class _CatequistaTable extends StatelessWidget {
   }
 
   Padding _bodyCell(String text, {bool isBold = false}) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Text(

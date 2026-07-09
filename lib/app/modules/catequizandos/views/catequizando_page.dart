@@ -1,9 +1,203 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
+import '../../matricula/viewmodels/matricula_viewmodel.dart';
+import '../../turma/models/turma_model.dart';
+import '../../../core/utils/certificate_generator.dart';
 import 'catequizando_form.dart';
+
+void showHistoricoDialog(BuildContext context, Catequizando catequizando, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final historico = matriculaVm.getHistoricoComTurma(catequizando.id, turmas);
+
+  showDialog(
+    context: context,
+    builder: (ctx) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 500),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: colorScheme.surface,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.onPrimary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.history_rounded, color: colorScheme.onPrimary, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Histórico de Matrículas', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.w600)),
+                        Text(catequizando.nome, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onPrimary.withOpacity(0.9))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (historico.isEmpty)
+              const Expanded(
+                child: Center(child: Text('Nenhum histórico encontrado')),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: historico.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final item = historico[i];
+                    final m = item.matricula;
+                    final statusColor = m.status == 'Ativa'
+                        ? colorScheme.primary
+                        : m.status == 'Concluída'
+                            ? colorScheme.tertiary
+                            : colorScheme.error;
+
+                    return Card(
+                      elevation: 0,
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                m.status == 'Ativa' ? Icons.menu_book_rounded : Icons.check_circle_outline_rounded,
+                                color: statusColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          item.turmaNome ?? 'Turma removida',
+                                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: statusColor.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          m.status,
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            color: statusColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today_rounded, size: 13, color: colorScheme.onSurfaceVariant),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${DateFormat('MMM/yyyy').format(m.dataMatricula)}',
+                                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                      ),
+                                      if (m.dataConclusao != null) ...[
+                                        const SizedBox(width: 8),
+                                        Icon(Icons.arrow_forward_rounded, size: 13, color: colorScheme.onSurfaceVariant),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${DateFormat('MMM/yyyy').format(m.dataConclusao!)}',
+                                          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (m.observacoes != null && m.observacoes!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(m.observacoes!, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontStyle: FontStyle.italic)),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (historico.isNotEmpty)
+                    FilledButton.icon(
+                      onPressed: () => CertificateGenerator.generateHistorico(catequizando, historico),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: const Text('Exportar PDF'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                      ),
+                    ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Fechar'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
     {required Catequizando catequizando}) {
@@ -160,7 +354,6 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                       id: catequizando.id,
                       nome: catequizando.nome,
                       dataNascimento: catequizando.dataNascimento,
-                      turmaNome: catequizando.turmaNome,
                       sexo: catequizando.sexo,
                       batizado: catequizando.batizado,
                       localBatismo: catequizando.localBatismo,
@@ -194,7 +387,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
 }
 
 void showEditarCatequizandoDialog(BuildContext context, CatequizandoViewModel vm,
-    {required Catequizando catequizando, List<String> turmas = const []}) {
+    {required Catequizando catequizando, List<TurmaModel> turmas = const []}) {
   final screenWidth = MediaQuery.of(context).size.width;
   final dialogWidth = screenWidth > 900 ? 640.0 : screenWidth > 600 ? 560.0 : screenWidth * 0.95;
 
@@ -209,6 +402,7 @@ void showEditarCatequizandoDialog(BuildContext context, CatequizandoViewModel vm
           catequizando: catequizando,
           vm: vm,
           turmas: turmas,
+          matriculaVm: Get.find<MatriculaViewModel>(),
           width: dialogWidth,
         ),
       ),
@@ -218,8 +412,14 @@ void showEditarCatequizandoDialog(BuildContext context, CatequizandoViewModel vm
 
 class CatequizandoPage extends StatelessWidget {
   final CatequizandoViewModel vm;
-  final List<String> turmas;
-  const CatequizandoPage({super.key, required this.vm, this.turmas = const []});
+  final List<TurmaModel> turmas;
+  final MatriculaViewModel matriculaVm;
+  const CatequizandoPage({
+    super.key,
+    required this.vm,
+    this.turmas = const [],
+    required this.matriculaVm,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -254,8 +454,9 @@ class CatequizandoPage extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Obx(() {
-          final list = vm.filteredCatequizandos;
-          if (list.isEmpty) {
+          final paginated = vm.paginatedCatequizandos;
+          final total = vm.totalPages;
+          if (vm.catequizandos.isEmpty) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 48),
               child: Center(
@@ -272,10 +473,55 @@ class CatequizandoPage extends StatelessWidget {
             builder: (context, constraints) {
               if (constraints.maxWidth < 600) {
                 return Column(
-                  children: list.map((a) => _CatequizandoCard(aluno: a, theme: theme, vm: vm, turmas: turmas)).toList(),
+                  children: [
+                    if (paginated.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
+                        child: Center(
+                          child: Text(
+                            'Nenhum resultado para essa busca',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: paginated.length,
+                        itemBuilder: (_, i) => _CatequizandoCard(
+                          aluno: paginated[i], theme: theme, vm: vm,
+                          turmas: turmas, matriculaVm: matriculaVm,
+                        ),
+                      ),
+                    if (total > 1) _PaginationControls(vm: vm, theme: theme),
+                  ],
                 );
               }
-              return _CatequizandoTable(alunos: list, theme: theme, vm: vm, turmas: turmas);
+              return Column(
+                children: [
+                  if (paginated.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: Text(
+                          'Nenhum resultado para essa busca',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    _CatequizandoTable(
+                      alunos: paginated, theme: theme, vm: vm,
+                      turmas: turmas, matriculaVm: matriculaVm,
+                    ),
+                  if (total > 1) _PaginationControls(vm: vm, theme: theme),
+                ],
+              );
             },
           );
         }),
@@ -284,16 +530,38 @@ class CatequizandoPage extends StatelessWidget {
   }
 }
 
+Color _statusColor(String status) {
+  switch (status) {
+    case 'Em Andamento': return Colors.blue;
+    case 'Formado': return Colors.green;
+    case 'Desistente': return Colors.red;
+    case 'Transferido': return Colors.orange;
+    case 'Inativo': return Colors.grey;
+    default: return Colors.grey;
+  }
+}
+
 class _CatequizandoCard extends StatelessWidget {
   final Catequizando aluno;
   final ThemeData theme;
   final CatequizandoViewModel vm;
-  final List<String> turmas;
+  final List<TurmaModel> turmas;
+  final MatriculaViewModel matriculaVm;
 
-  const _CatequizandoCard({required this.aluno, required this.theme, required this.vm, this.turmas = const []});
+  const _CatequizandoCard({
+    required this.aluno,
+    required this.theme,
+    required this.vm,
+    this.turmas = const [],
+    required this.matriculaVm,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final turmaNome = matriculaVm.getNomeTurmaAtual(aluno.id, turmas) ?? '';
+    final tempoLongo = matriculaVm.getTemTempoLongo(aluno.id);
+    final meses = matriculaVm.mesesNaTurmaAtual(aluno.id);
+    final corStatus = _statusColor(aluno.status);
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 10),
@@ -331,7 +599,43 @@ class _CatequizandoCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        _infoChip(Icons.menu_book_rounded, aluno.turma, theme),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.menu_book_rounded, size: 13, color: tempoLongo ? Colors.orange.shade700 : theme.colorScheme.onSurface.withOpacity(0.5)),
+                            const SizedBox(width: 4),
+                            Flexible(child: Text(turmaNome, style: theme.textTheme.bodySmall?.copyWith(color: tempoLongo ? Colors.orange.shade700 : null), overflow: TextOverflow.ellipsis)),
+                            if (tempoLongo) ...[
+                              const SizedBox(width: 4),
+                              Icon(Icons.schedule_rounded, size: 13, color: Colors.orange.shade700),
+                            ],
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: corStatus.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6, height: 6,
+                                decoration: BoxDecoration(shape: BoxShape.circle, color: corStatus),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                aluno.status,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: corStatus,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         _infoChip(Icons.person_outline, aluno.responsavel, theme),
                       ],
                     ),
@@ -376,8 +680,19 @@ class _CatequizandoCard extends StatelessWidget {
                         child: IconButton(
                           padding: EdgeInsets.zero,
                           iconSize: 16,
+                          icon: Icon(Icons.history_rounded, color: theme.colorScheme.tertiary),
+                          onPressed: () => showHistoricoDialog(context, aluno, matriculaVm, turmas),
+                          tooltip: 'Histórico',
+                        ),
+                      ),
+                      SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 16,
                           icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
-                          onPressed: () => showEditarCatequizandoDialog(context, vm, catequizando: aluno, turmas: turmas),
+                          onPressed: () => showEditarCatequizandoDialog(context, vm, catequizando: aluno, turmas: turmas, ),
                           tooltip: 'Editar',
                         ),
                       ),
@@ -444,16 +759,37 @@ class _CatequizandoCard extends StatelessWidget {
   }
 }
 
-class _CatequizandoTable extends StatelessWidget {
+class _CatequizandoTable extends StatefulWidget {
   final List<Catequizando> alunos;
   final ThemeData theme;
   final CatequizandoViewModel vm;
-  final List<String> turmas;
+  final List<TurmaModel> turmas;
+  final MatriculaViewModel matriculaVm;
 
-  const _CatequizandoTable({required this.alunos, required this.theme, required this.vm, this.turmas = const []});
+  const _CatequizandoTable({
+    required this.alunos,
+    required this.theme,
+    required this.vm,
+    this.turmas = const [],
+    required this.matriculaVm,
+  });
+
+  @override
+  State<_CatequizandoTable> createState() => _CatequizandoTableState();
+}
+
+class _CatequizandoTableState extends State<_CatequizandoTable> {
+  void _sort(int col) {
+    widget.vm.sortBy(col);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final alunos = widget.alunos;
+    final sortCol = widget.vm.sortColumn.value;
+    final sortAsc = widget.vm.sortAscending.value;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -465,10 +801,11 @@ class _CatequizandoTable extends StatelessWidget {
         columnWidths: const {
           0: FlexColumnWidth(0.5),
           1: FlexColumnWidth(3),
-          2: FlexColumnWidth(2),
-          3: FlexColumnWidth(2.5),
-          4: FixedColumnWidth(80),
-          5: FixedColumnWidth(130),
+          2: FlexColumnWidth(1.5),
+          3: FlexColumnWidth(1.3),
+          4: FlexColumnWidth(2),
+          5: FixedColumnWidth(80),
+          6: FixedColumnWidth(164),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -487,10 +824,11 @@ class _CatequizandoTable extends StatelessWidget {
             ),
             children: [
               const SizedBox.shrink(),
-              _headerCell('Nome', Icons.person_rounded),
-              _headerCell('Turma', Icons.menu_book_rounded),
-              _headerCell('Responsável', Icons.phone_rounded),
-              _headerCell('Idade', Icons.cake_rounded),
+              _sortableHeader('Nome', Icons.person_rounded, 1, sortCol, sortAsc),
+              _sortableHeader('Turma', Icons.menu_book_rounded, 2, sortCol, sortAsc),
+              _sortableHeader('Status', Icons.info_outline_rounded, 3, sortCol, sortAsc),
+              _sortableHeader('Responsável', Icons.phone_rounded, 4, sortCol, sortAsc),
+              _sortableHeader('Idade', Icons.cake_rounded, 5, sortCol, sortAsc),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
@@ -526,16 +864,57 @@ class _CatequizandoTable extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+                        color: widget.matriculaVm.getTemTempoLongo(a.id)
+                            ? Colors.orange.withOpacity(0.15)
+                            : theme.colorScheme.primaryContainer.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(
-                        a.turma,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.matriculaVm.getNomeTurmaAtual(a.id, widget.turmas) ?? '',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: widget.matriculaVm.getTemTempoLongo(a.id)
+                                  ? Colors.orange.shade700
+                                  : theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (widget.matriculaVm.getTemTempoLongo(a.id)) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.schedule_rounded, size: 13, color: Colors.orange.shade700),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _statusColor(a.status).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6, height: 6,
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: _statusColor(a.status)),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            a.status,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: _statusColor(a.status),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -584,8 +963,18 @@ class _CatequizandoTable extends StatelessWidget {
                           height: 36,
                           child: IconButton(
                             padding: EdgeInsets.zero,
+                            icon: Icon(Icons.history_rounded, size: 18, color: theme.colorScheme.tertiary),
+                            onPressed: () => showHistoricoDialog(context, a, widget.matriculaVm, widget.turmas),
+                            tooltip: 'Histórico',
+                          ),
+                        ),
+                        SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () => showEditarCatequizandoDialog(context, vm, catequizando: a, turmas: turmas),
+                            onPressed: () => showEditarCatequizandoDialog(context, widget.vm, catequizando: a, turmas: widget.turmas),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -604,7 +993,7 @@ class _CatequizandoTable extends StatelessWidget {
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
                                       onPressed: () {
-                                        vm.removeCatequizando(a.id);
+                                        widget.vm.removeCatequizando(a.id);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -623,7 +1012,7 @@ class _CatequizandoTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.folder_outlined, size: 18, color: theme.colorScheme.tertiary),
-                            onPressed: () => showDocumentosDialog(context, vm, catequizando: a),
+                            onPressed: () => showDocumentosDialog(context, widget.vm, catequizando: a),
                             tooltip: 'Documentos',
                           ),
                         ),
@@ -639,7 +1028,43 @@ class _CatequizandoTable extends StatelessWidget {
     );
   }
 
-  Padding _headerCell(String label, IconData icon) {
+  Widget _sortableHeader(String label, IconData icon, int col, int sortCol, bool sortAsc) {
+    final theme = widget.theme;
+    final isActive = sortCol == col;
+    return InkWell(
+      onTap: () => _sort(col),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: theme.colorScheme.onPrimary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 4),
+              Icon(
+                sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 14,
+                color: theme.colorScheme.onPrimary,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String label, IconData icon) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Row(
@@ -662,6 +1087,7 @@ class _CatequizandoTable extends StatelessWidget {
   }
 
   Padding _bodyCell(String text, {bool isBold = false}) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Text(
@@ -670,6 +1096,113 @@ class _CatequizandoTable extends StatelessWidget {
         style: isBold
             ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
             : theme.textTheme.bodyMedium,
+      ),
+    );
+  }
+}
+
+class _PaginationControls extends StatelessWidget {
+  final CatequizandoViewModel vm;
+  final ThemeData theme;
+
+  const _PaginationControls({required this.vm, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = vm.totalPages;
+    final current = vm.currentPage.value;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded),
+            onPressed: current > 0 ? vm.prevPage : null,
+            tooltip: 'Anterior',
+          ),
+          const SizedBox(width: 8),
+          ..._buildPageNumbers(total, current),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded),
+            onPressed: current < total - 1 ? vm.nextPage : null,
+            tooltip: 'Próximo',
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildPageNumbers(int total, int current) {
+    final pages = <Widget>[];
+    final int start;
+    final int end;
+
+    if (total <= 7) {
+      start = 0;
+      end = total;
+    } else {
+      start = (current - 2).clamp(0, total - 5);
+      end = (start + 5).clamp(0, total);
+    }
+
+    if (start > 0) {
+      pages.add(_pageChip(0, current));
+      pages.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Text('...'),
+      ));
+    }
+
+    for (var i = start; i < end; i++) {
+      pages.add(_pageChip(i, current));
+    }
+
+    if (end < total) {
+      pages.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Text('...'),
+      ));
+      pages.add(_pageChip(total - 1, current));
+    }
+
+    return pages;
+  }
+
+  Widget _pageChip(int page, int current) {
+    final isActive = page == current;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: isActive
+            ? FilledButton.tonal(
+                onPressed: null,
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  minimumSize: const Size(36, 36),
+                ),
+                child: Text(
+                  '${page + 1}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              )
+            : TextButton(
+                onPressed: () => vm.goToPage(page),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(36, 36),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text(
+                  '${page + 1}',
+                  style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                ),
+              ),
       ),
     );
   }

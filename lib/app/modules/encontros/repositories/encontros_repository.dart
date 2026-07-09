@@ -1,30 +1,59 @@
 import 'package:get/get.dart';
 import '../models/encontro_model.dart';
-import '../models/frequencia_model.dart';
 
 class EncontrosRepository {
-  final List<Encontro> _mockData = [
-    Encontro(
-      id: '1_2026-06-28T00:00:00.000',
-      data: DateTime(2026, 6, 28),
-      descricao: 'Encontro de abertura - Apresentação do cronograma',
-      frequencias: [
-        Frequencia(catequizandoId: '1', presente: true),
-        Frequencia(catequizandoId: '2', presente: true),
-        Frequencia(catequizandoId: '3', presente: false),
-      ],
-    ),
-    Encontro(
-      id: '1_2026-07-05T00:00:00.000',
-      data: DateTime(2026, 7, 5),
-      descricao: 'Oração do Pai Nosso',
-      frequencias: [
-        Frequencia(catequizandoId: '1', presente: true),
-        Frequencia(catequizandoId: '2', presente: false),
-        Frequencia(catequizandoId: '3', presente: true),
-      ],
-    ),
-  ];
+  final List<Encontro> _mockData = () {
+    final turmasIds = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+    final descricoes = [
+      'Encontro de abertura - Apresentação do cronograma',
+      'Oração do Pai Nosso',
+      'Ave Maria e o Rosário',
+      'Os Mandamentos da Lei de Deus',
+      'Os Sacramentos da Igreja',
+      'A vida de Jesus Cristo',
+      'O Espírito Santo na nossa vida',
+      'A Santa Missa explicada',
+      'O Batismo: porta dos sacramentos',
+      'A Eucaristia: fonte e ápice da vida cristã',
+      'A Confissão: sacramento da misericórdia',
+      'Os Santos e a Igreja',
+      'A Quaresma e a Semana Santa',
+      'A Páscoa do Senhor',
+      'Maria, Mãe da Igreja',
+      'O Advento e o Natal',
+      'A Igreja: povo de Deus',
+      'Vocação e missão do cristão',
+      'A Palavra de Deus na vida',
+      'Encontro de encerramento e confraternização',
+      'Preparação para a Primeira Eucaristia',
+      'Retiro espiritual dos catequizandos',
+      'Visita à Igreja Matriz',
+      'A Campanha da Fraternidade',
+      'Dia da Família na catequese',
+      'A oração na vida do cristão',
+      'Os dons do Espírito Santo',
+      'Os frutos do Espírito Santo',
+      'As bem-aventuranças',
+      'O mandamento do amor',
+    ];
+
+    final encontros = <Encontro>[];
+    var idx = 0;
+    for (final turmaId in turmasIds) {
+      for (var mes = 2; mes <= 11; mes++) {
+        if (idx >= 80) break;
+        final dia = 1 + (idx % 25);
+        encontros.add(Encontro(
+          id: '${turmaId}_2026-${mes.toString().padLeft(2, '0')}-${dia.toString().padLeft(2, '0')}T00:00:00.000',
+          data: DateTime(2026, mes, dia),
+          descricao: descricoes[idx % descricoes.length],
+        ));
+        idx++;
+      }
+      if (idx >= 80) break;
+    }
+    return encontros;
+  }();
 
   List<Encontro> getAll() => List.unmodifiable(_mockData);
 

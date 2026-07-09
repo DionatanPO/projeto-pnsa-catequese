@@ -114,7 +114,7 @@ void showEditarEncontroDialog(BuildContext context, Encontro encontro, String tu
 
 void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, String turmaNome, EncontrosViewModel encontrosVm, CatequizandoViewModel catequizandoVm) {
   final turmaVm = Get.find<TurmaViewModel>();
-  final alunos = turmaVm.alunosDaTurma(turmaNome, catequizandoVm.catequizandos);
+  final alunos = turmaVm.alunosDaTurma(turmaId, catequizandoVm.catequizandos);
   final presencas = <String, bool>{};
   for (final a in alunos) {
     final f = encontro.frequencias.firstWhereOrNull((f) => f.catequizandoId == a.id);
@@ -359,26 +359,14 @@ class EncontrosPage extends StatelessWidget {
     final theme = Theme.of(context);
     final hPad = MediaQuery.of(context).size.width < 600 ? 8.0 : 32.0;
 
+    encontrosVm.rebuildList(turmas);
+
     return GetBuilder<EncontrosViewModel>(
       init: encontrosVm,
       id: 'encontros',
       builder: (_) {
-        var todosEncontros = <({Encontro encontro, String turmaNome})>[];
-        for (final t in turmas) {
-          for (final e in encontrosVm.encontrosDaTurma(t.id)) {
-            todosEncontros.add((encontro: e, turmaNome: t.nome));
-          }
-        }
-        todosEncontros.sort((a, b) => b.encontro.data.compareTo(a.encontro.data));
-
-        final query = encontrosVm.searchQuery.value.toLowerCase().trim();
-        if (query.isNotEmpty) {
-          todosEncontros = todosEncontros.where((item) =>
-            item.turmaNome.toLowerCase().contains(query) ||
-            item.encontro.descricao.toLowerCase().contains(query) ||
-            '${item.encontro.data.day.toString().padLeft(2, '0')}/${item.encontro.data.month.toString().padLeft(2, '0')}/${item.encontro.data.year}'.contains(query)
-          ).toList();
-        }
+        final paginated = encontrosVm.paginatedItems;
+        final total = encontrosVm.totalPages;
 
         return ListView(
           padding: EdgeInsets.fromLTRB(hPad, 8, hPad, hPad),
@@ -407,7 +395,7 @@ class EncontrosPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            if (todosEncontros.isEmpty)
+            if (paginated.isEmpty && encontrosVm.allItems.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Center(
@@ -425,22 +413,42 @@ class EncontrosPage extends StatelessWidget {
                   ),
                 ),
               )
+            else if (paginated.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 48),
+                child: Center(
+                  child: Text(
+                    'Nenhum resultado para essa busca',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              )
             else
               LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth < 600) {
-                    return _EncontrosListMobile(
-                      list: todosEncontros,
-                      theme: theme,
-                      encontrosVm: encontrosVm,
-                      catequizandoVm: catequizandoVm,
+                    return Column(
+                      children: [
+                        _EncontrosListMobile(
+                          list: paginated,
+                          theme: theme,
+                          encontrosVm: encontrosVm,
+                          catequizandoVm: catequizandoVm,
+                        ),
+                        if (total > 1) _PaginationControls(vm: encontrosVm, theme: theme),
+                      ],
                     );
                   }
-                  return _EncontrosTable(
-                    list: todosEncontros,
-                    theme: theme,
-                    encontrosVm: encontrosVm,
-                    catequizandoVm: catequizandoVm,
+                  return Column(
+                    children: [
+                      _EncontrosTable(
+                        list: paginated,
+                        theme: theme,
+                        encontrosVm: encontrosVm,
+                        catequizandoVm: catequizandoVm,
+                      ),
+                      if (total > 1) _PaginationControls(vm: encontrosVm, theme: theme),
+                    ],
                   );
                 },
               ),
@@ -451,7 +459,7 @@ class EncontrosPage extends StatelessWidget {
   }
 }
 
-class _EncontrosTable extends StatelessWidget {
+class _EncontrosTable extends StatefulWidget {
   final List<({Encontro encontro, String turmaNome})> list;
   final ThemeData theme;
   final EncontrosViewModel encontrosVm;
@@ -460,7 +468,20 @@ class _EncontrosTable extends StatelessWidget {
   const _EncontrosTable({required this.list, required this.theme, required this.encontrosVm, required this.catequizandoVm});
 
   @override
+  State<_EncontrosTable> createState() => _EncontrosTableState();
+}
+
+class _EncontrosTableState extends State<_EncontrosTable> {
+  void _sort(int col) {
+    widget.encontrosVm.sortBy(col);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final items = widget.list;
+    final sortCol = widget.encontrosVm.sortColumn.value;
+    final sortAsc = widget.encontrosVm.sortAscending.value;
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -488,13 +509,13 @@ class _EncontrosTable extends StatelessWidget {
               ),
             ),
             children: [
-              _headerCell('Data', Icons.calendar_month_rounded),
-              _headerCell('Turma', Icons.group_rounded),
-              _headerCell('Descrição', Icons.notes_rounded),
+              _sortableHeader('Data', Icons.calendar_month_rounded, 0, sortCol, sortAsc),
+              _sortableHeader('Turma', Icons.group_rounded, 1, sortCol, sortAsc),
+              _sortableHeader('Descrição', Icons.notes_rounded, 2, sortCol, sortAsc),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
-          ...list.asMap().entries.map(
+          ...items.asMap().entries.map(
             (entry) {
               final i = entry.key;
               final item = entry.value;
@@ -541,7 +562,7 @@ class _EncontrosTable extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () => showEditarEncontroDialog(context, item.encontro, item.turmaNome, encontrosVm),
+                            onPressed: () => showEditarEncontroDialog(context, item.encontro, item.turmaNome, widget.encontrosVm),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -556,8 +577,8 @@ class _EncontrosTable extends StatelessWidget {
                               item.encontro,
                               item.encontro.id.split('_').first,
                               item.turmaNome,
-                              encontrosVm,
-                              catequizandoVm,
+                              widget.encontrosVm,
+                              widget.catequizandoVm,
                             ),
                             tooltip: 'Chamada',
                           ),
@@ -580,7 +601,7 @@ class _EncontrosTable extends StatelessWidget {
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
                                       onPressed: () {
-                                        encontrosVm.removerEncontro(item.encontro);
+                                        widget.encontrosVm.removerEncontro(item.encontro);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -605,7 +626,43 @@ class _EncontrosTable extends StatelessWidget {
     );
   }
 
-  Padding _headerCell(String label, IconData icon) {
+  Widget _sortableHeader(String label, IconData icon, int col, int sortCol, bool sortAsc) {
+    final theme = widget.theme;
+    final isActive = sortCol == col;
+    return InkWell(
+      onTap: () => _sort(col),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: theme.colorScheme.onPrimary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: theme.colorScheme.onPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isActive) ...[
+              const SizedBox(width: 4),
+              Icon(
+                sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 14,
+                color: theme.colorScheme.onPrimary,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String label, IconData icon) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Row(
@@ -628,6 +685,7 @@ class _EncontrosTable extends StatelessWidget {
   }
 
   Padding _bodyCell(String text, {bool isBold = false}) {
+    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Text(
@@ -651,145 +709,254 @@ class _EncontrosListMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: list
-          .map(
-            (item) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.event_rounded, color: theme.colorScheme.primary),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: list.length,
+      itemBuilder: (_, i) {
+        final item = list[i];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.event_rounded, color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    item.turmaNome,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.tertiary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${item.encontro.data.day.toString().padLeft(2, '0')}/'
-                                  '${item.encontro.data.month.toString().padLeft(2, '0')}/'
-                                  '${item.encontro.data.year}',
-                                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                            if (item.encontro.descricao.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                item.encontro.descricao,
-                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ],
-                            const SizedBox(height: 4),
+                              child: Text(
+                                item.turmaNome,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.tertiary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Text(
-                              '${item.encontro.frequencias.where((f) => f.presente).length} / ${item.encontro.frequencias.length} presentes',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              '${item.encontro.data.day.toString().padLeft(2, '0')}/'
+                              '${item.encontro.data.month.toString().padLeft(2, '0')}/'
+                              '${item.encontro.data.year}',
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              iconSize: 17,
-                              icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
-                              onPressed: () => showEditarEncontroDialog(context, item.encontro, item.turmaNome, encontrosVm),
-                              tooltip: 'Editar',
-                            ),
-                          ),
-                          SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              iconSize: 17,
-                              icon: Icon(Icons.checklist_rounded, color: theme.colorScheme.tertiary),
-                              onPressed: () => showChamadaDialog(
-                                context,
-                                item.encontro,
-                                item.encontro.id.split('_').first,
-                                item.turmaNome,
-                                encontrosVm,
-                                catequizandoVm,
-                              ),
-                              tooltip: 'Chamada',
-                            ),
-                          ),
-                          SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              iconSize: 17,
-                              icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                              onPressed: () {
-                                Get.dialog(
-                                  AlertDialog(
-                                    title: const Text('Excluir Encontro'),
-                                    content: Text('Deseja excluir o encontro de '
-                                        '${item.encontro.data.day.toString().padLeft(2, '0')}/'
-                                        '${item.encontro.data.month.toString().padLeft(2, '0')}/'
-                                        '${item.encontro.data.year}?'),
-                                    actions: [
-                                      TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
-                                      FilledButton(
-                                        onPressed: () {
-                                          encontrosVm.removerEncontro(item.encontro);
-                                          Get.back();
-                                        },
-                                        style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
-                                        child: const Text('Excluir'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              tooltip: 'Excluir',
-                            ),
+                        if (item.encontro.descricao.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            item.encontro.descricao,
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item.encontro.frequencias.where((f) => f.presente).length} / ${item.encontro.frequencias.length} presentes',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 17,
+                          icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
+                          onPressed: () => showEditarEncontroDialog(context, item.encontro, item.turmaNome, encontrosVm),
+                          tooltip: 'Editar',
+                        ),
+                      ),
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 17,
+                          icon: Icon(Icons.checklist_rounded, color: theme.colorScheme.tertiary),
+                          onPressed: () => showChamadaDialog(
+                            context,
+                            item.encontro,
+                            item.encontro.id.split('_').first,
+                            item.turmaNome,
+                            encontrosVm,
+                            catequizandoVm,
+                          ),
+                          tooltip: 'Chamada',
+                        ),
+                      ),
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 17,
+                          icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                          onPressed: () {
+                            Get.dialog(
+                              AlertDialog(
+                                title: const Text('Excluir Encontro'),
+                                content: Text('Deseja excluir o encontro de '
+                                    '${item.encontro.data.day.toString().padLeft(2, '0')}/'
+                                    '${item.encontro.data.month.toString().padLeft(2, '0')}/'
+                                    '${item.encontro.data.year}?'),
+                                actions: [
+                                  TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+                                  FilledButton(
+                                    onPressed: () {
+                                      encontrosVm.removerEncontro(item.encontro);
+                                      Get.back();
+                                    },
+                                    style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
+                                    child: const Text('Excluir'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          tooltip: 'Excluir',
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
-          )
-          .toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PaginationControls extends StatelessWidget {
+  final EncontrosViewModel vm;
+  final ThemeData theme;
+
+  const _PaginationControls({required this.vm, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = vm.totalPages;
+    final current = vm.currentPage.value;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left_rounded),
+            onPressed: current > 0 ? vm.prevPage : null,
+            tooltip: 'Anterior',
+          ),
+          const SizedBox(width: 8),
+          ..._buildPageNumbers(total, current),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.chevron_right_rounded),
+            onPressed: current < total - 1 ? vm.nextPage : null,
+            tooltip: 'Próximo',
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildPageNumbers(int total, int current) {
+    final pages = <Widget>[];
+    final int start;
+    final int end;
+
+    if (total <= 7) {
+      start = 0;
+      end = total;
+    } else {
+      start = (current - 2).clamp(0, total - 5);
+      end = (start + 5).clamp(0, total);
+    }
+
+    if (start > 0) {
+      pages.add(_pageChip(0, current));
+      pages.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Text('...'),
+      ));
+    }
+
+    for (var i = start; i < end; i++) {
+      pages.add(_pageChip(i, current));
+    }
+
+    if (end < total) {
+      pages.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Text('...'),
+      ));
+      pages.add(_pageChip(total - 1, current));
+    }
+
+    return pages;
+  }
+
+  Widget _pageChip(int page, int current) {
+    final isActive = page == current;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: isActive
+            ? FilledButton.tonal(
+                onPressed: null,
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  minimumSize: const Size(36, 36),
+                ),
+                child: Text(
+                  '${page + 1}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              )
+            : TextButton(
+                onPressed: () => vm.goToPage(page),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(36, 36),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text(
+                  '${page + 1}',
+                  style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                ),
+              ),
+      ),
     );
   }
 }

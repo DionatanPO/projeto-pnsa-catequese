@@ -5,12 +5,20 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
+import '../../matricula/viewmodels/matricula_viewmodel.dart';
+import '../../turma/models/turma_model.dart';
 import 'catequizando_form.dart';
 
 class CatequizandoWizardPage extends StatefulWidget {
   final CatequizandoViewModel vm;
-  final List<String> turmas;
-  const CatequizandoWizardPage({super.key, required this.vm, required this.turmas});
+  final List<TurmaModel> turmas;
+  final MatriculaViewModel matriculaVm;
+  const CatequizandoWizardPage({
+    super.key,
+    required this.vm,
+    required this.turmas,
+    required this.matriculaVm,
+  });
 
   @override
   State<CatequizandoWizardPage> createState() => _CatequizandoWizardPageState();
@@ -45,13 +53,14 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
 
   String _sexo = 'Masculino';
   DateTime? _dataNascimento;
-  String? _turmaSelecionada;
+  String? _turmaSelecionadaId;
   bool _batizado = false;
   bool? _fezPrimeiraEucaristia;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
   bool _aceiteTermos = false;
   bool _submitting = false;
+  String _status = 'Em Andamento';
   final List<PlatformFile> _arquivosAnexados = [];
 
   final _stepLabels = [
@@ -81,11 +90,14 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     return true;
   }
 
-  bool get _requerEucaristia =>
-      _turmaSelecionada != null &&
-      (_turmaSelecionada!.toLowerCase().contains('perseverança') ||
-       _turmaSelecionada!.toLowerCase().contains('perseveranca') ||
-       _turmaSelecionada!.toLowerCase().contains('crisma'));
+  bool get _requerEucaristia {
+    if (_turmaSelecionadaId == null) return false;
+    final turma = widget.turmas.firstWhereOrNull((t) => t.id == _turmaSelecionadaId);
+    final nome = turma?.nome.toLowerCase() ?? '';
+    return nome.contains('perseverança') ||
+        nome.contains('perseveranca') ||
+        nome.contains('crisma');
+  }
 
   void _avancar() {
     if (!_podeAvancar) return;
@@ -116,7 +128,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       nome: nomeCtrl.text.trim(),
       sexo: _sexo,
       dataNascimento: _dataNascimento!,
-      turmaNome: _turmaSelecionada!,
       batizado: _batizado,
       localBatismo: _batizado ? localBatismoCtrl.text.trim() : null,
       fezPrimeiraEucaristia: _batizado && _requerEucaristia ? _fezPrimeiraEucaristia! : null,
@@ -129,11 +140,15 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       bairro: bairroCtrl.text.trim(),
       possuiRestricao: _possuiRestricao,
       detalheRestricao: _possuiRestricao ? detalheRestricaoCtrl.text.trim() : null,
+      status: _status,
       aceiteTermos: _aceiteTermos,
       documentosAnexados: _arquivosAnexados.map((f) => '${f.name} (${(f.extension ?? '').toUpperCase()}, ${_formatBytes(f.size)})').toList(),
     );
 
     widget.vm.addCatequizando(c);
+    if (_turmaSelecionadaId != null) {
+      widget.matriculaVm.matricular(c.id, _turmaSelecionadaId!);
+    }
     setState(() => _submitting = false);
     if (!mounted) return;
     
@@ -497,21 +512,69 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
-          value: _turmaSelecionada,
+          value: _turmaSelecionadaId,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: const InputDecoration(
             labelText: 'Turma',
             hintText: 'Selecione a turma',
             prefixIcon: Icon(Icons.auto_stories_rounded),
           ),
-          items: widget.turmas.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+          items: widget.turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome))).toList(),
           onChanged: (v) {
             setState(() {
-              _turmaSelecionada = v;
+              _turmaSelecionadaId = v;
               if (!_requerEucaristia) _fezPrimeiraEucaristia = null;
             });
           },
-          validator: (v) => null, // Opcional, sem validação
+          validator: (v) => null,
+        ),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(
+          value: _status,
+          decoration: const InputDecoration(
+            labelText: 'Status do Catequizando',
+            prefixIcon: Icon(Icons.info_outline_rounded),
+          ),
+          items: Catequizando.statusOptions.map((s) =>
+            DropdownMenuItem(value: s, child: Text(s))
+          ).toList(),
+          onChanged: (v) => setState(() => _status = v!),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.lightbulb_outline_rounded, size: 16, color: theme.colorScheme.tertiary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Significado de cada status:',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
+              const SizedBox(height: 6),
+              _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
+              const SizedBox(height: 6),
+              _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
+              const SizedBox(height: 6),
+              _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
+              const SizedBox(height: 6),
+              _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
+            ],
+          ),
         ),
       ],
     );
@@ -1002,6 +1065,35 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   }
 
   // ── Helpers ──
+
+  Widget _statusLegenda(ThemeData theme, String status, String descricao) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 2),
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white70,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onTertiaryContainer),
+              children: [
+                TextSpan(text: '$status: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+                TextSpan(text: descricao),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _stepHeader(String title, String subtitle, IconData icon, ThemeData theme) {
     return Row(

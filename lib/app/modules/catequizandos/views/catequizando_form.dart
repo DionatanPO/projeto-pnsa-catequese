@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
+import '../../matricula/viewmodels/matricula_viewmodel.dart';
+import '../../turma/models/turma_model.dart';
 
 Widget sectionHeader(String title, IconData icon, ThemeData theme) {
   return Row(
@@ -17,6 +19,35 @@ Widget sectionHeader(String title, IconData icon, ThemeData theme) {
       ),
       const SizedBox(width: 10),
       Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+    ],
+  );
+}
+
+Widget _statusLegenda(ThemeData theme, String status, String descricao) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        margin: const EdgeInsets.only(top: 2),
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: theme.colorScheme.tertiary,
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: RichText(
+          text: TextSpan(
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onTertiaryContainer),
+            children: [
+              TextSpan(text: '$status: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+              TextSpan(text: descricao),
+            ],
+          ),
+        ),
+      ),
     ],
   );
 }
@@ -86,15 +117,17 @@ Widget radioGroup<T>({
 class CatequizandoForm extends StatefulWidget {
   final Catequizando? catequizando;
   final CatequizandoViewModel? vm;
-  final List<String> turmas;
+  final List<TurmaModel> turmas;
+  final MatriculaViewModel? matriculaVm;
   final double width;
-  final void Function(Catequizando dados)? onSave;
+  final void Function(Catequizando dados, String? turmaId)? onSave;
 
   const CatequizandoForm({
     super.key,
     this.catequizando,
     this.vm,
     this.turmas = const [],
+    this.matriculaVm,
     this.width = 560,
     this.onSave,
   });
@@ -110,7 +143,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   late final TextEditingController _detalheRestricaoCtrl;
   late final TextEditingController _responsavelCtrl;
   late final TextEditingController _telefoneCtrl;
-  late final TextEditingController _turmaCtrl;
   late final TextEditingController _cepCtrl;
   late final TextEditingController _enderecoCtrl;
   late final TextEditingController _numeroCtrl;
@@ -125,8 +157,19 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   bool? _fezPrimeiraEucaristia;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
+  String? _selectedTurmaId;
+  String _status = 'Em Andamento';
 
   bool get _isEditing => widget.catequizando != null;
+
+  bool get _requerEucaristia {
+    if (_selectedTurmaId == null) return false;
+    final turma = widget.turmas.firstWhereOrNull((t) => t.id == _selectedTurmaId);
+    final nome = turma?.nome.toLowerCase() ?? '';
+    return nome.contains('perseverança') ||
+        nome.contains('perseveranca') ||
+        nome.contains('crisma');
+  }
 
   @override
   void initState() {
@@ -137,7 +180,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     _detalheRestricaoCtrl = TextEditingController(text: c?.detalheRestricao ?? '');
     _responsavelCtrl = TextEditingController(text: c?.responsavel ?? '');
     _telefoneCtrl = TextEditingController(text: c?.telefone ?? '');
-    _turmaCtrl = TextEditingController(text: c?.turmaNome ?? '');
     _cepCtrl = TextEditingController(text: c?.cep ?? '');
     _enderecoCtrl = TextEditingController(text: c?.endereco ?? '');
     _numeroCtrl = TextEditingController(text: c?.numero ?? '');
@@ -156,6 +198,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       _fezPrimeiraEucaristia = c.fezPrimeiraEucaristia;
       _parentesco = c.parentesco;
       _possuiRestricao = c.possuiRestricao;
+      _status = c.status;
     }
 
     if (c?.dataNascimento != null) {
@@ -167,6 +210,14 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     } else {
       _dataNascimentoCtrl = TextEditingController();
     }
+
+    if (c != null && widget.matriculaVm != null) {
+      final turmaNome = widget.matriculaVm!.getNomeTurmaAtual(c.id, widget.turmas);
+      if (turmaNome != null) {
+        final turma = widget.turmas.firstWhereOrNull((t) => t.nome == turmaNome);
+        _selectedTurmaId = turma?.id;
+      }
+    }
   }
 
   @override
@@ -177,7 +228,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     _detalheRestricaoCtrl.dispose();
     _responsavelCtrl.dispose();
     _telefoneCtrl.dispose();
-    _turmaCtrl.dispose();
     _cepCtrl.dispose();
     _enderecoCtrl.dispose();
     _numeroCtrl.dispose();
@@ -205,7 +255,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       nome: _nomeCtrl.text.trim(),
       sexo: _sexo,
       dataNascimento: _dataNascimento!,
-      turmaNome: _turmaCtrl.text.trim(),
       batizado: _batizado,
       localBatismo: _batizado ? _localBatismoCtrl.text.trim() : null,
       fezPrimeiraEucaristia: _batizado ? _fezPrimeiraEucaristia : null,
@@ -218,6 +267,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       bairro: _bairroCtrl.text.trim(),
       possuiRestricao: _possuiRestricao,
       detalheRestricao: _possuiRestricao ? _detalheRestricaoCtrl.text.trim() : null,
+      status: _status,
       aceiteTermos: widget.catequizando?.aceiteTermos ?? false,
       assinaturaResponsavel: widget.catequizando?.assinaturaResponsavel,
       dataAssinatura: widget.catequizando?.dataAssinatura,
@@ -230,12 +280,18 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     if (dados == null) return;
 
     if (widget.onSave != null) {
-      widget.onSave!(dados);
+      widget.onSave!(dados, _selectedTurmaId);
     } else if (widget.vm != null) {
       if (_isEditing) {
         widget.vm!.updateCatequizando(dados);
+        if (_selectedTurmaId != null && widget.matriculaVm != null) {
+          widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+        }
       } else {
         widget.vm!.addCatequizando(dados);
+        if (_selectedTurmaId != null && widget.matriculaVm != null) {
+          widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+        }
       }
       Navigator.of(context).pop();
     }
@@ -356,19 +412,66 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: widget.turmas.contains(_turmaCtrl.text) ? _turmaCtrl.text : null,
+                          value: _selectedTurmaId,
                           autovalidateMode: AutovalidateMode.onUserInteraction,
                           decoration: const InputDecoration(
                             labelText: 'Turma',
                             hintText: 'Selecione a turma',
                             prefixIcon: Icon(Icons.auto_stories_rounded),
                           ),
-                          items: widget.turmas.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                          items: widget.turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome))).toList(),
                           onChanged: (v) {
-                            _turmaCtrl.text = v ?? '';
-                            setState(() {});
+                            setState(() => _selectedTurmaId = v);
                           },
                           validator: (v) => v == null ? 'Selecione uma turma' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _status,
+                          decoration: const InputDecoration(
+                            labelText: 'Status do Catequizando',
+                            prefixIcon: Icon(Icons.info_outline_rounded),
+                          ),
+                          items: Catequizando.statusOptions.map((s) =>
+                            DropdownMenuItem(value: s, child: Text(s))
+                          ).toList(),
+                          onChanged: (v) => setState(() => _status = v!),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.lightbulb_outline_rounded, size: 16, color: theme.colorScheme.tertiary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Significado de cada status:',
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onTertiaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
+                              const SizedBox(height: 6),
+                              _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
+                              const SizedBox(height: 6),
+                              _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
+                              const SizedBox(height: 6),
+                              _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
+                              const SizedBox(height: 6),
+                              _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 24),
                         sectionHeader('Histórico Sacramental', Icons.check_circle_outline_rounded, theme),
@@ -392,10 +495,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                             ),
                           ),
                         ],
-                        if (_batizado &&
-                            (_turmaCtrl.text.toLowerCase().contains('perseverança') ||
-                             _turmaCtrl.text.toLowerCase().contains('perseveranca') ||
-                             _turmaCtrl.text.toLowerCase().contains('crisma'))) ...[
+                        if (_batizado && _requerEucaristia) ...[
                           const SizedBox(height: 16),
                           radioGroup<bool>(
                             label: 'Já fez a Primeira Eucaristia?',

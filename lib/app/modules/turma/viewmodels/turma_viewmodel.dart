@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../models/turma_model.dart';
 import '../../catequizandos/models/catequizando_model.dart';
+import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../repositories/turma_repository.dart';
 
 class TurmaViewModel extends GetxController {
@@ -52,11 +53,13 @@ class TurmaViewModel extends GetxController {
     update(['turmas']);
   }
 
-  List<Catequizando> alunosDaTurma(String turmaNome, List<Catequizando> todos) {
-    return todos.where((a) => a.turmaNome == turmaNome).toList();
+  List<Catequizando> alunosDaTurma(String turmaId, List<Catequizando> todos) {
+    final matriculaVm = Get.find<MatriculaViewModel>();
+    return matriculaVm.getAlunosDaTurma(turmaId, todos);
   }
 
-  int totalAlunosTurma(String turmaNome, List<Catequizando> todos) {
-    return alunosDaTurma(turmaNome, todos).length;
+  int totalAlunosTurma(String turmaId) {
+    final matriculaVm = Get.find<MatriculaViewModel>();
+    return matriculaVm.totalAlunosNaTurma(turmaId);
   }
 }

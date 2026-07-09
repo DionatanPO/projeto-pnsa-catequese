@@ -39,7 +39,7 @@ class EncontroViewModel extends GetxController {
 
   void definirTurma(TurmaModel turmaSelecionada, TurmaViewModel turmaVm, CatequizandoViewModel catequizandoVm) {
     _turma = turmaSelecionada;
-    _todosAlunos = turmaVm.alunosDaTurma(turmaSelecionada.nome, catequizandoVm.catequizandos);
+    _todosAlunos = turmaVm.alunosDaTurma(turmaSelecionada.id, catequizandoVm.catequizandos);
     presencasLocais.clear();
     carregarData(dataSelecionada.value);
     update();

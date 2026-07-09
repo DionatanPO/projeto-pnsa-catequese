@@ -96,11 +96,14 @@ Widget? _buildFab(BuildContext context, HomeViewModel vm) {
     case 3:
       return FloatingActionButton.extended(
         onPressed: () {
-          final turmas = vm.turmaVm.turmas.map((t) => t.nome).toList();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CatequizandoWizardPage(vm: vm.catequizandoVm, turmas: turmas),
+              builder: (_) => CatequizandoWizardPage(
+                vm: vm.catequizandoVm,
+                turmas: vm.turmaVm.turmas,
+                matriculaVm: vm.matriculaVm,
+              ),
             ),
           );
         },
@@ -200,55 +203,7 @@ if (extended) ...[
   }
 }
 
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
 
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 22, color: color),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.3)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ExtraWideLayout extends StatelessWidget {
   final HomeViewModel vm;
@@ -388,7 +343,7 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 2:
           return TurmaPage(vm: vm.turmaVm, catequizandoVm: vm.catequizandoVm);
         case 3:
-          return CatequizandoPage(vm: vm.catequizandoVm, turmas: vm.turmaVm.turmas.map((t) => t.nome).toList());
+          return CatequizandoPage(vm: vm.catequizandoVm, turmas: vm.turmaVm.turmas, matriculaVm: vm.matriculaVm);
         case 4:
           return EncontrosPage(encontrosVm: vm.encontrosVm, turmas: vm.turmaVm.turmas, catequizandoVm: vm.catequizandoVm);
         case 5:
@@ -510,69 +465,108 @@ class _InicioContent extends StatelessWidget {
             },
           ),
           const SizedBox(height: 32),
+
+          // --- Status Section ---
           Text(
-            'Ações Rápidas',
+            'Catequizandos por Status',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Atalhos para as tarefas mais comuns',
+            'Distribuição dos catequizandos conforme a situação atual',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 600;
-              final actions = [
-                _QuickAction(
-                  icon: Icons.person_add_alt_1_rounded,
-                  label: 'Novo Catequizando',
-                  color: theme.colorScheme.primary,
-                  onTap: () {
-                    final turmas = vm.turmaVm.turmas.map((t) => t.nome).toList();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CatequizandoWizardPage(vm: vm.catequizandoVm, turmas: turmas),
-                      ),
-                    );
-                  },
-                ),
-                _QuickAction(
-                  icon: Icons.group_add_rounded,
-                  label: 'Nova Turma',
-                  color: theme.colorScheme.tertiary,
-                  onTap: () => showNovaTurmaDialog(context, vm.turmaVm),
-                ),
-                _QuickAction(
-                  icon: Icons.calendar_month_rounded,
-                  label: 'Novo Encontro',
-                  color: theme.colorScheme.secondary,
-                  onTap: () => showNovoEncontroDialog(context, vm.encontrosVm, turmas: vm.turmaVm.turmas),
-                ),
+              final catequizandos = vm.catequizandoVm.catequizandos;
+              final statusData = [
+                ('Em Andamento', catequizandos.where((c) => c.status == 'Em Andamento').length, Colors.blue),
+                ('Formado', catequizandos.where((c) => c.status == 'Formado').length, Colors.green),
+                ('Desistente', catequizandos.where((c) => c.status == 'Desistente').length, Colors.red),
+                ('Transferido', catequizandos.where((c) => c.status == 'Transferido').length, Colors.orange),
+                ('Inativo', catequizandos.where((c) => c.status == 'Inativo').length, Colors.grey),
               ];
               if (isWide) {
                 return Row(
-                  children: actions.map((a) => Expanded(child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: a,
-                  ))).toList(),
+                  children: statusData.map((s) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _StatusCard(label: s.$1, value: s.$2, color: s.$3),
+                    ),
+                  )).toList(),
                 );
               }
-              return Column(
-                children: actions.map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: a,
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: statusData.map((s) => SizedBox(
+                  width: (constraints.maxWidth - 8) / 2,
+                  child: _StatusCard(label: s.$1, value: s.$2, color: s.$3),
                 )).toList(),
               );
             },
           ),
         ],
       );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _StatusCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 10, height: 10,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$value',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
