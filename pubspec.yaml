@@ -44,12 +44,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^4.0.0
+  msix: ^3.16.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -92,3 +88,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+msix_config:
+  display_name: Plataforma PNSA Catequese
+  publisher_display_name: Paroquia Nossa Senhora Auxiliadora
+  identity_name: paroquiansa.plataformacatequese
+  publisher: CN=Paroquia Nossa Senhora Auxiliadora
+  logo_path: web\icons\Icon-512.png

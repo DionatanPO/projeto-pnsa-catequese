@@ -1,0 +1,64 @@
+ORCAMENTO - PLATAFORMA PNSA CATEQUESE
+========================================
+
+1. SOBRE O PROJETO
+
+Sistema web responsivo para gestao da catequese paroquial, desenvolvido
+em Flutter Web. Acessivel via navegador em computadores, tablets e
+celulares.
+
+2. ESCOPO TOTAL DO SISTEMA
+
+- Tela de login com autenticacao
+- Dashboard com metricas e graficos
+- Cadastro completo de catequizandos (wizard de 6 etapas: identificacao,
+  historico sacramental, contatos, saude, documentos e termos)
+- Cadastro de catequistas
+- Cadastro de turmas
+- Cadastro de coordenadores
+- Controle de encontros e chamada de frequencia
+- Relatorios gerenciais
+- Perfil do usuario
+- Geração de certificado PDF
+- Layout responsivo adaptado para desktop, tablet e celular
+- Tema claro e escuro
+
+3. ENTREGAS PARCIAIS
+
+Primeira entrega (15 dias):
+- Cadastro completo de catequizandos (wizard 6 etapas)
+- Cadastro de catequistas
+- Listagem, edicao e exclusao de ambos
+- Layout responsivo funcional
+
+Segunda entrega (30 dias):
+- Sistema completo conforme escopo total
+- Versao funcional para publicacao
+
+4. PRAZO
+
+Prazo estimado: 1 a 2 meses, dependendo da disponibilidade de
+informacoes e aprovacoes durante o desenvolvimento.
+
+5. INVESTIMENTO
+
+Valor total estimado: R$ 4.200,00
+
+6. NAO INCLUSO
+
+- Hospedagem do site (recomendado: Firebase Hosting ou Vercel, a partir
+  de R$ 0 nos planos gratuitos)
+- Dominio proprio (caso queira um dominio personalizado)
+- Manutencao mensal (pode ser contratada a parte)
+
+7. MANUTENCAO (opcional)
+
+Apos a entrega, e recomendada a contratacao de manutencao mensal para
+correcoes, atualizacoes e suporte. Valor sugerido: R$ 200,00/mes.
+
+8. CONTATO
+
+Em caso de duvidas ou para ajustes no orcamento, estou a disposicao.
+
+--
+Paroquia Nossa Senhora Auxiliadora - Ipora/GO

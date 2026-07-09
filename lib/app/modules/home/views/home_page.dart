@@ -347,7 +347,13 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 4:
           return EncontrosPage(encontrosVm: vm.encontrosVm, turmas: vm.turmaVm.turmas, catequizandoVm: vm.catequizandoVm);
         case 5:
-          return RelatorioPage(vm: vm.relatorioVm);
+          return RelatorioPage(
+            relatorioVm: vm.relatorioVm,
+            catequizandoVm: vm.catequizandoVm,
+            turmaVm: vm.turmaVm,
+            encontrosVm: vm.encontrosVm,
+            matriculaVm: vm.matriculaVm,
+          );
         case 6:
           return CoordenadorPage(vm: vm.coordenadorVm);
         case 7:
