@@ -58,7 +58,7 @@ class CatequistaPage extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Obx(() {
-          final list = vm.filteredCatequistas;
+          final list = vm.paginatedCatequistas;
           if (list.isEmpty) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 48),
@@ -75,13 +75,21 @@ class CatequistaPage extends StatelessWidget {
           return LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 600) {
-                return Column(
-                  children: list.map((c) => _CatequistaCard(catequista: c, theme: theme, vm: vm)).toList(),
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: list.length,
+                  itemBuilder: (_, i) => _CatequistaCard(catequista: list[i], theme: theme, vm: vm),
                 );
               }
               return _CatequistaTable(catequistas: list, theme: theme, vm: vm);
             },
           );
+        }),
+        const SizedBox(height: 16),
+        Obx(() {
+          if (vm.totalPages <= 1) return const SizedBox.shrink();
+          return _PaginationControls(vm: vm);
         }),
       ],
     );
@@ -227,7 +235,7 @@ class _CatequistaCard extends StatelessWidget {
   }
 }
 
-class _CatequistaTable extends StatefulWidget {
+class _CatequistaTable extends StatelessWidget {
   final List<Catequista> catequistas;
   final ThemeData theme;
   final CatequistaViewModel vm;
@@ -235,49 +243,7 @@ class _CatequistaTable extends StatefulWidget {
   const _CatequistaTable({required this.catequistas, required this.theme, required this.vm});
 
   @override
-  State<_CatequistaTable> createState() => _CatequistaTableState();
-}
-
-class _CatequistaTableState extends State<_CatequistaTable> {
-  int _sortColumn = -1;
-  bool _sortAscending = true;
-
-  String _getSortKey(Catequista c, int col) {
-    switch (col) {
-      case 1: return c.nome;
-      case 2: return c.status;
-      case 3: return c.email;
-      case 4: return c.telefone;
-      default: return '';
-    }
-  }
-
-  void _sort(int col) {
-    setState(() {
-      if (_sortColumn == col) {
-        _sortAscending = !_sortAscending;
-      } else {
-        _sortColumn = col;
-        _sortAscending = true;
-      }
-    });
-  }
-
-  List<Catequista> get _sortedList {
-    if (_sortColumn < 0) return widget.catequistas;
-    final sorted = List<Catequista>.from(widget.catequistas);
-    sorted.sort((a, b) {
-      final r = _getSortKey(a, _sortColumn).compareTo(_getSortKey(b, _sortColumn));
-      return _sortAscending ? r : -r;
-    });
-    return sorted;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = widget.theme;
-    final sorted = _sortedList;
-
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -318,7 +284,7 @@ class _CatequistaTableState extends State<_CatequistaTable> {
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
-          ...sorted.asMap().entries.map(
+          ...catequistas.asMap().entries.map(
             (entry) {
               final i = entry.key;
               final c = entry.value;
@@ -374,7 +340,7 @@ class _CatequistaTableState extends State<_CatequistaTable> {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                            onPressed: () => showCatequistaDialog(context, widget.vm, catequista: c),
+                            onPressed: () => showCatequistaDialog(context, vm, catequista: c),
                             tooltip: 'Editar',
                           ),
                         ),
@@ -393,7 +359,7 @@ class _CatequistaTableState extends State<_CatequistaTable> {
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
                                       onPressed: () {
-                                        widget.vm.removeCatequista(c.id);
+                                        vm.removeCatequista(c.id);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -419,10 +385,9 @@ class _CatequistaTableState extends State<_CatequistaTable> {
   }
 
   Widget _sortableHeader(String label, IconData icon, int col) {
-    final theme = widget.theme;
-    final isActive = _sortColumn == col;
+    final isActive = vm.sortColumn.value == col;
     return InkWell(
-      onTap: () => _sort(col),
+      onTap: () => vm.sortBy(col),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         child: Row(
@@ -442,7 +407,7 @@ class _CatequistaTableState extends State<_CatequistaTable> {
             if (isActive) ...[
               const SizedBox(width: 4),
               Icon(
-                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                vm.sortAscending.value ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                 size: 14,
                 color: theme.colorScheme.onPrimary,
               ),
@@ -454,7 +419,6 @@ class _CatequistaTableState extends State<_CatequistaTable> {
   }
 
   Widget _headerCell(String label, IconData icon) {
-    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       child: Row(
@@ -477,16 +441,65 @@ class _CatequistaTableState extends State<_CatequistaTable> {
   }
 
   Padding _bodyCell(String text, {bool isBold = false}) {
-    final theme = widget.theme;
+    final t = theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Text(
         text,
         overflow: TextOverflow.ellipsis,
         style: isBold
-            ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
-            : theme.textTheme.bodyMedium,
+            ? t.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
+            : t.textTheme.bodyMedium,
       ),
+    );
+  }
+}
+
+class _PaginationControls extends StatelessWidget {
+  final CatequistaViewModel vm;
+  const _PaginationControls({required this.vm});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = vm.totalPages;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left_rounded),
+          onPressed: vm.currentPage.value > 0 ? vm.prevPage : null,
+        ),
+        const SizedBox(width: 8),
+        ...List.generate(total, (i) {
+          final isCurrent = i == vm.currentPage.value;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: isCurrent
+                ? FilledButton(
+                    onPressed: null,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(36, 36),
+                    ),
+                    child: Text('${i + 1}'),
+                  )
+                : OutlinedButton(
+                    onPressed: () => vm.goToPage(i),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(36, 36),
+                    ),
+                    child: Text('${i + 1}'),
+                  ),
+          );
+        }),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.chevron_right_rounded),
+          onPressed: vm.currentPage.value < total - 1 ? vm.nextPage : null,
+        ),
+      ],
     );
   }
 }

@@ -1,35 +1,59 @@
 import '../models/catequista_model.dart';
 
 class CatequistaRepository {
-  final List<Catequista> _mockData = [
-    Catequista(nome: 'Maria José Silva', email: 'maria@pnsa.com', telefone: '(62) 99901-0001', status: 'Ativo'),
-    Catequista(nome: 'João Pedro Santos', email: 'joao@pnsa.com', telefone: '(62) 99901-0002', status: 'Ativo'),
-    Catequista(nome: 'Ana Clara Oliveira', email: 'ana@pnsa.com', telefone: '(62) 99901-0003', status: 'Ativo'),
-    Catequista(nome: 'Carlos Eduardo Lima', email: 'carlos@pnsa.com', telefone: '(62) 99901-0004', status: 'Ativo'),
-    Catequista(nome: 'Lucia Aparecida Souza', email: 'lucia@pnsa.com', telefone: '(62) 99901-0005', status: 'Inativo'),
-    Catequista(nome: 'Pedro Henrique Costa', email: 'pedro@pnsa.com', telefone: '(62) 99901-0006', status: 'Ativo'),
-    Catequista(nome: 'Rita de Cássia Pereira', email: 'rita@pnsa.com', telefone: '(62) 99901-0007', status: 'Ativo'),
-    Catequista(nome: 'Antônio Carlos Gomes', email: 'antonio@pnsa.com', telefone: '(62) 99901-0008', status: 'Inativo'),
-    Catequista(nome: 'Cristina Almeida', email: 'cristina@pnsa.com', telefone: '(62) 99901-0009', status: 'Ativo'),
-    Catequista(nome: 'Fernando José Martins', email: 'fernando@pnsa.com', telefone: '(62) 99901-0010', status: 'Ativo'),
-    Catequista(nome: 'Teresa Cristina Rocha', email: 'teresa@pnsa.com', telefone: '(62) 99901-0011', status: 'Ativo'),
-    Catequista(nome: 'Paulo Sérgio Barbosa', email: 'paulo@pnsa.com', telefone: '(62) 99901-0012', status: 'Ativo'),
-  ];
+  final List<Catequista> _items = [];
 
-  List<Catequista> getAll() => List.unmodifiable(_mockData);
-
-  Future<void> add(Catequista catequista) async {
-    _mockData.add(catequista);
+  CatequistaRepository() {
+    _loadMockData();
   }
 
-  Future<void> update(Catequista catequista) async {
-    final idx = _mockData.indexWhere((x) => x.id == catequista.id);
-    if (idx != -1) {
-      _mockData[idx] = catequista;
+  void _loadMockData() {
+    if (_items.isNotEmpty) return;
+
+    final statusList = ['Ativo', 'Ativo', 'Ativo', 'Ativo', 'Inativo', 'Afastado'];
+    final nomes = [
+      'Ana Clara Silva', 'Beatriz Souza Oliveira', 'Carlos Eduardo Pereira',
+      'Daniela Santos Lima', 'Eduardo Almeida Costa', 'Fernanda Oliveira Martins',
+      'Gabriel Barbosa Rocha', 'Helena Cristina Dias', 'Igor Nascimento Teixeira',
+      'Juliana Costa Mendes', 'Kevin William Araújo', 'Larissa Fernanda Vieira',
+      'Marcelo Henrique Gomes', 'Natália Beatriz Ribeiro', 'Otávio Augusto Carvalho',
+      'Patrícia Aparecida Moreira', 'Raul César Azevedo', 'Sabrina Helena Farias',
+      'Thiago Martins Correia', 'Ursula Cristina Pinto', 'Vinícius Santos Nogueira',
+      'Wagner Luiz Barbosa', 'Yasmin Oliveira Campos', 'Zilda Maria Cardoso',
+      'Adriana Ferreira Lopes', 'Bruno César Rocha', 'Cíntia Marques Soares',
+      'Diego Henrique Castro', 'Elaine Cristina Freitas', 'Felipe Augusto Duarte',
+      'Gabriela Nunes Peixoto', 'Humberto Alves Neto', 'Isabela Cristina Fogaça',
+      'João Pedro Vasconcelos', 'Karen Santos Oliveira', 'Leonardo Ribeiro Bastos',
+      'Márcia Helena Padilha', 'Nelson Eduardo Tavares', 'Olívia Campos Menezes',
+      'Paulo Sérgio Antunes', 'Renata Cristina Machado', 'Sérgio Murilo Figueiredo',
+      'Tatiana Oliveira Lira', 'Ubirajara Santos Melo', 'Vanessa Cristina Borges',
+      'Wellington Dias Cabral', 'Xavier Almeida Prado', 'Amanda Lúcia Vargas',
+    ];
+
+    for (var i = 0; i < nomes.length; i++) {
+      _items.add(Catequista(
+        id: (i + 1).toString(),
+        nome: nomes[i],
+        email: '${nomes[i].split(' ').first.toLowerCase()}@email.com',
+        telefone: '(11) 9${(90000 + i).toString().padLeft(5, '0')}-${(1000 + i).toString().padLeft(4, '0')}',
+        status: statusList[i % statusList.length],
+
+      ));
     }
   }
 
+  List<Catequista> getAll() => List.unmodifiable(_items);
+
+  Future<void> add(Catequista c) async {
+    _items.add(c);
+  }
+
+  Future<void> update(Catequista c) async {
+    final i = _items.indexWhere((e) => e.id == c.id);
+    if (i != -1) _items[i] = c;
+  }
+
   Future<void> remove(String id) async {
-    _mockData.removeWhere((x) => x.id == id);
+    _items.removeWhere((e) => e.id == id);
   }
 }

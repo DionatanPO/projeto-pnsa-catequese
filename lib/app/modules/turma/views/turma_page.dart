@@ -1031,34 +1031,45 @@ class TurmaPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        GetBuilder<TurmaViewModel>(
-          init: vm,
-          id: 'turmas',
-          builder: (_) {
-            final list = vm.filteredTurmas;
-            if (list.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Center(
-                  child: Text(
-                    'Nenhuma turma encontrada',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    ),
+        Obx(() {
+          final list = vm.paginatedTurmas;
+          if (list.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text(
+                  'Nenhuma turma encontrada',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
                 ),
-              );
-            }
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth < 600) {
-                  return _TurmaListMobile(list: list, theme: theme);
-                }
-                return _TurmaTable(list: list, theme: theme, vm: vm, catequizandoVm: catequizandoVm);
-              },
+              ),
             );
-          },
-        ),
+          }
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 600) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: list.length,
+                  itemBuilder: (_, i) => _TurmaCard(
+                    turma: list[i],
+                    theme: theme,
+                    vm: vm,
+                    catequizandoVm: catequizandoVm,
+                  ),
+                );
+              }
+              return _TurmaTable(list: list, theme: theme, vm: vm, catequizandoVm: catequizandoVm);
+            },
+          );
+        }),
+        const SizedBox(height: 16),
+        Obx(() {
+          if (vm.totalPages <= 1) return const SizedBox.shrink();
+          return _PaginationControls(vm: vm);
+        }),
       ],
     );
   }
@@ -1073,7 +1084,169 @@ Color _turmaStatusColor(String status) {
   }
 }
 
-class _TurmaTable extends StatefulWidget {
+class _TurmaCard extends StatelessWidget {
+  final TurmaModel turma;
+  final ThemeData theme;
+  final TurmaViewModel vm;
+  final CatequizandoViewModel catequizandoVm;
+
+  const _TurmaCard({required this.turma, required this.theme, required this.vm, required this.catequizandoVm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.menu_book_rounded, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            turma.nome,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _turmaStatusColor(turma.status).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5, height: 5,
+                                decoration: BoxDecoration(shape: BoxShape.circle, color: _turmaStatusColor(turma.status)),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                turma.status,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: _turmaStatusColor(turma.status),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        const SizedBox(width: 4),
+                        Text(turma.catequista, style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time_rounded, size: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        const SizedBox(width: 4),
+                        Text(turma.diaHorario, style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiaryContainer.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${turma.totalCatequizandos}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 17,
+                          icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
+                          onPressed: () => showTurmaDialog(context, vm, turma: turma),
+                          tooltip: 'Editar',
+                        ),
+                      ),
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 17,
+                          icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                          onPressed: () {
+                            Get.dialog(
+                              AlertDialog(
+                                title: const Text('Confirmar Exclusão'),
+                                content: Text('Deseja excluir a turma "${turma.nome}"?'),
+                                actions: [
+                                  TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
+                                  FilledButton(
+                                    onPressed: () {
+                                      vm.removeTurma(turma.id);
+                                      Get.back();
+                                    },
+                                    style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
+                                    child: const Text('Excluir'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          tooltip: 'Excluir',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TurmaTable extends StatelessWidget {
   final List<TurmaModel> list;
   final ThemeData theme;
   final TurmaViewModel vm;
@@ -1082,51 +1255,7 @@ class _TurmaTable extends StatefulWidget {
   const _TurmaTable({required this.list, required this.theme, required this.vm, required this.catequizandoVm});
 
   @override
-  State<_TurmaTable> createState() => _TurmaTableState();
-}
-
-class _TurmaTableState extends State<_TurmaTable> {
-  int _sortColumn = -1;
-  bool _sortAscending = true;
-
-  String _getSortKey(TurmaModel t, int col) {
-    switch (col) {
-      case 0: return t.nome;
-      case 1: return t.catequista;
-      case 2: return t.diaHorario;
-      case 3: return t.capacidade.toString().padLeft(5, '0');
-      case 4: return t.status;
-      case 5: return t.observacoes ?? '';
-      default: return '';
-    }
-  }
-
-  void _sort(int col) {
-    setState(() {
-      if (_sortColumn == col) {
-        _sortAscending = !_sortAscending;
-      } else {
-        _sortColumn = col;
-        _sortAscending = true;
-      }
-    });
-  }
-
-  List<TurmaModel> get _sortedList {
-    if (_sortColumn < 0) return widget.list;
-    final sorted = List<TurmaModel>.from(widget.list);
-    sorted.sort((a, b) {
-      final r = _getSortKey(a, _sortColumn).compareTo(_getSortKey(b, _sortColumn));
-      return _sortAscending ? r : -r;
-    });
-    return sorted;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = widget.theme;
-    final sorted = _sortedList;
-
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 0,
@@ -1169,7 +1298,7 @@ class _TurmaTableState extends State<_TurmaTable> {
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
           ),
-          ...sorted.asMap().entries.map(
+          ...list.asMap().entries.map(
             (entry) {
               final i = entry.key;
               final t = entry.value;
@@ -1248,13 +1377,13 @@ class _TurmaTableState extends State<_TurmaTable> {
                               padding: EdgeInsets.zero,
                               icon: Icon(Icons.people_outline, size: 18, color: theme.colorScheme.tertiary),
                             onPressed: () {
-                              showGerenciarCatequizandosDialog(context, t, widget.catequizandoVm);
+                              showGerenciarCatequizandosDialog(context, t, catequizandoVm);
                             },
                               tooltip: 'Ver Catequizandos',
                             ),
                           ),
                         ),
-                Flexible(
+                    Flexible(
                           child: SizedBox(
                             width: 30,
                             height: 36,
@@ -1262,7 +1391,7 @@ class _TurmaTableState extends State<_TurmaTable> {
                               padding: EdgeInsets.zero,
                               icon: Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
                               onPressed: () {
-                                showTurmaDialog(context, widget.vm, turma: t);
+                                showTurmaDialog(context, vm, turma: t);
                               },
                               tooltip: 'Editar',
                             ),
@@ -1284,7 +1413,7 @@ class _TurmaTableState extends State<_TurmaTable> {
                                       TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                       FilledButton(
                                         onPressed: () {
-                                          widget.vm.removeTurma(t.id);
+                                          vm.removeTurma(t.id);
                                           Get.back();
                                         },
                                         style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -1311,10 +1440,9 @@ class _TurmaTableState extends State<_TurmaTable> {
   }
 
   Widget _sortableHeader(String label, IconData icon, int col) {
-    final theme = widget.theme;
-    final isActive = _sortColumn == col;
+    final isActive = vm.sortColumn.value == col;
     return InkWell(
-      onTap: () => _sort(col),
+      onTap: () => vm.sortBy(col),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
         child: Row(
@@ -1337,7 +1465,7 @@ class _TurmaTableState extends State<_TurmaTable> {
             if (isActive) ...[
               const SizedBox(width: 4),
               Icon(
-                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                vm.sortAscending.value ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                 size: 14,
                 color: theme.colorScheme.onPrimary,
               ),
@@ -1349,7 +1477,6 @@ class _TurmaTableState extends State<_TurmaTable> {
   }
 
   Widget _headerCell(String label, IconData icon) {
-    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Row(
@@ -1375,7 +1502,6 @@ class _TurmaTableState extends State<_TurmaTable> {
   }
 
   Padding _bodyCell(String text, {bool isBold = false, int? maxLines}) {
-    final theme = widget.theme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: Text(
@@ -1390,150 +1516,51 @@ class _TurmaTableState extends State<_TurmaTable> {
   }
 }
 
-class _TurmaListMobile extends StatelessWidget {
-  final List<TurmaModel> list;
-  final ThemeData theme;
-
-  const _TurmaListMobile({required this.list, required this.theme});
+class _PaginationControls extends StatelessWidget {
+  final TurmaViewModel vm;
+  const _PaginationControls({required this.vm});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: list
-          .map(
-            (t) => Card(
-              clipBehavior: Clip.antiAlias,
-              margin: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
-                onTap: () {},
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.menu_book_rounded, color: theme.colorScheme.primary),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    t.nome,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: _turmaStatusColor(t.status).withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 5, height: 5,
-                                        decoration: BoxDecoration(shape: BoxShape.circle, color: _turmaStatusColor(t.status)),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        t.status,
-                                        style: theme.textTheme.labelSmall?.copyWith(
-                                          color: _turmaStatusColor(t.status),
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(Icons.person_outline, size: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
-                                const SizedBox(width: 4),
-                                Text(t.catequista, style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Icon(Icons.access_time_rounded, size: 13, color: theme.colorScheme.onSurface.withOpacity(0.5)),
-                                const SizedBox(width: 4),
-                                Text(t.diaHorario, style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.tertiaryContainer.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${t.totalCatequizandos}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: theme.colorScheme.tertiary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 17,
-                                  icon: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
-                                  onPressed: () {},
-                                  tooltip: 'Editar',
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  iconSize: 17,
-                                  icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                                  onPressed: () {},
-                                  tooltip: 'Excluir',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+    final total = vm.totalPages;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left_rounded),
+          onPressed: vm.currentPage.value > 0 ? vm.prevPage : null,
+        ),
+        const SizedBox(width: 8),
+        ...List.generate(total, (i) {
+          final isCurrent = i == vm.currentPage.value;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: isCurrent
+                ? FilledButton(
+                    onPressed: null,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(36, 36),
+                    ),
+                    child: Text('${i + 1}'),
+                  )
+                : OutlinedButton(
+                    onPressed: () => vm.goToPage(i),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(36, 36),
+                    ),
+                    child: Text('${i + 1}'),
                   ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+          );
+        }),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.chevron_right_rounded),
+          onPressed: vm.currentPage.value < total - 1 ? vm.nextPage : null,
+        ),
+      ],
     );
   }
 }
