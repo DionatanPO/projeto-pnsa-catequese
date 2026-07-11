@@ -20,8 +20,8 @@ class CatequistaViewModel extends GetxController {
     _loadData();
   }
 
-  void _loadData() {
-    final list = _repository.getAll();
+  Future<void> _loadData() async {
+    final list = await _repository.getAll();
     data.value = CatequistaModel(
       totalTurmas: 8,
       totalCatequizandos: 142,
@@ -129,16 +129,16 @@ class CatequistaViewModel extends GetxController {
 
   Future<void> addCatequista(Catequista c) async {
     await _repository.add(c);
-    _loadData();
+    await _loadData();
   }
 
   Future<void> updateCatequista(Catequista c) async {
     await _repository.update(c);
-    _loadData();
+    await _loadData();
   }
 
   Future<void> removeCatequista(String id) async {
     await _repository.remove(id);
-    _loadData();
+    await _loadData();
   }
 }

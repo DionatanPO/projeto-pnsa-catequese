@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
@@ -180,30 +179,13 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       documentosAnexados: _arquivosAnexados.map((f) => '${f.name} (${(f.extension ?? '').toUpperCase()}, ${_formatBytes(f.size)})').toList(),
     );
 
-    widget.vm.addCatequizando(c);
+    final novoId = await widget.vm.addCatequizando(c);
     if (_turmaSelecionadaId != null) {
-      widget.matriculaVm.matricular(c.id, _turmaSelecionadaId!);
+      await widget.matriculaVm.matricular(novoId, _turmaSelecionadaId!);
     }
     setState(() => _submitting = false);
     if (!mounted) return;
-    
-    // Pergunta se deseja emitir o certificado
-    final emitir = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sucesso'),
-        content: Text('${c.nome} foi cadastrado(a) com sucesso. Deseja emitir o certificado de cadastro?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Não')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sim')),
-        ],
-      ),
-    );
 
-    if (emitir == true) {
-      await CertificateGenerator.generate(c);
-    }
-    
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

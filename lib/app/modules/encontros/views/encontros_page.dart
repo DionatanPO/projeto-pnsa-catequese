@@ -4,11 +4,12 @@ import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import '../../turma/viewmodels/turma_viewmodel.dart';
 import '../models/encontro_model.dart';
-import '../models/frequencia_model.dart';
+import '../models/chamada_model.dart';
 import '../viewmodels/encontros_viewmodel.dart';
 
 void showEditarEncontroDialog(BuildContext context, Encontro encontro, String turmaNome, EncontrosViewModel encontrosVm) {
   final descCtrl = TextEditingController(text: encontro.descricao);
+  final dataCtrl = encontro.data.obs;
 
   showDialog(
     context: context,
@@ -58,10 +59,7 @@ void showEditarEncontroDialog(BuildContext context, Encontro encontro, String tu
                           ),
                         ),
                         Text(
-                          '$turmaNome — '
-                          '${encontro.data.day.toString().padLeft(2, '0')}/'
-                          '${encontro.data.month.toString().padLeft(2, '0')}/'
-                          '${encontro.data.year}',
+                          turmaNome,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onPrimary.withOpacity(0.9),
                           ),
@@ -73,6 +71,39 @@ void showEditarEncontroDialog(BuildContext context, Encontro encontro, String tu
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                child: InkWell(
+                  onTap: () async {
+                    final d = await showDatePicker(
+                      context: ctx,
+                      initialDate: dataCtrl.value,
+                      firstDate: DateTime(2025),
+                      lastDate: DateTime.now(),
+                      locale: const Locale('pt', 'BR'),
+                    );
+                    if (d != null) dataCtrl.value = d;
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Data',
+                      prefixIcon: Icon(Icons.calendar_month_rounded, color: colorScheme.primary),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    child: Obx(() => Text(
+                      '${dataCtrl.value.day.toString().padLeft(2, '0')}/'
+                      '${dataCtrl.value.month.toString().padLeft(2, '0')}/'
+                      '${dataCtrl.value.year}',
+                    )),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                 child: TextField(
                   controller: descCtrl,
                   decoration: const InputDecoration(
@@ -94,9 +125,15 @@ void showEditarEncontroDialog(BuildContext context, Encontro encontro, String tu
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
-                      onPressed: () {
-                        encontrosVm.atualizarEncontro(encontro, descCtrl.text.trim());
-                        Navigator.of(ctx).pop();
+                      onPressed: () async {
+                        final updated = Encontro(
+                          id: encontro.id,
+                          turmaId: encontro.turmaId,
+                          data: dataCtrl.value,
+                          descricao: descCtrl.text.trim(),
+                        );
+                        await encontrosVm.atualizarEncontro(updated);
+                        if (ctx.mounted) Navigator.of(ctx).pop();
                       },
                       icon: const Icon(Icons.save_rounded, size: 18),
                       label: const Text('Salvar'),
@@ -112,14 +149,34 @@ void showEditarEncontroDialog(BuildContext context, Encontro encontro, String tu
   );
 }
 
-void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, String turmaNome, EncontrosViewModel encontrosVm, CatequizandoViewModel catequizandoVm) {
+void showChamadaDialog(
+  BuildContext context,
+  String turmaId,
+  String turmaNome,
+  EncontrosViewModel encontrosVm,
+  CatequizandoViewModel catequizandoVm, {
+  DateTime? dataInicial,
+}) {
   final turmaVm = Get.find<TurmaViewModel>();
   final alunos = turmaVm.alunosDaTurma(turmaId, catequizandoVm.catequizandos);
+  DateTime dataAtual = dataInicial ?? DateTime.now();
   final presencas = <String, bool>{};
-  for (final a in alunos) {
-    final f = encontro.frequencias.firstWhereOrNull((f) => f.catequizandoId == a.id);
-    presencas[a.id] = f?.presente ?? true;
+  final descricaoCtrl = TextEditingController();
+  final searchCtrl = TextEditingController();
+  bool showHistory = false;
+
+  void carregarChamadas(DateTime data) {
+    presencas.clear();
+    final chamadas = encontrosVm.chamadasDoDia(turmaId, data);
+    final e = encontrosVm.encontroDoDia(turmaId, data);
+    descricaoCtrl.text = e?.descricao ?? '';
+    for (final a in alunos) {
+      final c = chamadas.firstWhereOrNull((c) => c.catequizandoId == a.id);
+      presencas[a.id] = c?.presente ?? true;
+    }
   }
+
+  carregarChamadas(dataAtual);
 
   showDialog(
     context: context,
@@ -132,7 +189,7 @@ void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, 
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           insetPadding: const EdgeInsets.all(16),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 600),
+            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               color: colorScheme.surface,
@@ -163,22 +220,8 @@ void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, 
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Chamada',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: colorScheme.onPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '$turmaNome — '
-                              '${encontro.data.day.toString().padLeft(2, '0')}/'
-                              '${encontro.data.month.toString().padLeft(2, '0')}/'
-                              '${encontro.data.year}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onPrimary.withOpacity(0.9),
-                              ),
-                            ),
+                            Text('Chamada', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.w600)),
+                            Text(turmaNome, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onPrimary.withOpacity(0.9))),
                           ],
                         ),
                       ),
@@ -188,114 +231,207 @@ void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, 
                           color: colorScheme.onPrimary.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          '${alunos.length} alunos',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: Text('${alunos.length} alunos', style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
                 ),
-                if (encontro.descricao.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                    width: double.infinity,
-                    child: Row(
-                      children: [
-                        Icon(Icons.notes_rounded, size: 16, color: colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            encontro.descricao,
-                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: () {
+                          dataAtual = dataAtual.subtract(const Duration(days: 1));
+                          carregarChamadas(dataAtual);
+                          setState(() {});
+                        },
+                        tooltip: 'Dia anterior',
+                      ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final d = await showDatePicker(
+                              context: ctx,
+                              initialDate: dataAtual,
+                              firstDate: DateTime(2025),
+                              lastDate: DateTime.now(),
+                              locale: const Locale('pt', 'BR'),
+                            );
+                            if (d != null) {
+                              dataAtual = d;
+                              carregarChamadas(d);
+                              setState(() {});
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.calendar_month_rounded, size: 16, color: colorScheme.primary),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${dataAtual.day.toString().padLeft(2, '0')}/'
+                                  '${dataAtual.month.toString().padLeft(2, '0')}/'
+                                  '${dataAtual.year}',
+                                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: dataAtual.isBefore(DateTime.now()) ? () {
+                          dataAtual = dataAtual.add(const Duration(days: 1));
+                          carregarChamadas(dataAtual);
+                          setState(() {});
+                        } : null,
+                        tooltip: 'Próximo dia',
+                      ),
+                    ],
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: TextField(
+                    controller: descricaoCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Tema, atividade...',
+                      prefixIcon: Icon(Icons.notes_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      isDense: true,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: searchCtrl,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar aluno...',
+                          prefixIcon: Icon(Icons.search_rounded, color: colorScheme.onSurfaceVariant),
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                          isDense: true,
+                          suffixIcon: searchCtrl.text.isNotEmpty
+                              ? IconButton(icon: const Icon(Icons.clear_rounded, size: 18), onPressed: () { searchCtrl.clear(); setState(() {}); })
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 32,
+                              child: OutlinedButton.icon(
+                                onPressed: () { for (final a in alunos) presencas[a.id] = true; setState(() {}); },
+                                icon: Icon(Icons.check_circle_outline, size: 14, color: colorScheme.primary),
+                                label: Text('Todos Presentes', style: TextStyle(fontSize: 11, color: colorScheme.primary)),
+                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SizedBox(
+                              height: 32,
+                              child: OutlinedButton.icon(
+                                onPressed: () { for (final a in alunos) presencas[a.id] = false; setState(() {}); },
+                                icon: Icon(Icons.cancel_outlined, size: 14, color: colorScheme.error),
+                                label: Text('Todos Ausentes', style: TextStyle(fontSize: 11, color: colorScheme.error)),
+                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 if (alunos.isEmpty)
-                  const Expanded(
-                    child: Center(child: Text('Nenhum aluno nesta turma')),
-                  )
+                  const Expanded(child: Center(child: Text('Nenhum aluno nesta turma')))
                 else
                   Expanded(
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: alunos.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      itemCount: alunos.where((a) {
+                        final q = searchCtrl.text.toLowerCase().trim();
+                        return q.isEmpty || a.nome.toLowerCase().contains(q) || a.responsavel.toLowerCase().contains(q);
+                      }).length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
                       itemBuilder: (_, i) {
-                        final aluno = alunos[i];
+                        final filtered = alunos.where((a) {
+                          final q = searchCtrl.text.toLowerCase().trim();
+                          return q.isEmpty || a.nome.toLowerCase().contains(q) || a.responsavel.toLowerCase().contains(q);
+                        }).toList();
+                        final aluno = filtered[i];
                         final presente = presencas[aluno.id] ?? true;
                         return Card(
                           elevation: 0,
                           margin: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: presente
-                                  ? colorScheme.outlineVariant.withOpacity(0.3)
-                                  : colorScheme.error.withOpacity(0.4),
-                            ),
+                            side: BorderSide(color: presente ? colorScheme.outlineVariant.withOpacity(0.3) : colorScheme.error.withOpacity(0.4)),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: presente
-                                      ? colorScheme.primaryContainer
-                                      : colorScheme.errorContainer,
-                                  child: Text(
-                                    aluno.nome.trim().isNotEmpty
-                                        ? aluno.nome.trim()[0].toUpperCase()
-                                        : '?',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: presente
-                                          ? colorScheme.onPrimaryContainer
-                                          : colorScheme.onErrorContainer,
-                                      fontWeight: FontWeight.w600,
+                          child: InkWell(
+                            onTap: () => setState(() => presencas[aluno.id] = !presente),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: presente ? colorScheme.primaryContainer : colorScheme.errorContainer,
+                                    child: Text(
+                                      aluno.nome.trim().isNotEmpty ? aluno.nome.trim()[0].toUpperCase() : '?',
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        color: presente ? colorScheme.onPrimaryContainer : colorScheme.onErrorContainer,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        aluno.nome,
-                                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.person_outline_rounded, size: 14, color: colorScheme.onSurfaceVariant),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              '${aluno.parentesco}: ${aluno.responsavel}',
-                                              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                                              overflow: TextOverflow.ellipsis,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(aluno.nome, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+                                        const SizedBox(height: 2),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.person_outline_rounded, size: 12, color: colorScheme.onSurfaceVariant),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text('${aluno.parentesco}: ${aluno.responsavel}', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontSize: 12), overflow: TextOverflow.ellipsis),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Switch(
-                                  value: presente,
-                                  activeColor: colorScheme.primary,
-                                  onChanged: (v) {
-                                    setState(() => presencas[aluno.id] = v);
-                                  },
-                                ),
-                              ],
+                                  Icon(presente ? Icons.check_circle_rounded : Icons.cancel_rounded, color: presente ? colorScheme.primary : colorScheme.error, size: 26),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -303,32 +439,65 @@ void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, 
                     ),
                   ),
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3))),
-                  ),
-                  child: Row(
+                  decoration: BoxDecoration(border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.3)))),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '${presencas.values.where((v) => v).length} / ${alunos.length} presentes',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: () {
-                          final frequencias = presencas.entries
-                              .map((e) => Frequencia(catequizandoId: e.key, presente: e.value))
-                              .toList();
-                          encontrosVm.salvarFrequencias(turmaId, encontro.data, frequencias);
-                          Navigator.of(ctx).pop();
-                        },
-                        icon: const Icon(Icons.save_rounded, size: 18),
-                        label: const Text('Salvar Chamada'),
+                      if (alunos.isNotEmpty)
+                        InkWell(
+                          onTap: () { showHistory = !showHistory; setState(() {}); },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.history_rounded, size: 16, color: colorScheme.onSurfaceVariant),
+                                const SizedBox(width: 8),
+                                Text('Histórico de Encontros', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                                const Spacer(),
+                                Icon(showHistory ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (showHistory)
+                        SizedBox(
+                          height: 120,
+                          child: _buildHistoryList(context, theme, colorScheme, turmaId, encontrosVm, (date) {
+                            dataAtual = date;
+                            carregarChamadas(date);
+                            searchCtrl.clear();
+                            showHistory = false;
+                          }, setState),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 18, color: colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${presencas.values.where((v) => v).length} / ${alunos.length} presentes',
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton.icon(
+                              onPressed: () async {
+                                final chamadas = presencas.entries
+                                    .map((e) => Chamada(id: '', encontroId: '', catequizandoId: e.key, presente: e.value))
+                                    .toList();
+                                await encontrosVm.salvarFrequencias(turmaId, dataAtual, chamadas, descricao: descricaoCtrl.text.trim());
+                                if (ctx.mounted) Navigator.of(ctx).pop();
+                              },
+                              icon: const Icon(Icons.save_rounded, size: 18),
+                              label: const Text('Salvar Chamada'),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -340,6 +509,272 @@ void showChamadaDialog(BuildContext context, Encontro encontro, String turmaId, 
       );
     },
   );
+}
+
+Widget _buildHistoryList(BuildContext context, ThemeData theme, ColorScheme colorScheme, String turmaId, EncontrosViewModel encontrosVm, void Function(DateTime) onSelectDate, StateSetter setState) {
+  final encontrosDaTurma = encontrosVm.encontros.where((e) => e.turmaId == turmaId).toList()
+    ..sort((a, b) => b.data.compareTo(a.data));
+  if (encontrosDaTurma.isEmpty) {
+    return Center(child: Text('Nenhum encontro registrado', style: theme.textTheme.bodySmall));
+  }
+  return ListView.separated(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    itemCount: encontrosDaTurma.length,
+    separatorBuilder: (_, __) => const Divider(height: 1),
+    itemBuilder: (_, i) {
+      final e = encontrosDaTurma[i];
+      final chamadas = encontrosVm.chamadaRepo.getByEncontro(e.id);
+      final presentes = chamadas.where((c) => c.presente).length;
+      return ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          '${e.data.day.toString().padLeft(2, '0')}/${e.data.month.toString().padLeft(2, '0')}/${e.data.year}',
+          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+        ),
+        subtitle: e.descricao.isNotEmpty
+            ? Text(e.descricao, style: theme.textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis)
+            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$presentes/${chamadas.length}', style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.primary)),
+            const SizedBox(width: 8),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Icon(Icons.visibility_rounded, size: 16, color: colorScheme.primary),
+              onPressed: () {
+                onSelectDate(e.data);
+                setState(() {});
+              },
+              tooltip: 'Carregar esta data',
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+const _meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+const _diasSemana = ['D','S','T','Q','Q','S','S'];
+
+int _daysInMonth(int year, int month) {
+  if (month == 2) {
+    return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;
+  }
+  return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+}
+
+int _firstWeekdayOffset(int year, int month) {
+  return DateTime(year, month, 1).weekday % 7;
+}
+
+Widget _dot(Color color) {
+  return Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color));
+}
+
+class _CalendarHeader extends StatelessWidget {
+  final EncontrosViewModel vm;
+  final List<TurmaModel> turmas;
+  final CatequizandoViewModel catequizandoVm;
+
+  const _CalendarHeader({required this.vm, required this.turmas, required this.catequizandoVm});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Obx(() {
+      final statusPorDia = vm.statusChamadaPorDia(turmaId: vm.selectedTurmaId.value.isNotEmpty ? vm.selectedTurmaId.value : null);
+      final daysInMonth = _daysInMonth(vm.calendarYear.value, vm.calendarMonth.value);
+      final offset = _firstWeekdayOffset(vm.calendarYear.value, vm.calendarMonth.value);
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded),
+                      onPressed: vm.prevMonth,
+                      tooltip: 'Mês anterior',
+                    ),
+                    Text(
+                      '${_meses[vm.calendarMonth.value - 1]} ${vm.calendarYear.value}',
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded),
+                      onPressed: vm.nextMonth,
+                      tooltip: 'Próximo mês',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: _diasSemana.map((d) => Expanded(
+                    child: Center(child: Text(d, style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600))),
+                  )).toList(),
+                ),
+                const SizedBox(height: 4),
+                Table(
+                  children: [
+                    for (var row = 0; row < ((offset + daysInMonth + 6) ~/ 7); row++)
+                      TableRow(
+                        children: [
+                          for (var col = 0; col < 7; col++)
+                            _buildDayCell(row * 7 + col, offset, daysInMonth, statusPorDia, context, colorScheme, theme),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _dot(colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text('Com chamada', style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    const SizedBox(width: 20),
+                    _dot(colorScheme.tertiary),
+                    const SizedBox(width: 6),
+                    Text('Sem chamada', style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    const SizedBox(width: 20),
+                    _dot(colorScheme.outlineVariant),
+                    const SizedBox(width: 6),
+                    Text('Sem encontro', style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDayCell(int index, int offset, int daysInMonth, Map<DateTime, bool> statusPorDia, BuildContext context, ColorScheme colorScheme, ThemeData theme) {
+    final day = index - offset + 1;
+    final isToday = day == DateTime.now().day && vm.calendarMonth.value == DateTime.now().month && vm.calendarYear.value == DateTime.now().year;
+
+    if (index < offset || day > daysInMonth) {
+      return const SizedBox(height: 32);
+    }
+
+    final date = DateTime(vm.calendarYear.value, vm.calendarMonth.value, day);
+    final hasEncontro = statusPorDia.containsKey(date);
+    final temChamada = statusPorDia[date];
+
+    return InkWell(
+      onTap: hasEncontro ? () {
+        final turmaId = vm.selectedTurmaId.value;
+        if (turmaId.isEmpty) return;
+        final turmaNome = turmas.firstWhereOrNull((t) => t.id == turmaId)?.nome ?? '';
+        showChamadaDialog(context, turmaId, turmaNome, vm, catequizandoVm, dataInicial: date);
+      } : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isToday ? colorScheme.primaryContainer.withOpacity(0.4) : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$day',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                color: isToday ? colorScheme.primary : (hasEncontro ? colorScheme.onSurface : colorScheme.onSurfaceVariant),
+              ),
+            ),
+            if (hasEncontro)
+              _dot(temChamada == true ? colorScheme.primary : colorScheme.tertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickChamadaBar extends StatelessWidget {
+  final EncontrosViewModel vm;
+  final List<TurmaModel> turmas;
+  final CatequizandoViewModel catequizandoVm;
+
+  const _QuickChamadaBar({required this.vm, required this.turmas, required this.catequizandoVm});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.checklist_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: DropdownButtonFormField<String>(
+                value: vm.selectedTurmaId.value.isEmpty ? null : vm.selectedTurmaId.value,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Turma',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  isDense: true,
+                ),
+                items: turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome, style: const TextStyle(fontSize: 14)))).toList(),
+                onChanged: (v) => vm.selectedTurmaId.value = v ?? '',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${DateTime.now().day.toString().padLeft(2, '0')}/${DateTime.now().month.toString().padLeft(2, '0')}/${DateTime.now().year}',
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: vm.selectedTurmaId.value.isEmpty
+                  ? null
+                  : () {
+                      final turma = turmas.firstWhereOrNull((t) => t.id == vm.selectedTurmaId.value);
+                      if (turma == null) return;
+                      showChamadaDialog(context, turma.id, turma.nome, vm, catequizandoVm, dataInicial: DateTime.now());
+                    },
+              icon: const Icon(Icons.play_arrow_rounded, size: 18),
+              label: const Text('Fazer Chamada'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class EncontrosPage extends StatelessWidget {
@@ -371,7 +806,11 @@ class EncontrosPage extends StatelessWidget {
         return ListView(
           padding: EdgeInsets.fromLTRB(hPad, 8, hPad, hPad),
           children: [
+            const SizedBox(height: 8),
+            _CalendarHeader(vm: encontrosVm, turmas: turmas, catequizandoVm: catequizandoVm),
             const SizedBox(height: 16),
+            _QuickChamadaBar(vm: encontrosVm, turmas: turmas, catequizandoVm: catequizandoVm),
+            const SizedBox(height: 20),
             Obx(
               () => TextField(
                 onChanged: encontrosVm.setSearch,
@@ -574,11 +1013,11 @@ class _EncontrosTableState extends State<_EncontrosTable> {
                             icon: Icon(Icons.checklist_rounded, size: 18, color: theme.colorScheme.tertiary),
                             onPressed: () => showChamadaDialog(
                               context,
-                              item.encontro,
-                              item.encontro.id.split('_').first,
+                              item.encontro.turmaId,
                               item.turmaNome,
                               widget.encontrosVm,
                               widget.catequizandoVm,
+                              dataInicial: item.encontro.data,
                             ),
                             tooltip: 'Chamada',
                           ),
@@ -600,8 +1039,8 @@ class _EncontrosTableState extends State<_EncontrosTable> {
                                   actions: [
                                     TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                     FilledButton(
-                                      onPressed: () {
-                                        widget.encontrosVm.removerEncontro(item.encontro);
+                                      onPressed: () async {
+                                        await widget.encontrosVm.removerEncontro(item.encontro);
                                         Get.back();
                                       },
                                       style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
@@ -715,6 +1154,8 @@ class _EncontrosListMobile extends StatelessWidget {
       itemCount: list.length,
       itemBuilder: (_, i) {
         final item = list[i];
+        final chamadas = encontrosVm.chamadaRepo.getByEncontro(item.encontro.id);
+        final presentes = chamadas.where((c) => c.presente).length;
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
           clipBehavior: Clip.antiAlias,
@@ -772,7 +1213,7 @@ class _EncontrosListMobile extends StatelessWidget {
                         ],
                         const SizedBox(height: 4),
                         Text(
-                          '${item.encontro.frequencias.where((f) => f.presente).length} / ${item.encontro.frequencias.length} presentes',
+                          '$presentes / ${chamadas.length} presentes',
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                       ],
@@ -801,11 +1242,11 @@ class _EncontrosListMobile extends StatelessWidget {
                           icon: Icon(Icons.checklist_rounded, color: theme.colorScheme.tertiary),
                           onPressed: () => showChamadaDialog(
                             context,
-                            item.encontro,
-                            item.encontro.id.split('_').first,
+                            item.encontro.turmaId,
                             item.turmaNome,
                             encontrosVm,
                             catequizandoVm,
+                            dataInicial: item.encontro.data,
                           ),
                           tooltip: 'Chamada',
                         ),
@@ -828,8 +1269,8 @@ class _EncontrosListMobile extends StatelessWidget {
                                 actions: [
                                   TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
                                   FilledButton(
-                                    onPressed: () {
-                                      encontrosVm.removerEncontro(item.encontro);
+                                    onPressed: () async {
+                                      await encontrosVm.removerEncontro(item.encontro);
                                       Get.back();
                                     },
                                     style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),

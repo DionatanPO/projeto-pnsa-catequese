@@ -1,26 +1,61 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/models/user_model.dart';
+import '../../../core/services/user_service.dart';
 import '../models/coordenador_model.dart';
 
 class CoordenadorRepository {
-  final List<Coordenador> _mockData = [
-    Coordenador(nome: 'Ana Silva', email: 'ana@pnsa.com', telefone: '(62) 99999-0001', area: 'Catequese Infantil', status: 'Ativo'),
-    Coordenador(nome: 'Bruno Santos', email: 'bruno@pnsa.com', telefone: '(62) 99999-0002', area: 'Crisma', status: 'Ativo'),
-    Coordenador(nome: 'Carla Oliveira', email: 'carla@pnsa.com', telefone: '(62) 99999-0003', area: 'Batismo', status: 'Inativo'),
-  ];
+  final UserService _userService = UserService();
 
-  List<Coordenador> getAll() => List.unmodifiable(_mockData);
+  Future<List<Coordenador>> getAll() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'coordenador')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final user = UserModel.fromMap(
+        doc.id,
+        doc.data() as Map<String, dynamic>,
+      );
+      return _toCoordenador(user);
+    }).toList();
+  }
 
   Future<void> add(Coordenador coordenador) async {
-    _mockData.add(coordenador);
+    final user = UserModel(
+      id: '',
+      nome: coordenador.nome,
+      email: coordenador.email,
+      telefone: coordenador.telefone,
+      area: coordenador.area,
+      role: 'coordenador',
+      ativo: coordenador.status == 'Ativo',
+    );
+    await FirebaseFirestore.instance.collection('users').add(user.toMap());
   }
 
   Future<void> update(Coordenador coordenador) async {
-    final idx = _mockData.indexWhere((x) => x.id == coordenador.id);
-    if (idx != -1) {
-      _mockData[idx] = coordenador;
-    }
+    await _userService.updateUser(coordenador.id, {
+      'nome': coordenador.nome,
+      'email': coordenador.email,
+      'telefone': coordenador.telefone,
+      'area': coordenador.area,
+      'ativo': coordenador.status == 'Ativo',
+    });
   }
 
   Future<void> remove(String id) async {
-    _mockData.removeWhere((x) => x.id == id);
+    await _userService.updateUser(id, {'ativo': false});
+  }
+
+  Coordenador _toCoordenador(UserModel user) {
+    return Coordenador(
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      area: user.area,
+      status: user.ativo ? 'Ativo' : 'Inativo',
+    );
   }
 }

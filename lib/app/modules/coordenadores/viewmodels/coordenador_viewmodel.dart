@@ -13,8 +13,8 @@ class CoordenadorViewModel extends GetxController {
     _loadData();
   }
 
-  void _loadData() {
-    final list = _repository.getAll();
+  Future<void> _loadData() async {
+    final list = await _repository.getAll();
     data.value = CoordenadorModel(
       totalCoordenadores: list.length,
       coordenadores: list,
@@ -34,16 +34,16 @@ class CoordenadorViewModel extends GetxController {
 
   Future<void> addCoordenador(Coordenador c) async {
     await _repository.add(c);
-    _loadData();
+    await _loadData();
   }
 
   Future<void> updateCoordenador(Coordenador c) async {
     await _repository.update(c);
-    _loadData();
+    await _loadData();
   }
 
   Future<void> removeCoordenador(String id) async {
     await _repository.remove(id);
-    _loadData();
+    await _loadData();
   }
 }

@@ -58,7 +58,7 @@ class _CatequistaFormState extends State<CatequistaForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final model = Catequista(
-      id: widget.catequista?.id ?? DateTime.now().toString(),
+      id: widget.catequista?.id ?? '',
       nome: _nomeCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       telefone: _telefoneCtrl.text.trim(),

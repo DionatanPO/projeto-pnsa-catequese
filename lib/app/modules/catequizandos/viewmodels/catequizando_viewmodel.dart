@@ -23,8 +23,9 @@ class CatequizandoViewModel extends GetxController {
     _loadData();
   }
 
-  void _loadData() {
-    catequizandos.value = _repository.getAll();
+  Future<void> _loadData() async {
+    final list = await _repository.getAll();
+    catequizandos.value = list;
   }
 
   List<Catequizando> get paginatedCatequizandos {
@@ -138,9 +139,10 @@ class CatequizandoViewModel extends GetxController {
     super.onClose();
   }
 
-  Future<void> addCatequizando(Catequizando c) async {
-    await _repository.add(c);
+  Future<String> addCatequizando(Catequizando c) async {
+    final id = await _repository.add(c);
     _loadData();
+    return id;
   }
 
   Future<void> updateCatequizando(Catequizando c) async {

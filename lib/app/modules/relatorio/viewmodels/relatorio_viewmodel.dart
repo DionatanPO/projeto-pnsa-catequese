@@ -106,7 +106,7 @@ class RelatorioViewModel extends GetxController {
       final encontros = encontrosVm.encontrosDaTurma(t.id);
       int totalPresencas = 0;
       for (final e in encontros) {
-        totalPresencas += e.frequencias.where((f) => f.presente).length;
+        totalPresencas += encontrosVm.totalPresencasEncontro(e.id);
       }
       final totalEncontros = encontros.length;
       return EncontrosTurmaCount(

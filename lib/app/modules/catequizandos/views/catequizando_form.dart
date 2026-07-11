@@ -276,7 +276,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     final dados = _buildModel();
     if (dados == null) return;
 
@@ -284,17 +284,17 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       widget.onSave!(dados, _selectedTurmaId);
     } else if (widget.vm != null) {
       if (_isEditing) {
-        widget.vm!.updateCatequizando(dados);
+        await widget.vm!.updateCatequizando(dados);
         if (_selectedTurmaId != null && widget.matriculaVm != null) {
-          widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+          await widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
         }
       } else {
-        widget.vm!.addCatequizando(dados);
+        final novoId = await widget.vm!.addCatequizando(dados);
         if (_selectedTurmaId != null && widget.matriculaVm != null) {
-          widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+          await widget.matriculaVm!.matricular(novoId, _selectedTurmaId!);
         }
       }
-      Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop();
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../core/middlewares/auth_middleware.dart';
 import '../modules/home/views/home_page.dart';
 import '../modules/login/views/login_page.dart';
 
@@ -13,6 +14,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.home,
       page: () => const HomePage(),
+      middlewares: [AuthMiddleware()],
     ),
   ];
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../viewmodels/turma_viewmodel.dart';
 import '../models/turma_model.dart';
+import '../../catequista/viewmodels/catequista_viewmodel.dart';
 
 class TurmaForm extends StatefulWidget {
   final TurmaModel? turma;
@@ -24,17 +26,23 @@ class _TurmaFormState extends State<TurmaForm> {
   late final TextEditingController _etapaCtrl;
   late final TextEditingController _diaHorarioCtrl;
   late final TextEditingController _localSalaCtrl;
-  late final TextEditingController _capacidadeCtrl;
   late final TextEditingController _observacoesCtrl;
   late final GlobalKey<FormState> _formKey;
 
-  final List<String> _catequistas = ['Maria José Silva', 'João Pereira', 'Ana Souza'];
   final List<String> _statusOptions = ['Ativa', 'Concluída', 'Suspensa'];
 
   String? _selectedCatequista;
   String _selectedStatus = 'Ativa';
 
   bool get _isEditing => widget.turma != null;
+
+  List<String> get _catequistas {
+    final catequistaVm = Get.find<CatequistaViewModel>();
+    return catequistaVm.data.value.catequistas
+        .where((c) => c.status == 'Ativo')
+        .map((c) => c.nome)
+        .toList()..sort();
+  }
 
   @override
   void initState() {
@@ -44,7 +52,6 @@ class _TurmaFormState extends State<TurmaForm> {
     _etapaCtrl = TextEditingController(text: widget.turma?.etapa ?? '');
     _diaHorarioCtrl = TextEditingController(text: widget.turma?.diaHorario ?? '');
     _localSalaCtrl = TextEditingController(text: widget.turma?.localSala ?? '');
-    _capacidadeCtrl = TextEditingController(text: widget.turma?.capacidade.toString() ?? '');
     _observacoesCtrl = TextEditingController(text: widget.turma?.observacoes ?? '');
     _formKey = GlobalKey<FormState>();
 
@@ -61,33 +68,39 @@ class _TurmaFormState extends State<TurmaForm> {
     _etapaCtrl.dispose();
     _diaHorarioCtrl.dispose();
     _localSalaCtrl.dispose();
-    _capacidadeCtrl.dispose();
     _observacoesCtrl.dispose();
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final model = TurmaModel(
-      id: widget.turma?.id ?? DateTime.now().toString(),
+      id: widget.turma?.id ?? '',
       nome: _nomeCtrl.text.trim(),
       ano: int.parse(_anoCtrl.text.trim()),
       etapa: _etapaCtrl.text.trim(),
       diaHorario: _diaHorarioCtrl.text.trim(),
       localSala: _localSalaCtrl.text.trim(),
-      capacidade: int.parse(_capacidadeCtrl.text.trim()),
       status: _selectedStatus,
       catequista: _selectedCatequista!,
       observacoes: _observacoesCtrl.text.trim(),
     );
 
-    if (_isEditing) {
-      widget.vm.updateTurma(model);
-    } else {
-      widget.vm.addTurma(model);
+    final error = _isEditing
+        ? await widget.vm.updateTurma(model)
+        : await widget.vm.addTurma(model);
+
+    if (error != null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+      return;
     }
-    Navigator.of(context).pop();
+
+    if (context.mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -188,28 +201,11 @@ class _TurmaFormState extends State<TurmaForm> {
                     TextFormField(
                       controller: _diaHorarioCtrl,
                       decoration: const InputDecoration(labelText: 'Dia e Horário', hintText: 'Ex: Sábados, 08:00'),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _localSalaCtrl,
-                            decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _capacidadeCtrl,
-                            decoration: const InputDecoration(labelText: 'Quantidade', hintText: 'Ex: 25'),
-                            keyboardType: TextInputType.number,
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                          ),
-                        ),
-                      ],
+                    TextFormField(
+                      controller: _localSalaCtrl,
+                      decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
                     ),
                     const SizedBox(height: 20),
                     DropdownButtonFormField<String>(

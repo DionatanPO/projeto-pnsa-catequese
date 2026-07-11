@@ -4,7 +4,7 @@ import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import '../../turma/viewmodels/turma_viewmodel.dart';
 import '../models/encontro_model.dart';
-import '../models/frequencia_model.dart';
+import '../models/chamada_model.dart';
 import 'encontros_viewmodel.dart';
 
 class EncontroViewModel extends GetxController {
@@ -63,12 +63,17 @@ class EncontroViewModel extends GetxController {
     presencasLocais[alunoId] = value;
   }
 
-  void salvar() {
+  Future<void> salvar() async {
     if (_turma == null) return;
-    final frequencias = presencasLocais.entries
-        .map((e) => Frequencia(catequizandoId: e.key, presente: e.value))
+    final chamadas = presencasLocais.entries
+        .map((e) => Chamada(
+          id: '',
+          encontroId: '',
+          catequizandoId: e.key,
+          presente: e.value,
+        ))
         .toList();
-    encontrosVm.salvarFrequencias(_turma!.id, dataSelecionada.value, frequencias);
+    await encontrosVm.salvarFrequencias(_turma!.id, dataSelecionada.value, chamadas, descricao: descricao.value);
   }
 
   void carregarDadosDoEncontro(DateTime data, String desc) {
@@ -77,7 +82,7 @@ class EncontroViewModel extends GetxController {
     abaAtual.value = 0;
   }
 
-  void removerEncontro(Encontro encontro) {
-    encontrosVm.removerEncontro(encontro);
+  Future<void> removerEncontro(Encontro encontro) async {
+    await encontrosVm.removerEncontro(encontro);
   }
 }

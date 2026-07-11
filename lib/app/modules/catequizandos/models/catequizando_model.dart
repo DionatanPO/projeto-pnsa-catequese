@@ -57,6 +57,60 @@ class Catequizando {
     this.documentosAnexados = const [],
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
+  factory Catequizando.fromMap(String id, Map<String, dynamic> map) {
+    return Catequizando(
+      id: id,
+      nome: map['nome'] as String? ?? '',
+      sexo: map['sexo'] as String? ?? 'Masculino',
+      dataNascimento: (map['dataNascimento'] as dynamic)?.toDate() ?? DateTime.now(),
+      batizado: map['batizado'] as bool? ?? false,
+      localBatismo: map['localBatismo'] as String?,
+      fezPrimeiraEucaristia: map['fezPrimeiraEucaristia'] as bool?,
+      responsavel: map['responsavel'] as String? ?? '',
+      parentesco: map['parentesco'] as String? ?? '',
+      telefone: map['telefone'] as String? ?? '',
+      cep: map['cep'] as String? ?? '',
+      endereco: map['endereco'] as String? ?? '',
+      numero: map['numero'] as String? ?? '',
+      bairro: map['bairro'] as String? ?? '',
+      possuiRestricao: map['possuiRestricao'] as bool? ?? false,
+      detalheRestricao: map['detalheRestricao'] as String?,
+      status: map['status'] as String? ?? 'Em Andamento',
+      aceiteTermos: map['aceiteTermos'] as bool? ?? false,
+      assinaturaResponsavel: map['assinaturaResponsavel'] as String?,
+      dataAssinatura: (map['dataAssinatura'] as dynamic)?.toDate(),
+      documentosAnexados: (map['documentosAnexados'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'nome': nome,
+      'sexo': sexo,
+      'dataNascimento': dataNascimento,
+      'batizado': batizado,
+      'localBatismo': localBatismo,
+      'fezPrimeiraEucaristia': fezPrimeiraEucaristia,
+      'responsavel': responsavel,
+      'parentesco': parentesco,
+      'telefone': telefone,
+      'cep': cep,
+      'endereco': endereco,
+      'numero': numero,
+      'bairro': bairro,
+      'possuiRestricao': possuiRestricao,
+      'detalheRestricao': detalheRestricao,
+      'status': status,
+      'aceiteTermos': aceiteTermos,
+      'assinaturaResponsavel': assinaturaResponsavel,
+      'dataAssinatura': dataAssinatura,
+      'documentosAnexados': documentosAnexados,
+    };
+  }
+
   int get idade {
     final hoje = DateTime.now();
     int age = hoje.year - dataNascimento.year;

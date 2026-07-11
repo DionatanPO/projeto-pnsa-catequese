@@ -14,30 +14,9 @@ class MatriculaViewModel extends GetxController {
     _loadData();
   }
 
-  void _loadData() {
-    matriculas.value = _repository.getAll();
-  }
-
-  void sincronizar(List<Catequizando> catequizandos, List<TurmaModel> turmas) {
-    if (matriculas.isNotEmpty) return;
-
-    final anoAtual = DateTime.now().year;
-
-    for (var i = 0; i < catequizandos.length; i++) {
-      final c = catequizandos[i];
-      final turma = turmas.isNotEmpty ? turmas[i % turmas.length] : null;
-      if (turma == null) continue;
-
-      final matricula = Matricula(
-        id: 'mat_${c.id}_${turma.id}',
-        catequizandoId: c.id,
-        turmaId: turma.id,
-        ano: anoAtual,
-        status: 'Ativa',
-      );
-      _repository.add(matricula);
-    }
-    _loadData();
+  Future<void> _loadData() async {
+    final list = await _repository.getAll();
+    matriculas.value = list;
   }
 
   String? getNomeTurmaAtual(
@@ -186,3 +165,4 @@ class MatriculaViewModel extends GetxController {
     _loadData();
   }
 }
+

@@ -61,7 +61,7 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final model = Coordenador(
-      id: widget.coordenador?.id ?? DateTime.now().toString(),
+      id: widget.coordenador?.id ?? '',
       nome: _nomeCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       telefone: _telefoneCtrl.text.trim(),

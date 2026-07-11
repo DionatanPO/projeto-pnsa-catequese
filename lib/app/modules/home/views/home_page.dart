@@ -118,7 +118,7 @@ Widget? _buildFab(BuildContext context, HomeViewModel vm) {
       );
     case 4:
       return FloatingActionButton.extended(
-        onPressed: () => showNovoEncontroDialog(context, vm.encontrosVm, turmas: vm.turmaVm.turmas),
+        onPressed: () => showNovoEncontroDialog(context, vm.encontrosVm, turmas: vm.turmaVm.turmasAtivas.obs),
         icon: const Icon(Icons.add),
         label: const Text('Novo Encontro'),
       );
@@ -165,29 +165,32 @@ class _SideMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<HomeViewModel>(
       id: 'selectedIndex',
-      builder: (_) => Theme(
-        data: theme.copyWith(
-          colorScheme: theme.colorScheme.copyWith(
-            onSurface: theme.colorScheme.onPrimary,
-            onSurfaceVariant: theme.colorScheme.onPrimary.withOpacity(0.7),
+      builder: (_) {
+        final visible = vm.visibleIndices;
+        final visualSelected = vm.mapActualToVisual(vm.selectedIndex);
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              onSurface: theme.colorScheme.onPrimary,
+              onSurfaceVariant: theme.colorScheme.onPrimary.withOpacity(0.7),
+            ),
+            navigationRailTheme: NavigationRailThemeData(
+              backgroundColor: theme.colorScheme.primary,
+              indicatorColor: theme.colorScheme.onPrimary.withOpacity(0.25),
+            ),
           ),
-          navigationRailTheme: NavigationRailThemeData(
-            backgroundColor: theme.colorScheme.primary,
-            indicatorColor: theme.colorScheme.onPrimary.withOpacity(0.25),
-          ),
-        ),
-        child: NavigationRail(
-          selectedIndex: vm.selectedIndex,
-          onDestinationSelected: (i) => vm.selectedIndex = i,
-          labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-          extended: extended,
-          minExtendedWidth: 200,
-          groupAlignment: -1.0,
-          leading: Padding(
-            padding: EdgeInsets.only(top: extended ? 16 : 8, bottom: extended ? 24 : 8),
-            child: Column(
-              children: [
-                Icon(Icons.church_rounded, size: extended ? 40 : 24, color: theme.colorScheme.onPrimary),
+          child: NavigationRail(
+            selectedIndex: visualSelected,
+            onDestinationSelected: (i) => vm.selectedIndex = vm.mapVisualToActual(i),
+            labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+            extended: extended,
+            minExtendedWidth: 200,
+            groupAlignment: -1.0,
+            leading: Padding(
+              padding: EdgeInsets.only(top: extended ? 16 : 8, bottom: extended ? 24 : 8),
+              child: Column(
+                children: [
+                  Icon(Icons.church_rounded, size: extended ? 40 : 24, color: theme.colorScheme.onPrimary),
 if (extended) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -202,9 +205,10 @@ if (extended) ...[
               ],
             ),
           ),
-          destinations: _destinations,
-        ),
-      ),
+          destinations: visible.map((i) => _destinations[i]).toList(),
+          ),
+        );
+      },
     );
   }
 }
@@ -298,7 +302,7 @@ class _NarrowLayout extends StatelessWidget {
                   ],
                 ),
               ),
-              for (var i = 0; i < _menuLabels.length; i++)
+              for (final i in vm.visibleIndices)
                 ListTile(
                   leading: Icon(
                     _menuIcons[i],
@@ -346,7 +350,9 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 0:
           return _InicioContent(vm: vm, theme: theme);
         case 1:
-          return CatequistaPage(vm: vm.catequistaVm);
+          return vm.isRestricted(1)
+              ? _InicioContent(vm: vm, theme: theme)
+              : CatequistaPage(vm: vm.catequistaVm);
         case 2:
           return TurmaPage(vm: vm.turmaVm, catequizandoVm: vm.catequizandoVm);
         case 3:
@@ -362,7 +368,9 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
             matriculaVm: vm.matriculaVm,
           );
         case 6:
-          return CoordenadorPage(vm: vm.coordenadorVm);
+          return vm.isRestricted(6)
+              ? _InicioContent(vm: vm, theme: theme)
+              : CoordenadorPage(vm: vm.coordenadorVm);
         case 7:
           return ProfilePage(vm: vm.profileVm);
         case 8:

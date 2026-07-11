@@ -1,95 +1,78 @@
-import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/encontro_model.dart';
 
 class EncontrosRepository {
-  final List<Encontro> _mockData = () {
-    final turmasIds = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-    final descricoes = [
-      'Encontro de abertura - Apresentação do cronograma',
-      'Oração do Pai Nosso',
-      'Ave Maria e o Rosário',
-      'Os Mandamentos da Lei de Deus',
-      'Os Sacramentos da Igreja',
-      'A vida de Jesus Cristo',
-      'O Espírito Santo na nossa vida',
-      'A Santa Missa explicada',
-      'O Batismo: porta dos sacramentos',
-      'A Eucaristia: fonte e ápice da vida cristã',
-      'A Confissão: sacramento da misericórdia',
-      'Os Santos e a Igreja',
-      'A Quaresma e a Semana Santa',
-      'A Páscoa do Senhor',
-      'Maria, Mãe da Igreja',
-      'O Advento e o Natal',
-      'A Igreja: povo de Deus',
-      'Vocação e missão do cristão',
-      'A Palavra de Deus na vida',
-      'Encontro de encerramento e confraternização',
-      'Preparação para a Primeira Eucaristia',
-      'Retiro espiritual dos catequizandos',
-      'Visita à Igreja Matriz',
-      'A Campanha da Fraternidade',
-      'Dia da Família na catequese',
-      'A oração na vida do cristão',
-      'Os dons do Espírito Santo',
-      'Os frutos do Espírito Santo',
-      'As bem-aventuranças',
-      'O mandamento do amor',
-    ];
+  Future<List<Encontro>> getAll() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('encontros')
+        .orderBy('data', descending: true)
+        .get();
 
-    final encontros = <Encontro>[];
-    var idx = 0;
-    for (final turmaId in turmasIds) {
-      for (var mes = 2; mes <= 11; mes++) {
-        if (idx >= 80) break;
-        final dia = 1 + (idx % 25);
-        encontros.add(Encontro(
-          id: '${turmaId}_2026-${mes.toString().padLeft(2, '0')}-${dia.toString().padLeft(2, '0')}T00:00:00.000',
-          data: DateTime(2026, mes, dia),
-          descricao: descricoes[idx % descricoes.length],
-        ));
-        idx++;
-      }
-      if (idx >= 80) break;
-    }
-    return encontros;
-  }();
-
-  List<Encontro> getAll() => List.unmodifiable(_mockData);
+    return snapshot.docs.map((doc) {
+      return Encontro.fromMap(doc.id, doc.data());
+    }).toList();
+  }
 
   Future<void> add(Encontro encontro) async {
-    _mockData.add(encontro);
+    await FirebaseFirestore.instance.collection('encontros').add(encontro.toMap());
   }
 
   Future<void> update(Encontro encontro) async {
-    final idx = _mockData.indexWhere((e) => e.id == encontro.id);
-    if (idx != -1) {
-      _mockData[idx] = encontro;
-    }
+    await FirebaseFirestore.instance
+        .collection('encontros')
+        .doc(encontro.id)
+        .update(encontro.toMap());
   }
 
   Future<void> remove(Encontro encontro) async {
-    _mockData.remove(encontro);
+    await FirebaseFirestore.instance.collection('encontros').doc(encontro.id).delete();
   }
 
-  List<Encontro> encontrosDaTurma(String turmaId) {
-    return _mockData.where((e) => e.id.startsWith(turmaId)).toList();
+  Future<List<Encontro>> encontrosDaTurma(String turmaId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('encontros')
+        .where('turmaId', isEqualTo: turmaId)
+        .orderBy('data', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return Encontro.fromMap(doc.id, doc.data());
+    }).toList();
   }
 
-  Encontro? encontroDoDia(String turmaId, DateTime data) {
-    return _mockData.firstWhereOrNull(
-      (e) => e.id.startsWith(turmaId) && e.data == data,
-    );
+  Future<Encontro?> encontroDoDia(String turmaId, DateTime data) async {
+    final start = DateTime(data.year, data.month, data.day);
+    final end = start.add(const Duration(days: 1));
+    final snapshot = await FirebaseFirestore.instance
+        .collection('encontros')
+        .where('turmaId', isEqualTo: turmaId)
+        .where('data', isGreaterThanOrEqualTo: start)
+        .where('data', isLessThan: end)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+    return Encontro.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+  }
+
+  Future<void> addAll(List<Encontro> encontros) async {
+    final batch = FirebaseFirestore.instance.batch();
+    for (final e in encontros) {
+      final ref = FirebaseFirestore.instance.collection('encontros').doc();
+      batch.set(ref, e.toMap());
+    }
+    await batch.commit();
   }
 
   Future<Encontro> criarOuObterEncontro(String turmaId, DateTime data) async {
-    final existing = encontroDoDia(turmaId, data);
+    final existing = await encontroDoDia(turmaId, data);
     if (existing != null) return existing;
-    final novo = Encontro(
-      id: '${turmaId}_${data.toIso8601String()}',
-      data: data,
-    );
-    _mockData.add(novo);
-    return novo;
+    final ref = await FirebaseFirestore.instance.collection('encontros').add({
+      'turmaId': turmaId,
+      'data': data,
+      'descricao': '',
+    });
+    final doc = await ref.get();
+    return Encontro.fromMap(doc.id, doc.data()!);
   }
 }

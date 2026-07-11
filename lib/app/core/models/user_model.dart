@@ -1,28 +1,31 @@
-class Coordenador {
+class UserModel {
   final String id;
   final String nome;
   final String email;
+  final String role;
   final String telefone;
   final String area;
-  final String status;
+  final bool ativo;
 
-  Coordenador({
+  UserModel({
     required this.id,
     required this.nome,
     required this.email,
-    required this.telefone,
-    required this.area,
-    required this.status,
+    this.role = 'catequista',
+    this.telefone = '',
+    this.area = '',
+    this.ativo = true,
   });
 
-  factory Coordenador.fromMap(String id, Map<String, dynamic> map) {
-    return Coordenador(
+  factory UserModel.fromMap(String id, Map<String, dynamic> map) {
+    return UserModel(
       id: id,
       nome: map['nome'] as String? ?? '',
       email: map['email'] as String? ?? '',
+      role: map['role'] as String? ?? 'catequista',
       telefone: map['telefone'] as String? ?? '',
       area: map['area'] as String? ?? '',
-      status: map['status'] as String? ?? 'Ativo',
+      ativo: map['ativo'] as bool? ?? true,
     );
   }
 
@@ -30,19 +33,10 @@ class Coordenador {
     return {
       'nome': nome,
       'email': email,
+      'role': role,
       'telefone': telefone,
       'area': area,
-      'status': status,
+      'ativo': ativo,
     };
   }
-}
-
-class CoordenadorModel {
-  final int totalCoordenadores;
-  final List<Coordenador> coordenadores;
-
-  CoordenadorModel({
-    this.totalCoordenadores = 0,
-    this.coordenadores = const [],
-  });
 }

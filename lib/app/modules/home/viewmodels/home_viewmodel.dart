@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/controllers/auth_controller.dart';
 import '../models/home_model.dart';
 import '../../catequista/viewmodels/catequista_viewmodel.dart';
 import '../../turma/viewmodels/turma_viewmodel.dart';
@@ -13,7 +14,7 @@ class HomeViewModel extends GetxController {
   final Rx<HomeModel> data = HomeModel(title: 'Início').obs;
   final RxInt counter = 0.obs;
   int _selectedIndex = 0;
-  final catequistaVm = CatequistaViewModel();
+  final catequistaVm = Get.put(CatequistaViewModel());
   final turmaVm = Get.put(TurmaViewModel());
   final catequizandoVm = CatequizandoViewModel();
   final matriculaVm = Get.put(MatriculaViewModel());
@@ -22,22 +23,54 @@ class HomeViewModel extends GetxController {
   final profileVm = ProfileViewModel();
   final coordenadorVm = CoordenadorViewModel();
 
+  final _restrictedIndices = <int>{};
+
   @override
   void onInit() {
     super.onInit();
-    sincronizarMatriculas();
+    _updateRestrictions();
+    if (_restrictedIndices.contains(_selectedIndex)) {
+      _selectedIndex = 0;
+    }
   }
+
+  bool get isAdmin => _role == 'administrador';
+
+  bool isRestricted(int index) => _restrictedIndices.contains(index);
+
+  String get _role {
+    final user = Get.find<AuthController>().firestoreUser.value;
+    return user?.role ?? '';
+  }
+
+  void _updateRestrictions() {
+    _restrictedIndices.clear();
+    if (_role != 'administrador') {
+      _restrictedIndices.add(6);
+    }
+    if (_role == 'catequista') {
+      _restrictedIndices.add(1);
+    }
+  }
+
+  List<int> get visibleIndices {
+    _updateRestrictions();
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        .where((i) => !_restrictedIndices.contains(i))
+        .toList();
+  }
+
+  int mapVisualToActual(int visualIndex) => visibleIndices[visualIndex];
+
+  int mapActualToVisual(int actualIndex) => visibleIndices.indexOf(actualIndex);
 
   int get selectedIndex => _selectedIndex;
 
   set selectedIndex(int value) {
+    if (_restrictedIndices.contains(value)) return;
     _selectedIndex = value;
     update(['selectedIndex']);
   }
 
   void increment() => counter.value++;
-
-  void sincronizarMatriculas() {
-    matriculaVm.sincronizar(catequizandoVm.catequizandos, turmaVm.turmas);
-  }
 }

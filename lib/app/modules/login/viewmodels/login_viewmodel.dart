@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/controllers/auth_controller.dart';
 import '../../../routes/app_pages.dart';
 
 class LoginViewModel extends GetxController {
@@ -12,6 +14,8 @@ class LoginViewModel extends GetxController {
   final RxBool obscurePassword = true.obs;
   final RxString emailError = ''.obs;
   final RxString passwordError = ''.obs;
+
+  AuthController get _authController => Get.find();
 
   void toggleObscure() => obscurePassword.toggle();
 
@@ -48,10 +52,45 @@ class LoginViewModel extends GetxController {
 
     isLoading.value = true;
 
-    await Future.delayed(const Duration(seconds: 1));
-
-    isLoading.value = false;
-    Get.offAllNamed(AppRoutes.home);
+    try {
+      await _authController.login(email, password);
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      await _authController.ensureUserDocExists(uid, email);
+      isLoading.value = false;
+      Get.offAllNamed(AppRoutes.home);
+    } on FirebaseAuthException catch (e) {
+      isLoading.value = false;
+      switch (e.code) {
+        case 'invalid-email':
+          emailError.value = 'E-mail inválido';
+          break;
+        case 'user-disabled':
+          emailError.value = 'Esta conta foi desativada';
+          break;
+        case 'user-not-found':
+          emailError.value = 'Nenhum usuário encontrado com este e-mail';
+          break;
+        case 'wrong-password':
+          passwordError.value = 'Senha incorreta';
+          break;
+        case 'invalid-credential':
+          passwordError.value = 'E-mail ou senha inválidos';
+          break;
+        case 'too-many-requests':
+          Get.snackbar(
+            'Muitas tentativas',
+            'Acesso temporariamente bloqueado. Tente novamente mais tarde.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          break;
+        default:
+          Get.snackbar(
+            'Erro ao entrar',
+            'Ocorreu um erro inesperado. Tente novamente.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+      }
+    }
   }
 
   @override

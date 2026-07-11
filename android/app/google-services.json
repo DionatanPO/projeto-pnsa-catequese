@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "401695407956",
+    "project_id": "sistema-pnsa-85f9a",
+    "storage_bucket": "sistema-pnsa-85f9a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:401695407956:android:750efb74e09a09bf0392c1",
+        "android_client_info": {
+          "package_name": "com.pnsa.plataforma_pnsa_catequese"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACrytvidP2QDvihAAOcJkfiuF7OlOzrrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

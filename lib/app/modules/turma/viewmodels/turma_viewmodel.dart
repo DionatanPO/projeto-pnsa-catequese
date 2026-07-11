@@ -9,6 +9,7 @@ class TurmaViewModel extends GetxController {
   final TurmaRepository _repository;
 
   final RxList<TurmaModel> turmas = <TurmaModel>[].obs;
+  List<TurmaModel> get turmasAtivas => turmas.where((t) => t.status == 'Ativa').toList();
   final RxString searchQuery = ''.obs;
   final RxInt currentPage = 0.obs;
   final RxInt sortColumn = (-1).obs;
@@ -22,8 +23,9 @@ class TurmaViewModel extends GetxController {
     _loadData();
   }
 
-  void _loadData() {
-    turmas.value = _repository.getAll();
+  Future<void> _loadData() async {
+    final list = await _repository.getAll();
+    turmas.value = list;
   }
 
   List<TurmaModel> get paginatedTurmas {
@@ -59,8 +61,8 @@ class TurmaViewModel extends GetxController {
       case 0: return t.nome;
       case 1: return t.catequista;
       case 2: return t.diaHorario;
-      case 3: return t.capacidade.toString().padLeft(5, '0');
-      case 4: return t.status;
+      case 3: return t.status;
+      case 4: return Get.find<MatriculaViewModel>().totalAlunosNaTurma(t.id).toString().padLeft(6, '0');
       case 5: return t.observacoes ?? '';
       default: return '';
     }
@@ -132,19 +134,25 @@ class TurmaViewModel extends GetxController {
     super.onClose();
   }
 
-  Future<void> addTurma(TurmaModel turma) async {
+  Future<String?> addTurma(TurmaModel turma) async {
+    final exists = await _repository.existsByName(turma.nome);
+    if (exists) return 'Já existe uma turma com este nome.';
     await _repository.add(turma);
-    _loadData();
+    await _loadData();
+    return null;
   }
 
-  Future<void> updateTurma(TurmaModel turma) async {
+  Future<String?> updateTurma(TurmaModel turma) async {
+    final exists = await _repository.existsByName(turma.nome, excludeId: turma.id);
+    if (exists) return 'Já existe outra turma com este nome.';
     await _repository.update(turma);
-    _loadData();
+    await _loadData();
+    return null;
   }
 
   Future<void> removeTurma(String id) async {
     await _repository.remove(id);
-    _loadData();
+    await _loadData();
   }
 
   List<Catequizando> alunosDaTurma(String turmaId, List<Catequizando> todos) {

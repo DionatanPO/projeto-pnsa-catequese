@@ -1183,7 +1183,7 @@ class _TurmaCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${turma.totalCatequizandos}',
+                      '${Get.find<MatriculaViewModel>().totalAlunosNaTurma(turma.id)}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: theme.colorScheme.tertiary,
@@ -1267,7 +1267,7 @@ class _TurmaTable extends StatelessWidget {
         columnWidths: const {
           0: FlexColumnWidth(3),
           1: FlexColumnWidth(2),
-          2: FlexColumnWidth(2),
+          2: FlexColumnWidth(1.5),
           3: FlexColumnWidth(0.8),
           4: FlexColumnWidth(0.8),
           5: FlexColumnWidth(2),
@@ -1292,8 +1292,8 @@ class _TurmaTable extends StatelessWidget {
               _sortableHeader('Turma', Icons.group_rounded, 0),
               _sortableHeader('Catequista', Icons.person_rounded, 1),
               _sortableHeader('Horário', Icons.access_time_rounded, 2),
-              _sortableHeader('Qtde', Icons.people_rounded, 3),
-              _sortableHeader('Status', Icons.info_outline_rounded, 4),
+              _sortableHeader('Status', Icons.info_outline_rounded, 3),
+              _sortableHeader('Cateq.', Icons.people_outline_rounded, 4),
               _sortableHeader('Detalhes', Icons.description_outlined, 5),
               _headerCell('Ações', Icons.touch_app_rounded),
             ],
@@ -1334,7 +1334,6 @@ class _TurmaTable extends StatelessWidget {
                   ),
                   _bodyCell(t.catequista),
                   _bodyCell(t.diaHorario),
-                  _bodyCell('${t.capacidade}'),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                     child: Container(
@@ -1363,6 +1362,7 @@ class _TurmaTable extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _bodyCell('${Get.find<MatriculaViewModel>().totalAlunosNaTurma(t.id)}'),
                   _bodyCell(t.observacoes != null && t.observacoes!.isNotEmpty ? t.observacoes! : '-', maxLines: 2),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),

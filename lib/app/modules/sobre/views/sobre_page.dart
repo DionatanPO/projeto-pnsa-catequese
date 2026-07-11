@@ -5,7 +5,7 @@ class SobrePage extends StatelessWidget {
 
   static const _version = '1.0.0+1';
   static const _parish = 'Paróquia Nossa Senhora Auxiliadora';
-  static const _city = 'Paraguáis';
+  static const _city = 'Iporá - GO';
 
   @override
   Widget build(BuildContext context) {
