@@ -427,4 +427,35 @@ class AppTheme {
       ),
     );
   }
+
+  static InputDecoration searchInputDecoration(
+    ColorScheme colorScheme, {
+    required String hintText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+    EdgeInsetsGeometry? contentPadding,
+    bool isDense = false,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      prefixIcon: prefixIcon ?? Icon(Icons.search_rounded, color: colorScheme.primary),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: colorScheme.onSurface.withOpacity(0.08),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide.none,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(28),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: contentPadding ?? const EdgeInsets.symmetric(vertical: 0),
+      isDense: isDense,
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/theme/app_theme.dart';
 import '../viewmodels/coordenador_viewmodel.dart';
 import '../models/coordenador_model.dart';
 import 'coordenador_form.dart';
@@ -37,22 +38,15 @@ class CoordenadorPage extends StatelessWidget {
         Obx(
           () => TextField(
             onChanged: vm.setSearch,
-            decoration: InputDecoration(
+            decoration: AppTheme.searchInputDecoration(
+              theme.colorScheme,
               hintText: 'Buscar coordenador por nome ou área...',
-              prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
               suffixIcon: vm.searchQuery.value.isNotEmpty
                   ? IconButton(
                       icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
                       onPressed: () => vm.setSearch(''),
                     )
                   : null,
-              filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
           ),
         ),

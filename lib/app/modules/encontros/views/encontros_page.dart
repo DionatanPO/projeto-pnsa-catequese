@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import '../../turma/viewmodels/turma_viewmodel.dart';
@@ -285,17 +286,14 @@ void showChamadaDialog(
                       TextField(
                         controller: searchCtrl,
                         onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
+                        decoration: AppTheme.searchInputDecoration(
+                          colorScheme,
                           hintText: 'Buscar aluno...',
-                          prefixIcon: Icon(Icons.search_rounded, color: colorScheme.onSurfaceVariant),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                          isDense: true,
                           suffixIcon: searchCtrl.text.isNotEmpty
                               ? IconButton(icon: const Icon(Icons.clear_rounded, size: 18), onPressed: () { searchCtrl.clear(); setState(() {}); })
                               : null,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                          isDense: true,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -489,16 +487,12 @@ class EncontrosPage extends StatelessWidget {
               const SizedBox(height: 16),
               Obx(() => TextField(
                 onChanged: encontrosVm.setSearch,
-                decoration: InputDecoration(
+                decoration: AppTheme.searchInputDecoration(
+                  colorScheme,
                   hintText: 'Buscar encontros...',
-                  prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
                   suffixIcon: encontrosVm.searchQuery.value.isNotEmpty
                       ? IconButton(icon: Icon(Icons.clear_rounded), onPressed: () => encontrosVm.setSearch(''))
                       : null,
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
               )),
               const SizedBox(height: 16),

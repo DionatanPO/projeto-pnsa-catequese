@@ -134,7 +134,7 @@ class _HeaderCard extends StatelessWidget {
                 color: theme.colorScheme.onPrimary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(Icons.church_rounded, size: 48, color: theme.colorScheme.onPrimary),
+              child: Image.asset('assets/images/logo.jpg', width: 48, height: 48, fit: BoxFit.contain),
             ),
             const SizedBox(height: 20),
             Text(

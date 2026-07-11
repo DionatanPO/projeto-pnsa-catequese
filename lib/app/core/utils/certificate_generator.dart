@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -23,6 +24,9 @@ class CertificateGenerator {
 
     final textStyle = pw.TextStyle(font: font, color: textColor);
 
+    final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final logoImage = pw.MemoryImage(logoBytes);
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
@@ -36,6 +40,8 @@ class CertificateGenerator {
               padding: const pw.EdgeInsets.all(40),
               child: pw.Column(
                 children: [
+                  pw.Image(logoImage, width: 70, height: 70),
+                  pw.SizedBox(height: 8),
                   pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
                       style: pw.TextStyle(font: fontBold, fontSize: 24, color: textColor)),
                   pw.Text('Iporá - GO', style: textStyle.copyWith(fontSize: 16)),
@@ -118,12 +124,17 @@ class CertificateGenerator {
     final textColor = PdfColor.fromHex('#2F4F4F');
     final primaryColor = PdfColor.fromHex('#8B0000');
 
+    final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final logoImage = pw.MemoryImage(logoBytes);
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
+            pw.Image(logoImage, width: 50, height: 50),
+            pw.SizedBox(height: 6),
             pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
                 style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
             pw.Text('PASTORAL CATEQUÉTICA',
@@ -235,12 +246,17 @@ class CertificateGenerator {
       );
     }
 
+    final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final logoImage = pw.MemoryImage(logoBytes);
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
+            pw.Image(logoImage, width: 50, height: 50),
+            pw.SizedBox(height: 6),
             pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
                 style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
             pw.Text('PASTORAL CATEQUÉTICA',

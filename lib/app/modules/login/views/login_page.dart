@@ -34,7 +34,7 @@ class _LoginForm extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(Icons.church_rounded, size: 48, color: theme.colorScheme.primary),
+        Image.asset('assets/images/app_icon.png', width: 64, height: 64),
         const SizedBox(height: 20),
         Text(
           'Entrar',

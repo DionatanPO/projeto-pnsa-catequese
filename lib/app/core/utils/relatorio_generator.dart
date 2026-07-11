@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -51,12 +52,17 @@ class RelatorioGenerator {
       );
     }
 
+    final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final logoImage = pw.MemoryImage(logoBytes);
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
+            pw.Image(logoImage, width: 50, height: 50),
+            pw.SizedBox(height: 6),
             pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
                 style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
             pw.Text('PASTORAL CATEQUÉTICA',
