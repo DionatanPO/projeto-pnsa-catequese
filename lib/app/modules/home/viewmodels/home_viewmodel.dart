@@ -32,6 +32,10 @@ class HomeViewModel extends GetxController {
     if (_restrictedIndices.contains(_selectedIndex)) {
       _selectedIndex = 0;
     }
+    ever(Get.find<AuthController>().firestoreUser, (_) {
+      _updateRestrictions();
+      update(['selectedIndex']);
+    });
   }
 
   bool get isAdmin => _role == 'administrador';

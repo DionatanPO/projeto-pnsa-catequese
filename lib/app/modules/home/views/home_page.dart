@@ -390,10 +390,11 @@ class _InicioContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = vm.catequistaVm.data.value;
     final hPad = MediaQuery.of(context).size.width < 600 ? 8.0 : 32.0;
 
-    return ListView(
+    return Obx(() {
+      final data = vm.catequistaVm.data.value;
+      return ListView(
       padding: EdgeInsets.fromLTRB(hPad, 8, hPad, hPad),
       children: [
           Container(
@@ -537,6 +538,7 @@ class _InicioContent extends StatelessWidget {
           ),
         ],
       );
+    });
   }
 }
 

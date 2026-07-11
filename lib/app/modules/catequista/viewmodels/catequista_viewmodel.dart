@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import '../models/catequista_model.dart';
 import '../repositories/catequista_repository.dart';
@@ -21,10 +22,17 @@ class CatequistaViewModel extends GetxController {
   }
 
   Future<void> _loadData() async {
-    final list = await _repository.getAll();
+    final results = await Future.wait([
+      _repository.getAll(),
+      FirebaseFirestore.instance.collection('turmas').count().get(),
+      FirebaseFirestore.instance.collection('catequizandos').count().get(),
+    ]);
+    final list = results[0] as List<Catequista>;
+    final totalTurmas = (results[1] as AggregateQuerySnapshot).count ?? 0;
+    final totalCatequizandos = (results[2] as AggregateQuerySnapshot).count ?? 0;
     data.value = CatequistaModel(
-      totalTurmas: 8,
-      totalCatequizandos: 142,
+      totalTurmas: totalTurmas,
+      totalCatequizandos: totalCatequizandos,
       totalCatequistas: list.length,
       catequistas: list,
     );
