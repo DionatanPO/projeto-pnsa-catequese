@@ -1,12 +1,17 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:plataforma_pnsa_catequese/app/core/services/google_drive_service.dart';
 import '../models/catequizando_model.dart';
+import '../models/documento_anexado.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import 'catequizando_form.dart';
+import '../../configuracao/views/configuracao_drive_page.dart';
 
 class CatequizandoWizardPage extends StatefulWidget {
   final CatequizandoViewModel vm;
@@ -61,6 +66,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   bool _submitting = false;
   String _status = 'Em Andamento';
   final List<PlatformFile> _arquivosAnexados = [];
+  final GoogleDriveService _driveService = Get.find<GoogleDriveService>();
+  String? _uploadStatus;
 
   final _stepLabels = [
     'Identificação',
@@ -80,6 +87,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     ]) {
       ctrl.dispose();
     }
+    _driveService.dispose();
     super.dispose();
   }
 
@@ -156,7 +164,81 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       return;
     }
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 400));
+
+    List<DocumentoAnexado> docsEnviados = [];
+    String? pastaCatequizandoId;
+
+    if (_arquivosAnexados.isNotEmpty) {
+      if (!_driveService.isReady) {
+        setState(() => _submitting = false);
+        await Get.dialog(AlertDialog(
+          title: const Text('Drive não configurado'),
+          content: const Text('Conecte a conta sistemapnsacatequese@gmail.com em "Config. Drive" para acessar os arquivos.'),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: const Text('Fechar')),
+            FilledButton(onPressed: () { Get.back(); Get.to(() => const ConfiguracaoDrivePage()); }, child: const Text('Config. Drive')),
+          ],
+        ));
+        return;
+      }
+
+      try {
+        setState(() => _uploadStatus = 'Criando pasta do catequizando...');
+        pastaCatequizandoId = await _driveService.createFolder(
+          nomeCtrl.text.trim(),
+        );
+        debugPrint('[Drive] Pasta criada: $pastaCatequizandoId');
+      } catch (e) {
+        debugPrint('[Drive] Erro ao criar pasta: $e');
+        setState(() => _submitting = false);
+        Get.snackbar('Erro', 'Falha ao criar pasta no Drive: $e');
+        return;
+      }
+
+      for (int i = 0; i < _arquivosAnexados.length; i++) {
+        final f = _arquivosAnexados[i];
+        setState(() {
+          _uploadStatus = 'Enviando ${f.name} (${i + 1}/${_arquivosAnexados.length})...';
+        });
+
+        try {
+          Uint8List bytes;
+          if (f.bytes != null) {
+            bytes = f.bytes!;
+          } else if (f.path != null) {
+            bytes = await File(f.path!).readAsBytes();
+          } else {
+            debugPrint('[Drive] bytes e path nulos para ${f.name}');
+            continue;
+          }
+          debugPrint('[Drive] Enviando: ${f.name}, tamanho: ${bytes.length}, pasta: $pastaCatequizandoId');
+
+          final driveFile = await _driveService.uploadFile(
+            bytes: bytes,
+            nome: f.name,
+            parentFolderId: pastaCatequizandoId,
+          );
+
+          debugPrint('[Drive] Arquivo enviado com sucesso: ${f.name} -> ID: ${driveFile.driveFileId}');
+          docsEnviados.add(DocumentoAnexado(
+            nome: f.name,
+            extensao: f.extension ?? '',
+            tamanho: f.size,
+            driveFileId: driveFile.driveFileId,
+            webViewLink: driveFile.webViewLink,
+            downloadLink: driveFile.downloadLink,
+          ));
+        } catch (e) {
+          debugPrint('[Drive] Erro ao enviar ${f.name}: $e');
+          Get.snackbar(
+            'Aviso',
+            'Não foi possível enviar ${f.name}. O cadastro continuará sem este arquivo.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+      }
+      setState(() => _uploadStatus = null);
+    }
 
     final c = Catequizando(
       nome: nomeCtrl.text.trim(),
@@ -176,7 +258,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       detalheRestricao: _possuiRestricao ? detalheRestricaoCtrl.text.trim() : null,
       status: _status,
       aceiteTermos: _aceiteTermos,
-      documentosAnexados: _arquivosAnexados.map((f) => '${f.name} (${(f.extension ?? '').toUpperCase()}, ${_formatBytes(f.size)})').toList(),
+      documentosAnexados: docsEnviados,
+      driveFolderId: pastaCatequizandoId,
     );
 
     final novoId = await widget.vm.addCatequizando(c);
@@ -872,6 +955,17 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   }
 
   Future<void> _selecionarTodosDocumentos() async {
+    if (!_driveService.isReady) {
+      await Get.dialog(AlertDialog(
+        title: const Text('Drive não configurado'),
+        content: const Text('Conecte a conta sistemapnsacatequese@gmail.com em "Config. Drive" para anexar arquivos.'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Fechar')),
+          FilledButton(onPressed: () { Get.back(); Get.to(() => const ConfiguracaoDrivePage()); }, child: const Text('Config. Drive')),
+        ],
+      ));
+      return;
+    }
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: true,
@@ -1046,7 +1140,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                     ),
                   )
                 : const Icon(Icons.check_rounded, size: 18),
-            label: Text(_submitting ? 'Salvando...' : 'Finalizar Inscrição'),
+            label: Text(_uploadStatus != null ? 'Enviando...' : 'Finalizar Inscrição'),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,

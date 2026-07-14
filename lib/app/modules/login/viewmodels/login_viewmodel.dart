@@ -5,8 +5,8 @@ import '../../../core/controllers/auth_controller.dart';
 import '../../../routes/app_pages.dart';
 
 class LoginViewModel extends GetxController {
-  final emailController = TextEditingController(text: 'admin@pnsa.com');
-  final passwordController = TextEditingController(text: '123456');
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   final emailFocus = FocusNode();
   final passwordFocus = FocusNode();
 
@@ -57,6 +57,8 @@ class LoginViewModel extends GetxController {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       await _authController.ensureUserDocExists(uid, email);
       isLoading.value = false;
+      passwordController.clear();
+      emailController.clear();
       Get.offAllNamed(AppRoutes.home);
     } on FirebaseAuthException catch (e) {
       isLoading.value = false;

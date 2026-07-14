@@ -12,6 +12,7 @@ import '../../relatorio/views/relatorio_page.dart';
 import '../../coordenadores/views/coordenador_page.dart';
 import '../../profile/views/profile_page.dart';
 import '../../sobre/views/sobre_page.dart';
+import '../../configuracao/views/configuracao_drive_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -36,7 +37,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre'];
+const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre', 'Config. Drive'];
 
 const _destinations = [
   NavigationRailDestination(
@@ -83,6 +84,11 @@ const _destinations = [
     icon: Icon(Icons.info_outline_rounded),
     selectedIcon: Icon(Icons.info_rounded),
     label: Text('Sobre'),
+  ),
+  NavigationRailDestination(
+    icon: Icon(Icons.cloud_outlined),
+    selectedIcon: Icon(Icons.cloud_rounded),
+    label: Text('Config. Drive'),
   ),
 ];
 
@@ -172,15 +178,17 @@ class _SideMenu extends StatelessWidget {
         return Theme(
           data: theme.copyWith(
             colorScheme: theme.colorScheme.copyWith(
-              onSurface: theme.colorScheme.onPrimary,
-              onSurfaceVariant: theme.colorScheme.onPrimary.withOpacity(0.65),
+              onSurface: theme.colorScheme.onSurface,
+              onSurfaceVariant: theme.colorScheme.onSurfaceVariant,
             ),
             navigationRailTheme: NavigationRailThemeData(
-              backgroundColor: theme.colorScheme.primary,
-              indicatorColor: theme.colorScheme.onPrimary.withOpacity(0.18),
+              backgroundColor: theme.colorScheme.surface,
+              indicatorColor: theme.colorScheme.primaryContainer,
               indicatorShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
+              selectedIconTheme: IconThemeData(color: theme.colorScheme.primary, size: 24),
+              unselectedIconTheme: IconThemeData(color: theme.colorScheme.onSurfaceVariant, size: 24),
             ),
           ),
           child: NavigationRail(
@@ -188,8 +196,8 @@ class _SideMenu extends StatelessWidget {
             onDestinationSelected: (i) => vm.selectedIndex = vm.mapVisualToActual(i),
             labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
             extended: extended,
-            minExtendedWidth: 220,
-            groupAlignment: -1.0,
+            minExtendedWidth: 240,
+            groupAlignment: -0.85,
             leading: _SideMenuHeader(extended: extended, theme: theme),
             destinations: visible.map((i) => _destinations[i]).toList(),
             trailing: _SideMenuFooter(extended: extended, theme: theme),
@@ -227,68 +235,53 @@ class _SideMenuHeader extends StatelessWidget {
     final role = user?.role ?? '';
 
     return Padding(
-      padding: EdgeInsets.only(top: extended ? 20 : 8),
+      padding: EdgeInsets.only(top: extended ? 24 : 12, bottom: extended ? 20 : 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-      CircleAvatar(
-            radius: extended ? 26 : 18,
-            backgroundColor: theme.colorScheme.onPrimary.withOpacity(0.16),
-            child: Text(
-              _initials(nome),
-              style: TextStyle(
-                color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: extended ? 20 : 13,
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+            ),
+            child: CircleAvatar(
+              radius: extended ? 32 : 20,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Text(
+                _initials(nome),
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: extended ? 24 : 14,
+                ),
               ),
             ),
           ),
           if (extended) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Text(
               nome,
               style: TextStyle(
-                color: theme.colorScheme.onPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
-              email,
+              role.toUpperCase(),
               style: TextStyle(
-                color: theme.colorScheme.onPrimary.withOpacity(0.55),
-                fontSize: 12,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onPrimary.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _roleLabel(role),
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary.withOpacity(0.8),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3,
-                ),
+                color: theme.colorScheme.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
             ),
           ],
-          SizedBox(height: extended ? 20 : 16),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: extended ? 16 : 8),
-            height: 1,
-            color: theme.colorScheme.onPrimary.withOpacity(0.10),
-          ),
+          SizedBox(height: extended ? 24 : 16),
         ],
       ),
     );
@@ -304,37 +297,23 @@ class _SideMenuFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: extended ? 16 : 8),
+      padding: EdgeInsets.symmetric(horizontal: extended ? 16 : 0, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: extended ? 16 : 8, vertical: 8),
-            height: 1,
-            color: theme.colorScheme.onPrimary.withOpacity(0.10),
-          ),
-          InkWell(
-            onTap: () => Get.find<AuthController>().logout(),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: extended ? 16 : 8,
-                vertical: 10,
-              ),
-              child: extended
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.logout_rounded, size: 20, color: theme.colorScheme.onPrimary.withOpacity(0.55)),
-                        const SizedBox(width: 10),
-                        Text('Sair', style: TextStyle(
-                          color: theme.colorScheme.onPrimary.withOpacity(0.55),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        )),
-                      ],
-                    )
-                  : Icon(Icons.logout_rounded, size: 20, color: theme.colorScheme.onPrimary.withOpacity(0.55)),
+          SizedBox(
+            width: extended ? 208 : 56, // Constraints for the ListTile
+            child: ListTile(
+              onTap: () => Get.find<AuthController>().logout(),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              leading: Icon(Icons.logout_rounded, size: 22, color: theme.colorScheme.error),
+              title: extended
+                  ? Text('Sair', style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ))
+                  : null,
             ),
           ),
         ],
@@ -639,6 +618,7 @@ const _menuIcons = [
   Icons.admin_panel_settings_rounded,
   Icons.person_rounded,
   Icons.info_outline_rounded,
+  Icons.cloud_rounded,
 ];
 
 IconData? _getSelectedIcon(int index) {
@@ -652,6 +632,7 @@ IconData? _getSelectedIcon(int index) {
     case 6: return Icons.admin_panel_settings_rounded;
     case 7: return Icons.person_rounded;
     case 8: return Icons.info_rounded;
+    case 9: return Icons.cloud_rounded;
     default: return null;
   }
 }
@@ -689,6 +670,8 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
           return ProfilePage(vm: vm.profileVm);
         case 8:
           return const SobrePage();
+        case 9:
+          return const ConfiguracaoDrivePage();
         default:
           return const SizedBox.shrink();
       }

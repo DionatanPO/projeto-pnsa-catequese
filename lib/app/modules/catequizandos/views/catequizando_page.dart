@@ -1,14 +1,21 @@
+import 'dart:io';
+import 'dart:typed_data';
+import '../../../core/utils/download_helper.dart'
+    if (dart.library.html) '../../../core/utils/download_helper_web.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:plataforma_pnsa_catequese/app/core/services/google_drive_service.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import '../models/catequizando_model.dart';
+import '../models/documento_anexado.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import '../../../core/utils/certificate_generator.dart';
 import 'catequizando_form.dart';
+import '../../configuracao/views/configuracao_drive_page.dart';
 
 void showHistoricoDialog(BuildContext context, Catequizando catequizando, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
   final theme = Theme.of(context);
@@ -203,12 +210,34 @@ void showHistoricoDialog(BuildContext context, Catequizando catequizando, Matric
 void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
     {required Catequizando catequizando}) {
   final theme = Theme.of(context);
-  final docs = RxList<String>.from(catequizando.documentosAnexados);
+  final driveService = Get.find<GoogleDriveService>();
 
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  if (!driveService.isReady) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Acesso aos arquivos'),
+        content: const Text('Conecte a conta sistemapnsacatequese@gmail.com nas Config. Drive para acessar os arquivos.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Fechar')),
+          FilledButton(onPressed: () { Navigator.of(ctx).pop(); Get.to(() => const ConfiguracaoDrivePage()); }, child: const Text('Config. Drive')),
+        ],
+      ),
+    );
+    return;
+  }
+
+  final docs = RxList<DocumentoAnexado>.from(catequizando.documentosAnexados);
+  final uploading = false.obs;
+  String? pastaId = catequizando.driveFolderId;
+
+  Future<void> _baixarArquivo(DocumentoAnexado doc) async {
+    try {
+      final bytes = await driveService.downloadFile(doc.driveFileId!);
+      downloadBytes(bytes, '${doc.nome}.${doc.extensao}');
+    } catch (e) {
+      Get.snackbar('Erro', 'Falha ao baixar arquivo: $e');
+    }
   }
 
   showDialog(
@@ -222,11 +251,11 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
           borderRadius: BorderRadius.circular(24),
           color: theme.colorScheme.surface,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -255,31 +284,174 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                 ],
               ),
               const SizedBox(height: 20),
-              SizedBox(
+              Obx(() {
+                if (!driveService.isReady) return const SizedBox.shrink();
+                return SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () async {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.any,
-                      allowMultiple: true,
-                    );
-                    if (result != null && result.files.isNotEmpty) {
-                      for (final f in result.files) {
-                        docs.add('${f.name} (${(f.extension ?? '').toUpperCase()}, ${_formatBytes(f.size)})');
-                      }
+                  onPressed: uploading.value
+                      ? null
+                      : () async {
+                          const maxBytes = 1048576;
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['pdf', 'doc', 'docx'],
+                            allowMultiple: true,
+                          );
+                          if (result == null || result.files.isEmpty) return;
+
+                          final extOk = {'pdf', 'doc', 'docx'};
+                          final validFiles = result.files.where((f) {
+                            final ext = (f.extension ?? '').toLowerCase();
+                            if (!extOk.contains(ext)) {
+                              Get.snackbar('Formato inválido', '${f.name} não é PDF ou Word.', snackPosition: SnackPosition.BOTTOM);
+                              return false;
+                            }
+                            if (f.size > maxBytes) {
+                              Get.snackbar('Arquivo muito grande', '${f.name} ultrapassa 1 MB.', snackPosition: SnackPosition.BOTTOM);
+                              return false;
+                            }
+                            return true;
+                          }).toList();
+                          if (validFiles.isEmpty) return;
+
+                          if (!driveService.isReady) {
+                            await Get.dialog(AlertDialog(
+                              title: const Text('Drive não configurado'),
+                              content: const Text('Conecte a conta sistemapnsacatequese@gmail.com em "Config. Drive" para acessar os arquivos.'),
+                              actions: [
+                                TextButton(onPressed: () => Get.back(), child: const Text('Fechar')),
+                                FilledButton(onPressed: () { Get.back(); Get.to(() => const ConfiguracaoDrivePage()); }, child: const Text('Config. Drive')),
+                              ],
+                            ));
+                            return;
+                          }
+
+                          uploading.value = true;
+                          try {
+                            if (pastaId == null) {
+                              try {
+                                pastaId = await driveService.createFolder(
+                                  catequizando.nome,
+                                );
+                                debugPrint('[Drive] Pasta criada: $pastaId');
+                              } catch (e) {
+                                debugPrint('[Drive] Erro ao criar pasta: $e');
+                                Get.snackbar('Erro', 'Falha ao criar pasta no Drive: $e');
+                                return;
+                              }
+                            }
+
+                            for (final f in validFiles) {
+                              try {
+                                Uint8List bytes;
+                                if (f.bytes != null) {
+                                  bytes = f.bytes!;
+                                } else if (f.path != null) {
+                                  bytes = await File(f.path!).readAsBytes();
+                                } else {
+                                  debugPrint('[Drive] bytes e path nulos para ${f.name}');
+                                  continue;
+                                }
+                                debugPrint('[Drive] Enviando: ${f.name}, tamanho: ${bytes.length}, pasta: $pastaId');
+
+                                final driveFile = await driveService.uploadFile(
+                                  bytes: bytes,
+                                  nome: f.name,
+                                  parentFolderId: pastaId,
+                                );
+
+                                debugPrint('[Drive] Sucesso: ${f.name} -> ID: ${driveFile.driveFileId}');
+                                docs.add(DocumentoAnexado(
+                                  nome: f.name,
+                                  extensao: f.extension ?? '',
+                                  tamanho: f.size,
+                                  driveFileId: driveFile.driveFileId,
+                                  webViewLink: driveFile.webViewLink,
+                                  downloadLink: driveFile.downloadLink,
+                                ));
+                                vm.updateCatequizando(Catequizando(
+                                  id: catequizando.id,
+                                  nome: catequizando.nome,
+                                  dataNascimento: catequizando.dataNascimento,
+                                  sexo: catequizando.sexo,
+                                  batizado: catequizando.batizado,
+                                  localBatismo: catequizando.localBatismo,
+                                  fezPrimeiraEucaristia: catequizando.fezPrimeiraEucaristia,
+                                  responsavel: catequizando.responsavel,
+                                  parentesco: catequizando.parentesco,
+                                  telefone: catequizando.telefone,
+                                  cep: catequizando.cep,
+                                  endereco: catequizando.endereco,
+                                  numero: catequizando.numero,
+                                  bairro: catequizando.bairro,
+                                  possuiRestricao: catequizando.possuiRestricao,
+                                  detalheRestricao: catequizando.detalheRestricao,
+                                  aceiteTermos: catequizando.aceiteTermos,
+                                  assinaturaResponsavel: catequizando.assinaturaResponsavel,
+                                  dataAssinatura: catequizando.dataAssinatura,
+                                  documentosAnexados: docs.toList(),
+                                  driveFolderId: pastaId ?? catequizando.driveFolderId,
+                                ));
+                              } catch (e) {
+                                debugPrint('[Drive] Erro ao enviar ${f.name}: $e');
+                                Get.snackbar(
+                                  'Aviso',
+                                  'Erro ao enviar ${f.name}: $e',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                );
+                              }
+                            }
+                          } finally {
+                            uploading.value = false;
+                          }
+                        },
+                  icon: Obx(() {
+                    if (uploading.value) {
+                      return const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
                     }
-                  },
-                  icon: const Icon(Icons.cloud_upload_rounded),
-                  label: const Text('Adicionar documentos'),
+                    return const Icon(Icons.cloud_upload_rounded);
+                  }),
+                  label: Obx(() => Text(uploading.value ? 'Enviando...' : 'Adicionar documentos (PDF, Word — máx. 1 MB)')),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
+                );
+              }),
               const SizedBox(height: 20),
               Expanded(
                 child: Obx(() {
+                  if (!driveService.isReady) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cloud_off_rounded, size: 48, color: theme.colorScheme.error.withOpacity(0.6)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Conecte a conta sistemapnsacatequese@gmail.com nas Config. Drive para acessar os arquivos.',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: () => Get.to(() => const ConfiguracaoDrivePage()),
+                              icon: const Icon(Icons.settings_rounded),
+                              label: const Text('Config. Drive'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                   if (docs.isEmpty) {
                     return Center(
                       child: Column(
@@ -297,6 +469,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (_, i) {
                       final doc = docs[i];
+                      final temDrive = doc.driveFileId != null && doc.driveFileId!.isNotEmpty;
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         leading: Container(
@@ -305,29 +478,30 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                             color: theme.colorScheme.primaryContainer.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.insert_drive_file_rounded, color: theme.colorScheme.primary),
+                          child: Icon(
+                            temDrive ? Icons.cloud_done_rounded : Icons.insert_drive_file_rounded,
+                            color: temDrive ? Colors.green : theme.colorScheme.primary,
+                          ),
                         ),
-                        title: Text(doc, style: const TextStyle(fontSize: 13)),
+                        title: Text(doc.descricao, style: const TextStyle(fontSize: 13)),
+                        subtitle: temDrive
+                            ? Text('No Google Drive', style: TextStyle(fontSize: 11, color: Colors.green.shade600))
+                            : null,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                iconSize: 18,
-                                icon: Icon(Icons.download_rounded, color: theme.colorScheme.primary),
-                                onPressed: () {
-                                  Get.snackbar(
-                                    'Download',
-                                    'Clique com o botão direito e salve o arquivo, ou aguarde a funcionalidade de download direto.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                  );
-                                },
-                                tooltip: 'Baixar',
+                            if (temDrive)
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  iconSize: 18,
+                                  icon: Icon(Icons.download_rounded, color: theme.colorScheme.primary),
+                                  onPressed: () => _baixarArquivo(doc),
+                                  tooltip: 'Baixar arquivo',
+                                ),
                               ),
-                            ),
                             SizedBox(
                               width: 32,
                               height: 32,
@@ -335,8 +509,47 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                                 padding: EdgeInsets.zero,
                                 iconSize: 18,
                                 icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                                onPressed: () => docs.removeAt(i),
-                                tooltip: 'Remover',
+                                onPressed: () async {
+                                  final confirm = await Get.dialog<bool>(
+                                    AlertDialog(
+                                      title: const Text('Excluir arquivo'),
+                                      content: const Text('Este arquivo será excluído permanentemente do Google Drive. Tem certeza?'),
+                                      actions: [
+                                        TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancelar')),
+                                        FilledButton(onPressed: () => Get.back(result: true), child: const Text('Excluir')),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm != true) return;
+                                  if (doc.driveFileId != null && doc.driveFileId!.isNotEmpty) {
+                                    await driveService.deleteFile(doc.driveFileId!);
+                                  }
+                                  docs.removeAt(i);
+                                  vm.updateCatequizando(Catequizando(
+                                    id: catequizando.id,
+                                    nome: catequizando.nome,
+                                    dataNascimento: catequizando.dataNascimento,
+                                    sexo: catequizando.sexo,
+                                    batizado: catequizando.batizado,
+                                    localBatismo: catequizando.localBatismo,
+                                    fezPrimeiraEucaristia: catequizando.fezPrimeiraEucaristia,
+                                    responsavel: catequizando.responsavel,
+                                    parentesco: catequizando.parentesco,
+                                    telefone: catequizando.telefone,
+                                    cep: catequizando.cep,
+                                    endereco: catequizando.endereco,
+                                    numero: catequizando.numero,
+                                    bairro: catequizando.bairro,
+                                    possuiRestricao: catequizando.possuiRestricao,
+                                    detalheRestricao: catequizando.detalheRestricao,
+                                    aceiteTermos: catequizando.aceiteTermos,
+                                    assinaturaResponsavel: catequizando.assinaturaResponsavel,
+                                    dataAssinatura: catequizando.dataAssinatura,
+                                    documentosAnexados: docs.toList(),
+                                    driveFolderId: pastaId ?? catequizando.driveFolderId,
+                                  ));
+                                },
+                                tooltip: 'Excluir do Drive',
                               ),
                             ),
                           ],
@@ -347,38 +560,6 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                 }),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    final updated = Catequizando(
-                      id: catequizando.id,
-                      nome: catequizando.nome,
-                      dataNascimento: catequizando.dataNascimento,
-                      sexo: catequizando.sexo,
-                      batizado: catequizando.batizado,
-                      localBatismo: catequizando.localBatismo,
-                      fezPrimeiraEucaristia: catequizando.fezPrimeiraEucaristia,
-                      responsavel: catequizando.responsavel,
-                      parentesco: catequizando.parentesco,
-                      telefone: catequizando.telefone,
-                      cep: catequizando.cep,
-                      endereco: catequizando.endereco,
-                      numero: catequizando.numero,
-                      bairro: catequizando.bairro,
-                      possuiRestricao: catequizando.possuiRestricao,
-                      detalheRestricao: catequizando.detalheRestricao,
-                      aceiteTermos: catequizando.aceiteTermos,
-                      assinaturaResponsavel: catequizando.assinaturaResponsavel,
-                      dataAssinatura: catequizando.dataAssinatura,
-                      documentosAnexados: docs.toList(),
-                    );
-                    vm.updateCatequizando(updated);
-                    Navigator.of(ctx).pop();
-                  },
-                  child: const Text('Salvar'),
-                ),
-              ),
             ],
           ),
         ),

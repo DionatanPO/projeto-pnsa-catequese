@@ -1,3 +1,5 @@
+import 'documento_anexado.dart';
+
 class Catequizando {
   final String id;
   final String nome;
@@ -23,7 +25,8 @@ class Catequizando {
   final bool aceiteTermos;
   final String? assinaturaResponsavel;
   final String? dataAssinatura;
-  final List<String> documentosAnexados;
+  final List<DocumentoAnexado> documentosAnexados;
+  final String? driveFolderId;
 
   static const List<String> statusOptions = [
     'Em Andamento',
@@ -55,6 +58,7 @@ class Catequizando {
     this.assinaturaResponsavel,
     this.dataAssinatura,
     this.documentosAnexados = const [],
+    this.driveFolderId,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   factory Catequizando.fromMap(String id, Map<String, dynamic> map) {
@@ -79,10 +83,11 @@ class Catequizando {
       aceiteTermos: map['aceiteTermos'] as bool? ?? false,
       assinaturaResponsavel: map['assinaturaResponsavel'] as String?,
       dataAssinatura: (map['dataAssinatura'] as dynamic)?.toDate(),
-      documentosAnexados: (map['documentosAnexados'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          [],
+documentosAnexados: (map['documentosAnexados'] as List<dynamic>?)
+          ?.map((e) => DocumentoAnexado.fromMap(e as Map<String, dynamic>))
+          .toList() ??
+      [],
+      driveFolderId: map['driveFolderId'] as String?,
     );
   }
 
@@ -107,7 +112,8 @@ class Catequizando {
       'aceiteTermos': aceiteTermos,
       'assinaturaResponsavel': assinaturaResponsavel,
       'dataAssinatura': dataAssinatura,
-      'documentosAnexados': documentosAnexados,
+      'documentosAnexados': documentosAnexados.map((d) => d.toMap()).toList(),
+      'driveFolderId': driveFolderId,
     };
   }
 

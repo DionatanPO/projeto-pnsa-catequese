@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'app/core/controllers/auth_controller.dart';
+import 'app/core/services/google_drive_service.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/routes/app_pages.dart';
 import 'firebase_options.dart';
@@ -14,6 +15,15 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  final driveService = GoogleDriveService();
+  Get.put(driveService, permanent: true);
+
+  final restored = await driveService.tryAutoSignIn();
+  if (restored) {
+    debugPrint('[Drive] Sessão restaurada: ${driveService.emailLogado}');
+  }
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
