@@ -16,13 +16,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  final driveService = GoogleDriveService();
-  Get.put(driveService, permanent: true);
-
-  final restored = await driveService.tryAutoSignIn();
-  if (restored) {
-    debugPrint('[Drive] Sessão restaurada: ${driveService.emailLogado}');
-  }
+  final driveService = Get.put(GoogleDriveService(), permanent: true);
+  await driveService.tryAutoSignIn();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../viewmodels/home_viewmodel.dart';
-import '../../../core/controllers/auth_controller.dart';
 import '../../catequista/views/catequista_page.dart';
 import '../../turma/views/turma_page.dart';
 import '../../encontros/views/encontro_page.dart';
@@ -13,6 +12,7 @@ import '../../coordenadores/views/coordenador_page.dart';
 import '../../profile/views/profile_page.dart';
 import '../../sobre/views/sobre_page.dart';
 import '../../configuracao/views/configuracao_drive_page.dart';
+import 'app_navigation.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -37,60 +37,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-const _menuLabels = ['Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre', 'Config. Drive'];
 
-const _destinations = [
-  NavigationRailDestination(
-    icon: Icon(Icons.home_outlined),
-    selectedIcon: Icon(Icons.home_rounded),
-    label: Text('Início'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.people_outline),
-    selectedIcon: Icon(Icons.people_rounded),
-    label: Text('Catequistas'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.group_outlined),
-    selectedIcon: Icon(Icons.group_rounded),
-    label: Text('Turmas'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.school_outlined),
-    selectedIcon: Icon(Icons.school_rounded),
-    label: Text('Catequizandos'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.event_outlined),
-    selectedIcon: Icon(Icons.event_rounded),
-    label: Text('Encontros'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.bar_chart_outlined),
-    selectedIcon: Icon(Icons.bar_chart_rounded),
-    label: Text('Relatórios'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.admin_panel_settings_outlined),
-    selectedIcon: Icon(Icons.admin_panel_settings_rounded),
-    label: Text('Coordenadores'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.person_outline),
-    selectedIcon: Icon(Icons.person_rounded),
-    label: Text('Perfil'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.info_outline_rounded),
-    selectedIcon: Icon(Icons.info_rounded),
-    label: Text('Sobre'),
-  ),
-  NavigationRailDestination(
-    icon: Icon(Icons.cloud_outlined),
-    selectedIcon: Icon(Icons.cloud_rounded),
-    label: Text('Config. Drive'),
-  ),
-];
 
 Widget? _buildFab(BuildContext context, HomeViewModel vm) {
   switch (vm.selectedIndex) {
@@ -149,180 +96,13 @@ AppBar _buildAppBar(HomeViewModel vm, ThemeData theme, {bool center = false}) {
         children: [
           Image.asset('assets/images/app_icon.png', width: 22, height: 22),
           const SizedBox(width: 10),
-          Text(_menuLabels[vm.selectedIndex]),
+          Text(menuLabels[vm.selectedIndex]),
         ],
       ),
     ),
     centerTitle: center,
   );
 }
-
-class _SideMenu extends StatelessWidget {
-  final HomeViewModel vm;
-  final ThemeData theme;
-  final bool extended;
-
-  const _SideMenu({
-    required this.vm,
-    required this.theme,
-    this.extended = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<HomeViewModel>(
-      id: 'selectedIndex',
-      builder: (_) {
-        final visible = vm.visibleIndices;
-        final visualSelected = vm.mapActualToVisual(vm.selectedIndex);
-        return Theme(
-          data: theme.copyWith(
-            colorScheme: theme.colorScheme.copyWith(
-              onSurface: theme.colorScheme.onSurface,
-              onSurfaceVariant: theme.colorScheme.onSurfaceVariant,
-            ),
-            navigationRailTheme: NavigationRailThemeData(
-              backgroundColor: theme.colorScheme.surface,
-              indicatorColor: theme.colorScheme.primaryContainer,
-              indicatorShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              selectedIconTheme: IconThemeData(color: theme.colorScheme.primary, size: 24),
-              unselectedIconTheme: IconThemeData(color: theme.colorScheme.onSurfaceVariant, size: 24),
-            ),
-          ),
-          child: NavigationRail(
-            selectedIndex: visualSelected,
-            onDestinationSelected: (i) => vm.selectedIndex = vm.mapVisualToActual(i),
-            labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
-            extended: extended,
-            minExtendedWidth: 240,
-            groupAlignment: -0.85,
-            leading: _SideMenuHeader(extended: extended, theme: theme),
-            destinations: visible.map((i) => _destinations[i]).toList(),
-            trailing: _SideMenuFooter(extended: extended, theme: theme),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SideMenuHeader extends StatelessWidget {
-  final bool extended;
-  final ThemeData theme;
-
-  const _SideMenuHeader({required this.extended, required this.theme});
-
-  String _initials(String nome) {
-    if (nome.isEmpty) return '?';
-    return nome.split(' ').map((e) => e[0]).take(2).join().toUpperCase();
-  }
-
-  String _roleLabel(String role) {
-    switch (role) {
-      case 'administrador': return 'Administrador';
-      case 'coordenador': return 'Coordenador';
-      default: return 'Catequista';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = Get.find<AuthController>().firestoreUser.value;
-    final nome = user?.nome ?? '';
-    final email = user?.email ?? '';
-    final role = user?.role ?? '';
-
-    return Padding(
-      padding: EdgeInsets.only(top: extended ? 24 : 12, bottom: extended ? 20 : 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-            ),
-            child: CircleAvatar(
-              radius: extended ? 32 : 20,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Text(
-                _initials(nome),
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: extended ? 24 : 14,
-                ),
-              ),
-            ),
-          ),
-          if (extended) ...[
-            const SizedBox(height: 16),
-            Text(
-              nome,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              role.toUpperCase(),
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-          SizedBox(height: extended ? 24 : 16),
-        ],
-      ),
-    );
-  }
-}
-
-class _SideMenuFooter extends StatelessWidget {
-  final bool extended;
-  final ThemeData theme;
-
-  const _SideMenuFooter({required this.extended, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: extended ? 16 : 0, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: extended ? 208 : 56, // Constraints for the ListTile
-            child: ListTile(
-              onTap: () => Get.find<AuthController>().logout(),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              leading: Icon(Icons.logout_rounded, size: 22, color: theme.colorScheme.error),
-              title: extended
-                  ? Text('Sair', style: TextStyle(
-                      color: theme.colorScheme.error,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ))
-                  : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
 
 class _ExtraWideLayout extends StatelessWidget {
   final HomeViewModel vm;
@@ -337,7 +117,7 @@ class _ExtraWideLayout extends StatelessWidget {
       builder: (_) => Scaffold(
         body: Row(
           children: [
-            _SideMenu(vm: vm, theme: theme, extended: true),
+            AppSideMenu(vm: vm, theme: theme, extended: true),
             const VerticalDivider(width: 1),
             Expanded(
               child: _buildBody(vm, theme),
@@ -363,7 +143,7 @@ class _WideLayout extends StatelessWidget {
       builder: (_) => Scaffold(
         body: Row(
           children: [
-            _SideMenu(vm: vm, theme: theme),
+            AppSideMenu(vm: vm, theme: theme),
             const VerticalDivider(width: 1),
             Expanded(
               child: _buildBody(vm, theme),
@@ -388,252 +168,11 @@ class _NarrowLayout extends StatelessWidget {
       id: 'selectedIndex',
       builder: (_) => Scaffold(
         appBar: _buildAppBar(vm, theme, center: true),
-        drawer: _AppDrawer(vm: vm, theme: theme),
+        drawer: AppDrawer(vm: vm, theme: theme),
         body: _buildBody(vm, theme),
         floatingActionButton: _buildFab(context, vm),
       ),
     );
-  }
-}
-
-class _AppDrawer extends StatelessWidget {
-  final HomeViewModel vm;
-  final ThemeData theme;
-
-  const _AppDrawer({required this.vm, required this.theme});
-
-  String _initials(String nome) {
-    if (nome.isEmpty) return '?';
-    return nome.split(' ').map((e) => e[0]).take(2).join().toUpperCase();
-  }
-
-  String _roleLabel(String role) {
-    switch (role) {
-      case 'administrador': return 'Administrador';
-      case 'coordenador': return 'Coordenador';
-      default: return 'Catequista';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = Get.find<AuthController>().firestoreUser.value;
-    final nome = user?.nome ?? '';
-    final email = user?.email ?? '';
-    final role = user?.role ?? '';
-
-    return Drawer(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withOpacity(0.88),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: theme.colorScheme.onPrimary.withOpacity(0.18),
-                      child: Text(
-                        _initials(nome),
-                        style: TextStyle(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 22,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      nome,
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimary.withOpacity(0.65),
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onPrimary.withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _roleLabel(role),
-                        style: TextStyle(
-                          color: theme.colorScheme.onPrimary.withOpacity(0.85),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                for (final i in vm.visibleIndices)
-                  _DrawerItem(
-                    icon: i == vm.selectedIndex
-                        ? (_getSelectedIcon(i) ?? _menuIcons[i])
-                        : _menuIcons[i],
-                    label: _menuLabels[i],
-                    selected: vm.selectedIndex == i,
-                    theme: theme,
-                    onTap: () {
-                      vm.selectedIndex = i;
-                      Navigator.pop(context);
-                    },
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-          ),
-          SafeArea(
-            top: false,
-            child: _DrawerItem(
-              icon: Icons.logout_rounded,
-              label: 'Sair',
-              theme: theme,
-              isDestructive: true,
-              onTap: () {
-                Navigator.pop(context);
-                Get.find<AuthController>().logout();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final bool isDestructive;
-  final ThemeData theme;
-  final VoidCallback onTap;
-
-  const _DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.theme,
-    required this.onTap,
-    this.selected = false,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bgColor = isDestructive
-        ? Colors.transparent
-        : selected
-            ? theme.colorScheme.primaryContainer.withOpacity(0.6)
-            : Colors.transparent;
-    final iconColor = isDestructive
-        ? theme.colorScheme.error
-        : selected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurfaceVariant;
-    final textColor = isDestructive
-        ? theme.colorScheme.error
-        : selected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface;
-    final fontWeight = selected ? FontWeight.w600 : FontWeight.w500;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListTile(
-          leading: Icon(icon, color: iconColor, size: 22),
-          title: Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: fontWeight,
-              fontSize: 14,
-            ),
-          ),
-          dense: true,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          onTap: onTap,
-        ),
-      ),
-    );
-  }
-}
-
-const _menuIcons = [
-  Icons.home_rounded,
-  Icons.menu_book_rounded,
-  Icons.group_rounded,
-  Icons.school_rounded,
-  Icons.event_rounded,
-  Icons.bar_chart_rounded,
-  Icons.admin_panel_settings_rounded,
-  Icons.person_rounded,
-  Icons.info_outline_rounded,
-  Icons.cloud_rounded,
-];
-
-IconData? _getSelectedIcon(int index) {
-  switch (index) {
-    case 0: return Icons.home_rounded;
-    case 1: return Icons.menu_book_rounded;
-    case 2: return Icons.group_rounded;
-    case 3: return Icons.school_rounded;
-    case 4: return Icons.event_rounded;
-    case 5: return Icons.bar_chart_rounded;
-    case 6: return Icons.admin_panel_settings_rounded;
-    case 7: return Icons.person_rounded;
-    case 8: return Icons.info_rounded;
-    case 9: return Icons.cloud_rounded;
-    default: return null;
   }
 }
 

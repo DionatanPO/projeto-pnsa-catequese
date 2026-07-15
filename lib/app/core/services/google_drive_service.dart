@@ -5,21 +5,25 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/googleapis_auth.dart' as auth;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'desktop_auth_helper.dart'
     if (dart.library.html) 'desktop_auth_helper_stub.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'drive_config.dart';
 
 class GoogleDriveService {
-  static const String _clientIdStr = DriveConfig.clientId;
+  auth.ClientId get _clientId => kIsWeb
+      ? auth.ClientId(DriveConfig.webClientId)
+      : auth.ClientId(DriveConfig.desktopClientId, DriveConfig.desktopClientSecret);
   static const String _driveCredsKey = DriveConfig.credsStorageKey;
+  static const String _driveSkipAutoSignInKey = DriveConfig.skipAutoSignInKey;
   static const List<String> _scopes = DriveConfig.scopes;
-
-  GoogleSignIn? _googleSignIn;
-  GoogleSignInAccount? _webAccount;
 
   auth.AutoRefreshingAuthClient? _desktopClient;
   http.Client? _desktopBaseClient;
+
+  GoogleSignIn? _googleSignIn;
+  http.Client? _webHttpClient;
 
   drive.DriveApi? _driveApi;
   String? _email;
@@ -28,6 +32,10 @@ class GoogleDriveService {
   String? get emailLogado => _email;
 
   Future<bool> tryAutoSignIn() async {
+    const storage = FlutterSecureStorage();
+    final skip = await storage.read(key: _driveSkipAutoSignInKey);
+    if (skip == 'true') return false;
+
     if (kIsWeb) {
       return _tryAutoSignInWeb();
     }
@@ -52,40 +60,128 @@ class GoogleDriveService {
 
   Future<bool> _tryAutoSignInWeb() async {
     try {
-      _webAccount = await _getGoogleSignIn().signInSilently();
-      if (_webAccount != null) {
-        final ok = await _getGoogleSignIn().requestScopes(_scopes);
-        if (!ok) return false;
-        _driveApi = drive.DriveApi(_GoogleAuthClient(_webAccount!));
-        _email = _webAccount!.email;
-        return true;
+      const storage = FlutterSecureStorage();
+      final saved = await storage.read(key: _driveCredsKey);
+      debugPrint('[Drive] F5 Restauração - Tem dados salvos? ${saved != null}');
+      
+      if (saved != null) {
+        final creds = auth.AccessCredentials.fromJson(
+          jsonDecode(saved) as Map<String, dynamic>,
+        );
+        
+        debugPrint('[Drive] F5 Restauração - Expirou? ${creds.accessToken.hasExpired}');
+        if (!creds.accessToken.hasExpired) {
+          _webHttpClient = auth.authenticatedClient(http.Client(), creds);
+          _driveApi = drive.DriveApi(_webHttpClient!);
+          
+          final savedEmail = await storage.read(key: 'google_drive_email');
+          _email = savedEmail ?? DriveConfig.allowedEmail;
+          
+          debugPrint('[Drive] F5 Restauração - Sucesso!');
+          return true;
+        } else {
+          debugPrint('[Drive] F5 Restauração - Token expirado!');
+          await storage.delete(key: _driveCredsKey);
+          await storage.delete(key: 'google_drive_email');
+        }
       }
+
+      _googleSignIn ??= GoogleSignIn(
+        clientId: DriveConfig.webClientId,
+        scopes: _scopes,
+      );
+      final account = await _googleSignIn!.signInSilently();
+      debugPrint('[Drive] signInSilently - Tem conta? ${account?.email}');
+
+      if (account == null) return false;
+
+      final httpClient = await _googleSignIn!.authenticatedClient();
+      if (httpClient == null) {
+        debugPrint('[Drive] authenticatedClient falhou.');
+        return false;
+      }
+
+      _webHttpClient = httpClient;
+      _driveApi = drive.DriveApi(httpClient);
+      _email = account.email;
+      
+      // Save the new token if silent login somehow retrieved it
+      final authData = await account.authentication;
+      if (authData.accessToken != null) {
+        final token = auth.AccessToken(
+          'Bearer',
+          authData.accessToken!,
+          DateTime.now().toUtc().add(const Duration(hours: 1)),
+        );
+        final credentials = auth.AccessCredentials(token, null, _scopes);
+        await storage.write(key: _driveCredsKey, value: jsonEncode(credentials.toJson()));
+        await storage.write(key: 'google_drive_email', value: _email);
+        debugPrint('[Drive] Token de Acesso salvo no Storage.');
+      }
+
+      return true;
     } catch (e) {
       debugPrint('[Drive] Web auto sign-in falhou: $e');
+      _webHttpClient?.close();
+      _webHttpClient = null;
+      return false;
     }
-    return false;
   }
 
   Future<void> _signInWeb() async {
-    _webAccount = await _getGoogleSignIn().signIn();
-    if (_webAccount == null) throw Exception('Login do Google cancelado');
-    _driveApi = drive.DriveApi(_GoogleAuthClient(_webAccount!));
-    _email = _webAccount!.email;
+    _googleSignIn ??= GoogleSignIn(
+      clientId: DriveConfig.webClientId,
+      scopes: _scopes,
+    );
+    final account = await _googleSignIn!.signIn();
+    if (account == null) throw Exception('Login cancelado pelo usuário');
+
+    if (account.email != DriveConfig.allowedEmail) {
+      await _googleSignIn!.signOut();
+      throw Exception('Conta inválida! O sistema só aceita ${DriveConfig.allowedEmail}');
+    }
+
+    // GIS na web precisa do requestScopes para liberar o access token real
+    final hasAccess = await _googleSignIn!.requestScopes(_scopes);
+    if (!hasAccess) throw Exception('Permissão do Google Drive foi negada.');
+
+    final httpClient = await _googleSignIn!.authenticatedClient();
+    if (httpClient == null) throw Exception('Falha ao obter cliente autenticado');
+
+    _webHttpClient = httpClient;
+    _driveApi = drive.DriveApi(httpClient);
+    _email = account.email;
+
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: _driveSkipAutoSignInKey);
+
+    final authData = await account.authentication;
+    if (authData.accessToken != null) {
+      final token = auth.AccessToken(
+        'Bearer',
+        authData.accessToken!,
+        DateTime.now().toUtc().add(const Duration(hours: 1)),
+      );
+      final credentials = auth.AccessCredentials(token, null, _scopes);
+      await storage.write(
+        key: _driveCredsKey,
+        value: jsonEncode(credentials.toJson()),
+      );
+      await storage.write(key: 'google_drive_email', value: _email);
+    }
   }
 
   Future<void> _signOutWeb() async {
-    await _getGoogleSignIn().signOut();
-    _webAccount = null;
+    await _googleSignIn?.signOut();
+    _googleSignIn?.disconnect().catchError((_) {});
+    _webHttpClient?.close();
+    _webHttpClient = null;
     _driveApi = null;
     _email = null;
-  }
-
-  GoogleSignIn _getGoogleSignIn() {
-    _googleSignIn ??= GoogleSignIn(
-      clientId: _clientIdStr,
-      scopes: _scopes,
-    );
-    return _googleSignIn!;
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: _driveCredsKey);
+    await storage.delete(key: 'google_drive_email');
+    await storage.write(key: _driveSkipAutoSignInKey, value: 'true');
   }
 
   Future<bool> _tryAutoSignInDesktop() async {
@@ -97,14 +193,13 @@ class GoogleDriveService {
       final creds = auth.AccessCredentials.fromJson(
         jsonDecode(saved) as Map<String, dynamic>,
       );
-      final clientId = auth.ClientId(_clientIdStr);
       _desktopBaseClient = http.Client();
 
       auth.AccessCredentials freshCreds;
       if (creds.accessToken.hasExpired) {
         try {
           freshCreds = await auth.refreshCredentials(
-            clientId,
+            _clientId,
             creds,
             _desktopBaseClient!,
           );
@@ -123,7 +218,7 @@ class GoogleDriveService {
       }
 
       _desktopClient = auth.autoRefreshingClient(
-        clientId,
+        _clientId,
         freshCreds,
         _desktopBaseClient!,
       );
@@ -142,15 +237,21 @@ class GoogleDriveService {
   }
 
   Future<void> _signInDesktop() async {
-    final clientId = auth.ClientId(_clientIdStr);
+    _desktopClient = await doClientViaUserConsent(_clientId, _scopes);
 
-    _desktopClient = await doClientViaUserConsent(clientId, _scopes);
+    final emailDetectado = _extractEmail(_desktopClient!.credentials);
+    if (emailDetectado != 'Conta Google' && emailDetectado != DriveConfig.allowedEmail) {
+      _desktopClient?.close();
+      _desktopClient = null;
+      throw Exception('Conta inválida! O sistema só aceita ${DriveConfig.allowedEmail}');
+    }
 
     const storage = FlutterSecureStorage();
     await storage.write(
       key: _driveCredsKey,
       value: jsonEncode(_desktopClient!.credentials.toJson()),
     );
+    await storage.delete(key: _driveSkipAutoSignInKey);
 
     _driveApi = drive.DriveApi(_desktopClient!);
     _email = _extractEmail(_desktopClient!.credentials);
@@ -165,6 +266,7 @@ class GoogleDriveService {
     _email = null;
     const storage = FlutterSecureStorage();
     await storage.delete(key: _driveCredsKey);
+    await storage.write(key: _driveSkipAutoSignInKey, value: 'true');
   }
 
   String _extractEmail(auth.AccessCredentials creds) {
@@ -187,6 +289,25 @@ class GoogleDriveService {
 
   Future<String> createFolder(String nomePasta, {String? parentFolderId}) async {
     if (_driveApi == null) throw Exception('Google Drive não conectado');
+
+    final query = StringBuffer()
+      ..write("name = '${nomePasta.replaceAll("'", "\\'")}'")
+      ..write(" and mimeType = 'application/vnd.google-apps.folder'")
+      ..write(' and trashed = false');
+    if (parentFolderId != null) {
+      query.write(" and '$parentFolderId' in parents");
+    }
+
+    final existing = await _driveApi!.files.list(
+      q: query.toString(),
+      $fields: 'files(id, name)',
+      pageSize: 1,
+    );
+
+    if (existing.files != null && existing.files!.isNotEmpty) {
+      debugPrint('[Drive] Pasta já existe: ${existing.files!.first.id}');
+      return existing.files!.first.id!;
+    }
 
     final folder = drive.File()
       ..name = nomePasta
@@ -289,21 +410,8 @@ class GoogleDriveService {
   void dispose() {
     _desktopClient?.close();
     _desktopBaseClient?.close();
+    _webHttpClient?.close();
     _driveApi = null;
-  }
-}
-
-class _GoogleAuthClient extends http.BaseClient {
-  final GoogleSignInAccount _account;
-  final http.Client _inner = http.Client();
-
-  _GoogleAuthClient(this._account);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final auth = await _account.authentication;
-    request.headers['Authorization'] = 'Bearer ${auth.accessToken}';
-    return _inner.send(request);
   }
 }
 

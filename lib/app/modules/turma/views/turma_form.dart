@@ -37,11 +37,15 @@ class _TurmaFormState extends State<TurmaForm> {
   bool get _isEditing => widget.turma != null;
 
   List<String> get _catequistas {
-    final catequistaVm = Get.find<CatequistaViewModel>();
-    return catequistaVm.data.value.catequistas
-        .where((c) => c.status == 'Ativo')
-        .map((c) => c.nome)
-        .toList()..sort();
+    try {
+      final catequistaVm = Get.find<CatequistaViewModel>();
+      return catequistaVm.data.value.catequistas
+          .where((c) => c.status == 'Ativo')
+          .map((c) => c.nome)
+          .toList()..sort();
+    } catch (_) {
+      return [];
+    }
   }
 
   @override
@@ -94,7 +98,11 @@ class _TurmaFormState extends State<TurmaForm> {
     if (error != null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(
+            content: Text(error), 
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
       return;
@@ -103,144 +111,283 @@ class _TurmaFormState extends State<TurmaForm> {
     if (context.mounted) Navigator.of(context).pop();
   }
 
+  // Helper para padronizar o design dos inputs
+  InputDecoration _buildInputDecoration({
+    required String label,
+    String? hint,
+    required IconData prefixIcon,
+    required ColorScheme colors,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(prefixIcon, size: 20),
+      filled: true,
+      fillColor: colors.surfaceContainerLowest,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.outlineVariant),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.outlineVariant.withOpacity(0.4)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.error, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Container(
+      constraints: BoxConstraints(maxWidth: widget.width),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        color: colors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: colors.outlineVariant.withOpacity(0.3)),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Form(
-        key: _formKey,
-        child: SizedBox(
-          width: widget.width,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withOpacity(0.85),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Cabeçalho refinado
+          Container(
+            padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              color: colors.primaryContainer.withOpacity(0.3),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _isEditing ? Icons.edit_note_rounded : Icons.group_add_rounded,
+                    color: colors.onPrimary,
+                    size: 24,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onPrimary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEditing ? 'Editar Turma' : 'Nova Turma',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurface,
+                        ),
                       ),
-                      child: Icon(
-                        _isEditing ? Icons.edit_rounded : Icons.group_add_rounded,
-                        color: theme.colorScheme.onPrimary,
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEditing ? 'Atualize os dados desta turma' : 'Preencha as informações da nova turma',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      _isEditing ? 'Editar Turma' : 'Nova Turma',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(32),
+              ],
+            ),
+          ),
+          // Corpo do Formulário com Rolagem Segura
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(32, 28, 32, 16),
+              child: Form(
+                key: _formKey,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Nome da Turma
                     TextFormField(
                       controller: _nomeCtrl,
-                      decoration: const InputDecoration(labelText: 'Nome da turma', hintText: 'Ex: Turma A'),
+                      decoration: _buildInputDecoration(
+                        label: 'Nome da turma',
+                        hint: 'Ex: Turma A',
+                        prefixIcon: Icons.class_outlined,
+                        colors: colors,
+                      ),
                       validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                     ),
                     const SizedBox(height: 20),
+
+                    // Ano Letivo e Etapa em linha
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: _anoCtrl,
-                            decoration: const InputDecoration(labelText: 'Ano Letivo', hintText: 'Ex: 2026'),
+                            decoration: _buildInputDecoration(
+                              label: 'Ano Letivo',
+                              hint: 'Ex: 2026',
+                              prefixIcon: Icons.calendar_today_rounded,
+                              colors: colors,
+                            ),
                             keyboardType: TextInputType.number,
-                            validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+                              if (int.tryParse(v.trim()) == null) return 'Digite um ano válido';
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
                             controller: _etapaCtrl,
-                            decoration: const InputDecoration(labelText: 'Etapa', hintText: 'Ex: Eucaristia'),
+                            decoration: _buildInputDecoration(
+                              label: 'Etapa',
+                              hint: 'Ex: Eucaristia',
+                              prefixIcon: Icons.auto_stories_outlined,
+                              colors: colors,
+                            ),
                             validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
+
+                    // Seleção do Catequista
                     DropdownButtonFormField<String>(
                       value: _selectedCatequista,
-                      decoration: const InputDecoration(labelText: 'Catequista', hintText: 'Selecione o catequista'),
+                      isExpanded: true,
+                      decoration: _buildInputDecoration(
+                        label: 'Catequista',
+                        hint: 'Selecione o catequista',
+                        prefixIcon: Icons.assignment_ind_outlined,
+                        colors: colors,
+                      ),
                       items: _catequistas.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                       onChanged: (v) => setState(() => _selectedCatequista = v),
                       validator: (v) => v == null ? 'Selecione um catequista' : null,
                     ),
                     const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _diaHorarioCtrl,
-                      decoration: const InputDecoration(labelText: 'Dia e Horário', hintText: 'Ex: Sábados, 08:00'),
+
+                    // Dia/Horário e Local/Sala em linha
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _diaHorarioCtrl,
+                            decoration: _buildInputDecoration(
+                              label: 'Dia e Horário',
+                              hint: 'Ex: Sábados, 08:00',
+                              prefixIcon: Icons.schedule_outlined,
+                              colors: colors,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _localSalaCtrl,
+                            decoration: _buildInputDecoration(
+                              label: 'Local/Sala',
+                              hint: 'Ex: Sala 01',
+                              prefixIcon: Icons.room_outlined,
+                              colors: colors,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _localSalaCtrl,
-                      decoration: const InputDecoration(labelText: 'Local/Sala', hintText: 'Ex: Sala 01'),
-                    ),
-                    const SizedBox(height: 20),
+
+                    // Status da Turma
                     DropdownButtonFormField<String>(
                       value: _selectedStatus,
-                      decoration: const InputDecoration(labelText: 'Status'),
+                      decoration: _buildInputDecoration(
+                        label: 'Status',
+                        prefixIcon: Icons.info_outline_rounded,
+                        colors: colors,
+                      ),
                       items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                       onChanged: (v) => setState(() => _selectedStatus = v!),
                     ),
                     const SizedBox(height: 20),
+
+                    // Observações adicionais
                     TextFormField(
                       controller: _observacoesCtrl,
-                      decoration: const InputDecoration(labelText: 'Observações'),
+                      decoration: _buildInputDecoration(
+                        label: 'Observações',
+                        prefixIcon: Icons.sticky_note_2_outlined,
+                        colors: colors,
+                      ),
                       maxLines: 3,
                     ),
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancelar'),
-                        ),
-                        const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: _save,
-                          child: Text(_isEditing ? 'Salvar Alterações' : 'Salvar'),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          // Botões de Ação do Rodapé
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 16, 32, 28),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: _save,
+                  icon: const Icon(Icons.save_rounded, size: 18),
+                  label: Text(_isEditing ? 'Salvar Alterações' : 'Criar Turma'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class SobrePage extends StatelessWidget {
+class SobrePage extends StatefulWidget {
   const SobrePage({super.key});
 
   static const _version = '1.0.0+1';
@@ -8,66 +8,97 @@ class SobrePage extends StatelessWidget {
   static const _city = 'Iporá - GO';
 
   @override
+  State<SobrePage> createState() => _SobrePageState();
+}
+
+class _SobrePageState extends State<SobrePage> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800), // Um pouco mais lento para elegância
+    );
+    
+    // Curva easeOutExpo é mais suave e "premium" que easeOutCubic
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutExpo);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutExpo));
+    
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 850;
-    final hPad = width < 600 ? 16.0 : 32.0;
+    final hPad = width < 600 ? 20.0 : 40.0; // Aumentei um pouco o padding lateral
 
-    // Seção: Sobre o Sistema
     final sectionAbout = _Section(
       theme: theme,
       title: 'Sobre o Sistema',
       subtitle: 'Informações gerais',
+      icon: Icons.info_outline_rounded,
       children: [
-        _InfoRow(theme: theme, icon: Icons.church_rounded, label: 'Paróquia', value: _parish),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
-        _InfoRow(theme: theme, icon: Icons.location_on_rounded, label: 'Cidade', value: _city),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
-        _InfoRow(theme: theme, icon: Icons.tag_rounded, label: 'Versão', value: _version),
+        _InfoRow(theme: theme, icon: Icons.church_rounded, label: 'Paróquia', value: SobrePage._parish),
+        const _RowDivider(),
+        _InfoRow(theme: theme, icon: Icons.location_on_rounded, label: 'Cidade', value: SobrePage._city),
+        const _RowDivider(),
+        _InfoRow(theme: theme, icon: Icons.tag_rounded, label: 'Versão', value: SobrePage._version),
       ],
     );
 
-    // Seção: Tecnologia
     final sectionTech = _Section(
       theme: theme,
       title: 'Tecnologia',
       subtitle: 'Stack utilizada',
+      icon: Icons.memory_rounded,
       children: [
         _TechTile(theme: theme, icon: Icons.flutter_dash_rounded, label: 'Flutter', value: 'UI multiplataforma'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
-        _TechTile(theme: theme, icon: Icons.electric_bolt_rounded, label: 'GetX', value: 'Gerenciamento de estado'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
+        _TechTile(theme: theme, icon: Icons.bolt_rounded, label: 'GetX', value: 'Gerenciamento de estado'),
+        const _RowDivider(),
         _TechTile(theme: theme, icon: Icons.design_services_rounded, label: 'Material 3', value: 'Design System'),
       ],
     );
 
-    // Seção: Plataformas
     final sectionPlatforms = _Section(
       theme: theme,
       title: 'Plataformas',
       subtitle: 'Dispositivos suportados',
+      icon: Icons.devices_rounded,
       children: [
         _PlatformTile(theme: theme, icon: Icons.web_rounded, label: 'Web'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
         _PlatformTile(theme: theme, icon: Icons.phone_android_rounded, label: 'Android'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
         _PlatformTile(theme: theme, icon: Icons.desktop_windows_rounded, label: 'Windows'),
       ],
     );
 
-    // Seção: Funcionalidades
     final sectionFeatures = _Section(
       theme: theme,
       title: 'Funcionalidades',
       subtitle: 'Módulos do sistema',
+      icon: Icons.dashboard_customize_rounded,
       children: [
         _FeatureChip(theme: theme, icon: Icons.people_rounded, label: 'Cadastro de Catequistas'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
         _FeatureChip(theme: theme, icon: Icons.group_rounded, label: 'Gestão de Turmas'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
         _FeatureChip(theme: theme, icon: Icons.school_rounded, label: 'Cadastro de Catequizandos'),
-        Divider(height: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        const _RowDivider(),
         _FeatureChip(theme: theme, icon: Icons.event_rounded, label: 'Registro de Encontros'),
       ],
     );
@@ -77,85 +108,58 @@ class SobrePage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
+            constraints: const BoxConstraints(maxWidth: 1080), // Ligeiramente mais largo para desktop
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _HeaderCard(theme: theme),
-                  const SizedBox(height: 32),
-                  if (isDesktop)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              sectionAbout,
-                              const SizedBox(height: 24),
-                              sectionPlatforms,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              sectionTech,
-                              const SizedBox(height: 24),
-                              sectionFeatures,
-                            ],
-                          ),
-                        ),
+              physics: const BouncingScrollPhysics(), // Rolagem mais suave no mobile
+              padding: EdgeInsets.fromLTRB(hPad, 32, hPad, 48),
+              child: FadeTransition(
+                opacity: _fade,
+                child: SlideTransition(
+                  position: _slide,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _HeaderCard(),
+                      const SizedBox(height: 40),
+                      if (isDesktop)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  sectionAbout,
+                                  const SizedBox(height: 28),
+                                  sectionPlatforms,
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  sectionTech,
+                                  const SizedBox(height: 28),
+                                  sectionFeatures,
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        sectionAbout,
+                        const SizedBox(height: 28),
+                        sectionTech,
+                        const SizedBox(height: 28),
+                        sectionPlatforms,
+                        const SizedBox(height: 28),
+                        sectionFeatures,
                       ],
-                    )
-                  else ...[
-                    sectionAbout,
-                    const SizedBox(height: 24),
-                    sectionTech,
-                    const SizedBox(height: 24),
-                    sectionPlatforms,
-                    const SizedBox(height: 24),
-                    sectionFeatures,
-                  ],
-                  const SizedBox(height: 48),
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.05),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.church_rounded,
-                            size: 24,
-                            color: theme.colorScheme.primary.withOpacity(0.6),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Desenvolvido para a glória de Deus e o bem da catequese',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'PNSA Catequese © 2026',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                      const SizedBox(height: 56),
+                      const _Footer(),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -165,136 +169,194 @@ class SobrePage extends StatelessWidget {
   }
 }
 
+/// Cabeçalho com gradiente refinado e efeito de borda sutil (Glassmorphism hint)
 class _HeaderCard extends StatelessWidget {
-  final ThemeData theme;
-  const _HeaderCard({required this.theme});
+  const _HeaderCard();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isSmall = MediaQuery.of(context).size.width < 450;
+    final primary = theme.colorScheme.primary;
+
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primaryContainer.withOpacity(0.25),
-            theme.colorScheme.surfaceContainerLow,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: primary.withOpacity(0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: isSmall ? 24 : 32,
-          horizontal: isSmall ? 16 : 24,
-        ),
-        child: Flex(
-          direction: isSmall ? Axis.vertical : Axis.horizontal,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primaryContainer.withOpacity(0.4),
+                    theme.colorScheme.surface,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Glow decorativo mais suave
+          Positioned(
+            right: -40,
+            top: -40,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withOpacity(0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                gradient: RadialGradient(
+                  colors: [primary.withOpacity(0.15), primary.withOpacity(0.0)],
+                ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(40),
-                child: Image.asset(
-                  'assets/images/logo.jpg',
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 64,
-                      height: 64,
-                      color: theme.colorScheme.primaryContainer,
-                      child: Icon(
-                        Icons.church_rounded,
-                        size: 32,
-                        color: theme.colorScheme.primary,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: isSmall ? 32 : 40,
+              horizontal: isSmall ? 24 : 32,
+            ),
+            child: Flex(
+              direction: isSmall ? Axis.vertical : Axis.horizontal,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [primary, theme.colorScheme.tertiary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                    );
-                  },
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: Container(
+                      color: theme.colorScheme.surface,
+                      child: Image.asset(
+                        'assets/images/logo.jpg',
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 72,
+                            height: 72,
+                            color: theme.colorScheme.primaryContainer,
+                            child: Icon(Icons.church_rounded, size: 36, color: primary),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            SizedBox(width: isSmall ? 0 : 20, height: isSmall ? 16 : 0),
-            Expanded(
-              flex: isSmall ? 0 : 1,
-              child: Column(
-                crossAxisAlignment: isSmall ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PNSA Catequese',
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                SizedBox(width: isSmall ? 0 : 24, height: isSmall ? 20 : 0),
+                Expanded(
+                  flex: isSmall ? 0 : 1,
+                  child: Column(
+                    crossAxisAlignment: isSmall ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [primary, theme.colorScheme.tertiary],
+                        ).createShader(bounds),
+                        child: Text(
+                          'PNSA Catequese',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sistema de Gestão para Catequese',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.1,
+                        ),
+                        textAlign: isSmall ? TextAlign.center : TextAlign.start,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: isSmall ? 0 : 24, height: isSmall ? 24 : 0),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'v${SobrePage._version}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Sistema de Gestão para Catequese',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: isSmall ? TextAlign.center : TextAlign.start,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: isSmall ? 0 : 16, height: isSmall ? 16 : 0),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Text(
-                'v${SobrePage._version}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Section extends StatelessWidget {
+/// Seção com efeito de hover sutil para desktop
+class _Section extends StatefulWidget {
   final ThemeData theme;
   final String title;
   final String subtitle;
+  final IconData icon;
   final List<Widget> children;
 
   const _Section({
     required this.theme,
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.children,
   });
+
+  @override
+  State<_Section> createState() => _SectionState();
+}
+
+class _SectionState extends State<_Section> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -302,51 +364,98 @@ class _Section extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
             children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.theme.colorScheme.primary.withOpacity(0.15),
+                      widget.theme.colorScheme.primary.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: widget.theme.colorScheme.primary.withOpacity(0.1)),
                 ),
+                child: Icon(widget.icon, size: 18, color: widget.theme.colorScheme.primary),
               ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: widget.theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: widget.theme.colorScheme.onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  Text(
+                    widget.subtitle,
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      color: widget.theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withOpacity(0.02),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+        const SizedBox(height: 16),
+        MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
+            decoration: BoxDecoration(
+              color: widget.theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: widget.theme.colorScheme.outlineVariant.withOpacity(_isHovered ? 0.4 : 0.2),
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Column(
-              children: children,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.08 : 0.04),
+                  blurRadius: _isHovered ? 24 : 16,
+                  offset: Offset(0, _isHovered ? 12 : 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  splashColor: widget.theme.colorScheme.primary.withOpacity(0.05),
+                  highlightColor: Colors.transparent,
+                  child: Column(children: widget.children),
+                ),
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20), // Recuo para visual moderno
+      child: Divider(height: 1, thickness: 1, color: theme.colorScheme.outlineVariant.withOpacity(0.2)),
     );
   }
 }
@@ -357,27 +466,15 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({
-    required this.theme,
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _InfoRow({required this.theme, required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 20, color: theme.colorScheme.primary),
-          ),
+          _IconBadge(theme: theme, icon: icon, color: theme.colorScheme.primary),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -387,15 +484,17 @@ class _InfoRow extends StatelessWidget {
                   label,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
+                    height: 1.2,
                   ),
                 ),
               ],
@@ -412,37 +511,34 @@ class _FeatureChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _FeatureChip({
-    required this.theme,
-    required this.icon,
-    required this.label,
-  });
+  const _FeatureChip({required this.theme, required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 18, color: theme.colorScheme.secondary),
-          ),
+          _IconBadge(theme: theme, icon: icon, color: theme.colorScheme.secondary),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),
             ),
           ),
-          Icon(Icons.check_circle_rounded, size: 20, color: theme.colorScheme.primary),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+            ),
+            child: Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.primary),
+          ),
         ],
       ),
     );
@@ -455,27 +551,15 @@ class _TechTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _TechTile({
-    required this.theme,
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _TechTile({required this.theme, required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 20, color: theme.colorScheme.tertiary),
-          ),
+          _IconBadge(theme: theme, icon: icon, color: theme.colorScheme.tertiary),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -483,16 +567,17 @@ class _TechTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -509,32 +594,25 @@ class _PlatformTile extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _PlatformTile({
-    required this.theme,
-    required this.icon,
-    required this.label,
-  });
+  const _PlatformTile({required this.theme, required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-            ),
-            child: Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+          _IconBadge(
+            theme: theme,
+            icon: icon,
+            color: theme.colorScheme.onSurfaceVariant,
+            background: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
               ),
@@ -543,20 +621,21 @@ class _PlatformTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(30),
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check, size: 12, color: theme.colorScheme.primary),
-                const SizedBox(width: 4),
+                Icon(Icons.check_rounded, size: 14, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
                 Text(
                   'Suportado',
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ],
@@ -564,6 +643,84 @@ class _PlatformTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _IconBadge extends StatelessWidget {
+  final ThemeData theme;
+  final IconData icon;
+  final Color color;
+  final Color? background;
+
+  const _IconBadge({required this.theme, required this.icon, required this.color, this.background});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: background == null 
+          ? LinearGradient(
+              colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            )
+          : null,
+        color: background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Icon(icon, size: 22, color: color),
+    );
+  }
+}
+
+class _Footer extends StatelessWidget {
+  const _Footer();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.1),
+                theme.colorScheme.tertiary.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
+          ),
+          child: Icon(Icons.church_rounded, size: 24, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Desenvolvido para a glória de Deus e o bem da catequese',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.9),
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'PNSA Catequese © ${DateTime.now().year}',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 }

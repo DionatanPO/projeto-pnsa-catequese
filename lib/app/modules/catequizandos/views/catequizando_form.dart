@@ -1,50 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import '../../../core/utils/certificate_generator.dart';
 import '../models/catequizando_model.dart';
 import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 
-Widget sectionHeader(String title, IconData icon, ThemeData theme) {
-  return Row(
-    children: [
-      Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
+// Helper para títulos de seções do formulário
+Widget _buildSectionHeader(String title, IconData icon, ThemeData theme) {
+  final colors = theme.colorScheme;
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: colors.primary),
         ),
-        child: Icon(icon, size: 18, color: theme.colorScheme.primary),
-      ),
-      const SizedBox(width: 10),
-      Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-    ],
+        const SizedBox(width: 12),
+        Text(
+          title, 
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.onSurface,
+          ),
+        ),
+      ],
+    ),
   );
 }
 
+// Helper para legendas explicativas do Status no Dialog
 Widget _statusLegenda(ThemeData theme, String status, String descricao) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Container(
-        margin: const EdgeInsets.only(top: 2),
+        margin: const EdgeInsets.only(top: 4),
         width: 8,
         height: 8,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: theme.colorScheme.tertiary,
+          color: theme.colorScheme.primary,
         ),
       ),
-      const SizedBox(width: 10),
+      const SizedBox(width: 12),
       Expanded(
         child: RichText(
           text: TextSpan(
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onTertiaryContainer),
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
             children: [
-              TextSpan(text: '$status: ', style: const TextStyle(fontWeight: FontWeight.w600)),
-              TextSpan(text: descricao),
+              TextSpan(text: '$status: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+              TextSpan(
+                text: descricao, 
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
             ],
           ),
         ),
@@ -53,6 +67,7 @@ Widget _statusLegenda(ThemeData theme, String status, String descricao) {
   );
 }
 
+// Grupo de rádio (segmentos) customizado e moderno
 Widget radioGroup<T>({
   required String label,
   required T value,
@@ -61,11 +76,19 @@ Widget radioGroup<T>({
   required ThemeData theme,
   required ValueChanged<T> onChanged,
 }) {
+  final colors = theme.colorScheme;
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-      const SizedBox(height: 8),
+      Text(
+        label, 
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: colors.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 10),
       Row(
         children: List.generate(options.length, (i) {
           final selected = value == options[i];
@@ -74,17 +97,18 @@ Widget radioGroup<T>({
               padding: EdgeInsets.only(right: i < options.length - 1 ? 12 : 0),
               child: InkWell(
                 onTap: () => onChanged(options[i]),
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: selected
-                        ? theme.colorScheme.primaryContainer
-                        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10),
+                        ? colors.primaryContainer.withOpacity(0.3)
+                        : colors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: selected ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.3),
-                      width: selected ? 1.5 : 1,
+                      color: selected ? colors.primary : colors.outlineVariant.withOpacity(0.4),
+                      width: selected ? 1.8 : 1,
                     ),
                   ),
                   child: Row(
@@ -93,14 +117,14 @@ Widget radioGroup<T>({
                       Icon(
                         selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                         size: 18,
-                        color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                        color: selected ? colors.primary : colors.onSurfaceVariant,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         labels[i],
                         style: TextStyle(
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                          color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                          fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                          color: selected ? colors.primary : colors.onSurface,
                         ),
                       ),
                     ],
@@ -151,6 +175,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   late final GlobalKey<FormState> _formKey;
 
   late final MaskTextInputFormatter _telefoneFormatter;
+  bool _isLoading = false;
 
   String _sexo = 'Masculino';
   DateTime? _dataNascimento;
@@ -280,73 +305,32 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     final dados = _buildModel();
     if (dados == null) return;
 
-    if (widget.onSave != null) {
-      widget.onSave!(dados, _selectedTurmaId);
-    } else if (widget.vm != null) {
-      if (_isEditing) {
-        await widget.vm!.updateCatequizando(dados);
-        if (_selectedTurmaId != null && widget.matriculaVm != null) {
-          await widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+    setState(() => _isLoading = true);
+
+    try {
+      if (widget.onSave != null) {
+        widget.onSave!(dados, _selectedTurmaId);
+      } else if (widget.vm != null) {
+        if (_isEditing) {
+          await widget.vm!.updateCatequizando(dados);
+          if (_selectedTurmaId != null && widget.matriculaVm != null) {
+            await widget.matriculaVm!.matricular(dados.id, _selectedTurmaId!);
+          }
+        } else {
+          final novoId = await widget.vm!.addCatequizando(dados);
+          if (_selectedTurmaId != null && widget.matriculaVm != null) {
+            await widget.matriculaVm!.matricular(novoId, _selectedTurmaId!);
+          }
         }
-      } else {
-        final novoId = await widget.vm!.addCatequizando(dados);
-        if (_selectedTurmaId != null && widget.matriculaVm != null) {
-          await widget.matriculaVm!.matricular(novoId, _selectedTurmaId!);
-        }
+        if (mounted) Navigator.of(context).pop();
       }
-      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      // Opcional: Tratar exceção aqui
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-  }
-
-  void _showExportOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.description_outlined),
-                title: const Text('Apenas ficha de cadastro'),
-                subtitle: const Text('Exportar somente os dados cadastrais'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _exportPdf(withHistory: false);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.history),
-                title: const Text('Ficha completa com histórico'),
-                subtitle: const Text('Inclui o histórico de matrículas'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _exportPdf(withHistory: true);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _exportPdf({required bool withHistory}) async {
-    final dados = _buildModel();
-    if (dados == null) return;
-    await CertificateGenerator.generateFicha(dados, withHistory: withHistory);
   }
 
   void _showStatusLegenda() {
@@ -357,8 +341,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb_outline_rounded, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
+            Icon(Icons.lightbulb_outline_rounded, color: theme.colorScheme.primary, size: 28),
+            const SizedBox(width: 12),
             const Text('Significado de cada status'),
           ],
         ),
@@ -367,13 +351,13 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _statusLegenda(theme, 'Em Andamento', 'Cursando normalmente. Padrão ao cadastrar.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _statusLegenda(theme, 'Formado', 'Concluiu o ciclo completo de catequese.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _statusLegenda(theme, 'Desistente', 'Abandonou o processo por vontade própria.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _statusLegenda(theme, 'Transferido', 'Saiu para outra paróquia / comunidade.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _statusLegenda(theme, 'Inativo', 'Sem matrícula ativa, mas pode retornar.'),
           ],
         ),
@@ -384,334 +368,503 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     );
   }
 
+  // Helper para padronizar o visual dos inputs em todo o formulário
+  InputDecoration _buildInputDecoration({
+    required String label,
+    String? hint,
+    required IconData prefixIcon,
+    required ColorScheme colors,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(prefixIcon, size: 20),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: colors.surfaceContainerLowest,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.outlineVariant),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.outlineVariant.withOpacity(0.4)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colors.error, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Container(
+      constraints: BoxConstraints(maxWidth: widget.width),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surface,
-            theme.colorScheme.surfaceContainerLow,
-          ],
-        ),
+        borderRadius: BorderRadius.circular(28),
+        color: colors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: colors.outlineVariant.withOpacity(0.3)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Form(
-          key: _formKey,
-          child: SizedBox(
-            width: widget.width,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Cabeçalho refinado
+          Container(
+            padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              color: colors.primaryContainer.withOpacity(0.3),
+            ),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.7),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        _isEditing ? Icons.edit_rounded : Icons.person_add_rounded,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      _isEditing ? 'Editar Catequizando' : 'Novo Catequizando',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        sectionHeader('Identificação', Icons.person_search_rounded, theme),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _nomeCtrl,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Nome Completo',
-                            hintText: 'Nome completo do catequizando',
-                            prefixIcon: Icon(Icons.person_rounded),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _sexo,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Sexo',
-                            prefixIcon: Icon(Icons.wc_rounded),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-                            DropdownMenuItem(value: 'Feminino', child: Text('Feminino')),
-                          ],
-                          onChanged: (v) => setState(() => _sexo = v!),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _dataNascimentoCtrl,
-                          readOnly: true,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Data de Nascimento',
-                            hintText: 'Selecionar data',
-                            prefixIcon: Icon(Icons.cake_rounded),
-                            suffixIcon: Icon(Icons.edit_calendar_rounded),
-                          ),
-                          onTap: () async {
-                            final data = await showDatePicker(
-                              context: context,
-                              initialDate: _dataNascimento ?? DateTime(2010),
-                              firstDate: DateTime(1900),
-                              lastDate: DateTime.now(),
-                              locale: const Locale('pt', 'BR'),
-                            );
-                            if (data != null) {
-                              setState(() {
-                                _dataNascimento = data;
-                                _dataNascimentoCtrl.text = '${data.day.toString().padLeft(2, '0')}/'
-                                    '${data.month.toString().padLeft(2, '0')}/'
-                                    '${data.year}  ·  ${_calcularIdade(data)} anos';
-                              });
-                            }
-                          },
-                          validator: (_) => _dataNascimento == null ? 'Campo obrigatório' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedTurmaId,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Turma',
-                            hintText: 'Selecione a turma',
-                            prefixIcon: Icon(Icons.auto_stories_rounded),
-                          ),
-                          items: widget.turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome))).toList(),
-                          onChanged: (v) {
-                            setState(() => _selectedTurmaId = v);
-                          },
-                          validator: (v) => v == null ? 'Selecione uma turma' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _status,
-                          decoration: const InputDecoration(
-                            labelText: 'Status do Catequizando',
-                            prefixIcon: Icon(Icons.info_outline_rounded),
-                          ),
-                          items: Catequizando.statusOptions.map((s) =>
-                            DropdownMenuItem(value: s, child: Text(s))
-                          ).toList(),
-                          onChanged: (v) => setState(() => _status = v!),
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SizedBox(
-                            height: 32,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: Icon(Icons.help_outline_rounded, size: 18, color: theme.colorScheme.primary),
-                              tooltip: 'Significado de cada status',
-                              onPressed: _showStatusLegenda,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        sectionHeader('Histórico Sacramental', Icons.check_circle_outline_rounded, theme),
-                        const SizedBox(height: 16),
-                        radioGroup<bool>(
-                          label: 'Já é Batizado(a)?',
-                          value: _batizado,
-                          options: const [true, false],
-                          labels: const ['Sim', 'Não'],
-                          theme: theme,
-                          onChanged: (v) => setState(() => _batizado = v),
-                        ),
-                        if (_batizado) ...[
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _localBatismoCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Local do Batismo (opcional)',
-                              hintText: 'Igreja / Paróquia onde foi batizado',
-                              prefixIcon: Icon(Icons.church_rounded),
-                            ),
-                          ),
-                        ],
-                        if (_batizado && _requerEucaristia) ...[
-                          const SizedBox(height: 16),
-                          radioGroup<bool>(
-                            label: 'Já fez a Primeira Eucaristia?',
-                            value: _fezPrimeiraEucaristia ?? false,
-                            options: const [true, false],
-                            labels: const ['Sim', 'Não'],
-                            theme: theme,
-                            onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        sectionHeader('Contatos e Responsáveis', Icons.contacts_rounded, theme),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _responsavelCtrl,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Nome do Responsável Principal',
-                            prefixIcon: Icon(Icons.person_rounded),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _parentesco,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Parentesco',
-                            prefixIcon: Icon(Icons.family_restroom_rounded),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'Mãe', child: Text('Mãe')),
-                            DropdownMenuItem(value: 'Pai', child: Text('Pai')),
-                            DropdownMenuItem(value: 'Avó', child: Text('Avó')),
-                            DropdownMenuItem(value: 'Avô', child: Text('Avô')),
-                            DropdownMenuItem(value: 'Tio(a)', child: Text('Tio(a)')),
-                            DropdownMenuItem(value: 'Outro', child: Text('Outro')),
-                          ],
-                          onChanged: (v) => setState(() => _parentesco = v!),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _telefoneCtrl,
-                          inputFormatters: [_telefoneFormatter],
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          decoration: const InputDecoration(
-                            labelText: 'Telefone / WhatsApp',
-                            hintText: '(62) 99999-9999',
-                            prefixIcon: Icon(Icons.phone_rounded),
-                          ),
-                          keyboardType: TextInputType.phone,
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(flex: 2, child: TextFormField(
-                              controller: _cepCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'CEP',
-                                hintText: '00000-000',
-                                prefixIcon: Icon(Icons.mail_outline_rounded),
-                              ),
-                              keyboardType: TextInputType.streetAddress,
-                            )),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(
-                              controller: _numeroCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Número',
-                                hintText: 'S/N',
-                              ),
-                            )),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _enderecoCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Endereço (Rua)',
-                            hintText: 'Nome da rua / logradouro',
-                            prefixIcon: Icon(Icons.map_rounded),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _bairroCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Bairro',
-                            hintText: 'Nome do bairro',
-                            prefixIcon: Icon(Icons.location_city_rounded),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                        ),
-                        const SizedBox(height: 24),
-                        sectionHeader('Saúde e Cuidados', Icons.healing_rounded, theme),
-                        const SizedBox(height: 16),
-                        radioGroup<bool>(
-                          label: 'Possui alergia, problema de saúde ou restrição?',
-                          value: _possuiRestricao,
-                          options: const [true, false],
-                          labels: const ['Sim', 'Não'],
-                          theme: theme,
-                          onChanged: (v) => setState(() => _possuiRestricao = v),
-                        ),
-                        if (_possuiRestricao) ...[
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _detalheRestricaoCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Detalhamento',
-                              hintText: 'Descreva as alergias, restrições ou cuidados necessários',
-                              prefixIcon: Icon(Icons.edit_note_rounded),
-                            ),
-                            maxLines: 3,
-                            textCapitalization: TextCapitalization.sentences,
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                      ],
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _isEditing ? Icons.edit_note_rounded : Icons.person_add_alt_1_rounded,
+                    color: colors.onPrimary,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    if (_isEditing)
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                        label: const Text('Exportar PDF'),
-                        onPressed: _showExportOptions,
-                      )
-                    else
-                      const Spacer(),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton(
-                      onPressed: _save,
-                      child: Text(_isEditing ? 'Salvar Alterações' : 'Salvar'),
-                    ),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEditing ? 'Editar Catequizando' : 'Novo Catequizando',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEditing ? 'Atualize as informações do cadastro' : 'Preencha as informações do novo cadastro',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+
+          // Corpo do Formulário com Rolagem Segura e Layout Adaptativo
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSectionHeader('Identificação', Icons.person_search_rounded, theme),
+                    const SizedBox(height: 12),
+
+                    // Campo Nome completo
+                    TextFormField(
+                      controller: _nomeCtrl,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      decoration: _buildInputDecoration(
+                        label: 'Nome Completo',
+                        hint: 'Nome completo do catequizando',
+                        prefixIcon: Icons.person_outline_rounded,
+                        colors: colors,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+                        if (v.trim().split(' ').length < 2) return 'Digite o nome completo';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Linha com Sexo e Data de Nascimento lado a lado
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _sexo,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            decoration: _buildInputDecoration(
+                              label: 'Sexo',
+                              prefixIcon: Icons.wc_rounded,
+                              colors: colors,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
+                              DropdownMenuItem(value: 'Feminino', child: Text('Feminino')),
+                            ],
+                            onChanged: (v) => setState(() => _sexo = v!),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _dataNascimentoCtrl,
+                            readOnly: true,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            decoration: _buildInputDecoration(
+                              label: 'Data de Nascimento',
+                              hint: 'Selecionar data',
+                              prefixIcon: Icons.cake_outlined,
+                              suffixIcon: const Icon(Icons.edit_calendar_rounded, size: 20),
+                              colors: colors,
+                            ),
+                            onTap: () async {
+                              final data = await showDatePicker(
+                                context: context,
+                                initialDate: _dataNascimento ?? DateTime(2010),
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                                locale: const Locale('pt', 'BR'),
+                              );
+                              if (data != null) {
+                                setState(() {
+                                  _dataNascimento = data;
+                                  _dataNascimentoCtrl.text = '${data.day.toString().padLeft(2, '0')}/'
+                                      '${data.month.toString().padLeft(2, '0')}/'
+                                      '${data.year}  ·  ${_calcularIdade(data)} anos';
+                                });
+                              }
+                            },
+                            validator: (_) => _dataNascimento == null ? 'Campo obrigatório' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Linha com Turma e Status lado a lado
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedTurmaId,
+                            isExpanded: true,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            decoration: _buildInputDecoration(
+                              label: 'Turma',
+                              hint: 'Selecione a turma',
+                              prefixIcon: Icons.auto_stories_rounded,
+                              colors: colors,
+                            ),
+                            items: widget.turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome))).toList(),
+                            onChanged: (v) {
+                              setState(() => _selectedTurmaId = v);
+                            },
+                            validator: (v) => v == null ? 'Selecione uma turma' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _status,
+                            decoration: _buildInputDecoration(
+                              label: 'Status do Catequizando',
+                              prefixIcon: Icons.info_outline_rounded,
+                              colors: colors,
+                            ),
+                            items: Catequizando.statusOptions.map((s) =>
+                              DropdownMenuItem(value: s, child: Text(s))
+                            ).toList(),
+                            onChanged: (v) => setState(() => _status = v!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Link para a legenda de status
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _showStatusLegenda,
+                        icon: Icon(Icons.help_outline_rounded, size: 16, color: colors.primary),
+                        label: Text('Ver significados dos status', style: TextStyle(color: colors.primary, fontSize: 12)),
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // SEÇÃO: HISTÓRICO SACRAMENTAL
+                    _buildSectionHeader('Histórico Sacramental', Icons.check_circle_outline_rounded, theme),
+                    const SizedBox(height: 12),
+                    radioGroup<bool>(
+                      label: 'Já é Batizado(a)?',
+                      value: _batizado,
+                      options: const [true, false],
+                      labels: const ['Sim', 'Não'],
+                      theme: theme,
+                      onChanged: (v) => setState(() => _batizado = v),
+                    ),
+                    if (_batizado) ...[
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _localBatismoCtrl,
+                        decoration: _buildInputDecoration(
+                          label: 'Local do Batismo (opcional)',
+                          hint: 'Igreja / Paróquia onde foi batizado',
+                          prefixIcon: Icons.church_rounded,
+                          colors: colors,
+                        ),
+                      ),
+                    ],
+                    if (_batizado && _requerEucaristia) ...[
+                      const SizedBox(height: 20),
+                      radioGroup<bool>(
+                        label: 'Já fez a Primeira Eucaristia?',
+                        value: _fezPrimeiraEucaristia ?? false,
+                        options: const [true, false],
+                        labels: const ['Sim', 'Não'],
+                        theme: theme,
+                        onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // SEÇÃO: CONTATOS E RESPONSÁVEIS
+                    _buildSectionHeader('Contatos e Responsáveis', Icons.contacts_rounded, theme),
+                    const SizedBox(height: 12),
+
+                    // Linha com Responsável e Parentesco lado a lado
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: _responsavelCtrl,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            decoration: _buildInputDecoration(
+                              label: 'Nome do Responsável Principal',
+                              prefixIcon: Icons.person_outline_rounded,
+                              colors: colors,
+                            ),
+                            textCapitalization: TextCapitalization.words,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+                              if (v.trim().split(' ').length < 2) return 'Digite o nome completo';
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: DropdownButtonFormField<String>(
+                            value: _parentesco,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            decoration: _buildInputDecoration(
+                              label: 'Parentesco',
+                              prefixIcon: Icons.family_restroom_rounded,
+                              colors: colors,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'Mãe', child: Text('Mãe')),
+                              DropdownMenuItem(value: 'Pai', child: Text('Pai')),
+                              DropdownMenuItem(value: 'Avó', child: Text('Avó')),
+                              DropdownMenuItem(value: 'Avô', child: Text('Avô')),
+                              DropdownMenuItem(value: 'Tio(a)', child: Text('Tio(a)')),
+                              DropdownMenuItem(value: 'Outro', child: Text('Outro')),
+                            ],
+                            onChanged: (v) => setState(() => _parentesco = v!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Telefone / WhatsApp
+                    TextFormField(
+                      controller: _telefoneCtrl,
+                      inputFormatters: [_telefoneFormatter],
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      decoration: _buildInputDecoration(
+                        label: 'Telefone / WhatsApp',
+                        hint: '(62) 99999-9999',
+                        prefixIcon: Icons.phone_outlined,
+                        colors: colors,
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
+                        if (v.replaceAll(RegExp(r'\D'), '').length < 11) {
+                          return 'Telefone incompleto';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Endereço (Rua)
+                    TextFormField(
+                      controller: _enderecoCtrl,
+                      decoration: _buildInputDecoration(
+                        label: 'Endereço (Rua)',
+                        hint: 'Nome da rua / logradouro',
+                        prefixIcon: Icons.map_rounded,
+                        colors: colors,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Linha com CEP, Número e Bairro lado a lado
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: _cepCtrl,
+                            decoration: _buildInputDecoration(
+                              label: 'CEP',
+                              hint: '00000-000',
+                              prefixIcon: Icons.mail_outline_rounded,
+                              colors: colors,
+                            ),
+                            keyboardType: TextInputType.streetAddress,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _numeroCtrl,
+                            decoration: _buildInputDecoration(
+                              label: 'Número',
+                              hint: 'S/N',
+                              prefixIcon: Icons.numbers_rounded,
+                              colors: colors,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 4,
+                          child: TextFormField(
+                            controller: _bairroCtrl,
+                            decoration: _buildInputDecoration(
+                              label: 'Bairro',
+                              hint: 'Nome do bairro',
+                              prefixIcon: Icons.location_city_rounded,
+                              colors: colors,
+                            ),
+                            textCapitalization: TextCapitalization.words,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // SEÇÃO: SAÚDE E CUIDADOS
+                    _buildSectionHeader('Saúde e Cuidados', Icons.healing_rounded, theme),
+                    const SizedBox(height: 12),
+                    radioGroup<bool>(
+                      label: 'Possui alergia, problema de saúde ou restrição?',
+                      value: _possuiRestricao,
+                      options: const [true, false],
+                      labels: const ['Sim', 'Não'],
+                      theme: theme,
+                      onChanged: (v) => setState(() => _possuiRestricao = v),
+                    ),
+                    if (_possuiRestricao) ...[
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _detalheRestricaoCtrl,
+                        decoration: _buildInputDecoration(
+                          label: 'Detalhamento',
+                          hint: 'Descreva as alergias, restrições ou cuidados necessários',
+                          prefixIcon: Icons.edit_note_rounded,
+                          colors: colors,
+                        ),
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Botões de Ação do Rodapé com estado de carregamento
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 16, 32, 28),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: _isLoading ? null : _save,
+                  icon: _isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onPrimary,
+                          ),
+                        )
+                      : Icon(_isEditing ? Icons.save_rounded : Icons.check_rounded, size: 18),
+                  label: Text(_isLoading ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

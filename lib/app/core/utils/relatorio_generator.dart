@@ -10,7 +10,7 @@ class RelatorioGenerator {
     final pdf = pw.Document();
     final font = await PdfGoogleFonts.latoRegular();
     final fontBold = await PdfGoogleFonts.latoBold();
-    final primaryColor = PdfColor.fromHex('#8B0000');
+    final primaryColor = PdfColor.fromHex('#9E9E9E');
     final textColor = PdfColor.fromHex('#2F4F4F');
     final greyColor = PdfColors.grey600;
     final now = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
@@ -37,7 +37,7 @@ class RelatorioGenerator {
       return pw.Column(
         children: [
           pw.SizedBox(height: 16),
-          pw.Divider(color: PdfColor.fromHex('#8B00004D')),
+          pw.Divider(color: PdfColors.grey300),
           pw.SizedBox(height: 4),
           pw.Text(
             'Relatório gerado em $now.',

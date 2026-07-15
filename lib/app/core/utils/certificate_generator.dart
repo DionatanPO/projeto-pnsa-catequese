@@ -19,7 +19,7 @@ class CertificateGenerator {
     final now = DateTime.now();
     final formattedDate = DateFormat('dd/MM/yyyy').format(now);
 
-    final borderColor = PdfColor.fromHex('#8B0000');
+    final borderColor = PdfColor.fromHex('#9E9E9E');
     final textColor = PdfColor.fromHex('#2F4F4F');
 
     final textStyle = pw.TextStyle(font: font, color: textColor);
@@ -30,77 +30,103 @@ class CertificateGenerator {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(30),
+        margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return pw.Container(
             decoration: pw.BoxDecoration(
               border: pw.Border.all(color: borderColor, width: 2),
             ),
-            child: pw.Padding(
-              padding: const pw.EdgeInsets.all(40),
-              child: pw.Column(
-                children: [
-                  pw.Image(logoImage, width: 70, height: 70),
-                  pw.SizedBox(height: 8),
-                  pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
-                      style: pw.TextStyle(font: fontBold, fontSize: 24, color: textColor)),
-                  pw.Text('Iporá - GO', style: textStyle.copyWith(fontSize: 16)),
-                  pw.SizedBox(height: 10),
-                  pw.Text('PASTORAL CATEQUÉTICA',
-                      style: pw.TextStyle(font: fontBold, fontSize: 18, color: borderColor)),
+            child: pw.Container(
+              margin: const pw.EdgeInsets.all(4),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300, width: 1),
+              ),
+              child: pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+                child: pw.Column(
+                  children: [
+                    // Cabeçalho Paroquial
+                    pw.Image(logoImage, width: 64, height: 64),
+                    pw.SizedBox(height: 10),
+                    pw.Text(
+                      'PARÓQUIA NOSSA SENHORA AUXILIADORA',
+                      style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor, letterSpacing: 0.5),
+                    ),
+                    pw.Text('Iporá - GO', style: textStyle.copyWith(fontSize: 13, color: PdfColors.grey700)),
+                    pw.SizedBox(height: 6),
+                    pw.Text(
+                      'PASTORAL CATEQUÉTICA',
+                      style: pw.TextStyle(font: fontBold, fontSize: 14, color: borderColor, letterSpacing: 1.0),
+                    ),
 
-                  pw.Spacer(),
+                    pw.Spacer(flex: 2),
 
-                  pw.Text('CERTIFICADO DE CADASTRO',
-                      style: pw.TextStyle(font: fontBold, fontSize: 36, color: textColor)),
-                  pw.SizedBox(height: 20),
+                    // Título do Certificado
+                    pw.Text(
+                      'CERTIFICADO DE CADASTRO',
+                      style: pw.TextStyle(font: fontBold, fontSize: 32, color: textColor, letterSpacing: 0.5),
+                    ),
+                    pw.SizedBox(height: 16),
 
-                  pw.Text('Certificamos, para os devidos fins, que o(a) catequizando(a):',
-                      style: textStyle.copyWith(fontSize: 16)),
-                  pw.SizedBox(height: 20),
+                    pw.Text(
+                      'Certificamos, para os devidos fins, que o(a) catequizando(a):',
+                      style: textStyle.copyWith(fontSize: 14),
+                    ),
+                    pw.SizedBox(height: 14),
 
-                  pw.Text(catequizando.nome.toUpperCase(),
-                      style: pw.TextStyle(font: fontBold, fontSize: 28, color: borderColor)),
+                    // Nome do Aluno Destacado
+                    pw.Text(
+                      catequizando.nome.toUpperCase(),
+                      style: pw.TextStyle(font: fontBold, fontSize: 24, color: borderColor, letterSpacing: 0.5),
+                    ),
 
-                  pw.SizedBox(height: 20),
-                  pw.Text(
+                    pw.SizedBox(height: 14),
+                    pw.Text(
                       'realizou seu cadastro no sistema da Pastoral Catequética em $formattedDate.',
                       textAlign: pw.TextAlign.center,
-                      style: textStyle.copyWith(fontSize: 16)),
+                      style: textStyle.copyWith(fontSize: 14),
+                    ),
 
-                  pw.Spacer(),
+                    pw.Spacer(flex: 2),
 
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildDetail('Turma', Get.find<MatriculaViewModel>().getNomeTurmaAtual(catequizando.id, Get.find<TurmaViewModel>().turmas) ?? '', borderColor, font, fontBold),
-                      _buildDetail('Responsável', catequizando.responsavel, borderColor, font, fontBold),
-                    ],
-                  ),
+                    // Detalhes Complementares
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildDetail('Turma', Get.find<MatriculaViewModel>().getNomeTurmaAtual(catequizando.id, Get.find<TurmaViewModel>().turmas) ?? '-', borderColor, font, fontBold),
+                        _buildDetail('Responsável', catequizando.responsavel, borderColor, font, fontBold),
+                      ],
+                    ),
 
-                  pw.Spacer(),
+                    pw.Spacer(flex: 3),
 
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Column(
-                        children: [
-                          pw.Text('__________________________', style: textStyle),
-                          pw.Text('Secretaria Pastoral', style: textStyle.copyWith(fontSize: 12)),
-                        ],
-                      ),
-                      pw.Text('Iporá/GO, $formattedDate', style: textStyle.copyWith(fontSize: 12)),
-                    ],
-                  ),
+                    // Assinatura e Data
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text('____________________________________', style: textStyle.copyWith(color: PdfColors.grey500)),
+                            pw.SizedBox(height: 4),
+                            pw.Text('Secretaria Pastoral', style: textStyle.copyWith(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                          ],
+                        ),
+                        pw.Text('Iporá/GO, $formattedDate', style: textStyle.copyWith(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                      ],
+                    ),
 
-                  pw.SizedBox(height: 30),
+                    pw.SizedBox(height: 24),
 
-                  pw.Text(
-                    'Documento autenticado e gerado automaticamente pelo sistema da PARÓQUIA NOSSA SENHORA AUXILIADORA – IPORÁ/GO.',
-                    textAlign: pw.TextAlign.center,
-                    style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
-                  ),
-                ],
+                    // Autenticação de Rodapé
+                    pw.Text(
+                      'Documento autenticado e gerado automaticamente pelo sistema da PARÓQUIA NOSSA SENHORA AUXILIADORA – IPORÁ/GO.',
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(font: font, fontSize: 7, fontStyle: pw.FontStyle.italic, color: PdfColors.grey500),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -122,7 +148,7 @@ class CertificateGenerator {
     final font = await PdfGoogleFonts.latoRegular();
     final fontBold = await PdfGoogleFonts.latoBold();
     final textColor = PdfColor.fromHex('#2F4F4F');
-    final primaryColor = PdfColor.fromHex('#8B0000');
+    final primaryColor = PdfColor.fromHex('#9E9E9E');
 
     final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
     final logoImage = pw.MemoryImage(logoBytes);
@@ -133,32 +159,41 @@ class CertificateGenerator {
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
-            pw.Image(logoImage, width: 50, height: 50),
-            pw.SizedBox(height: 6),
-            pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
-                style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
-            pw.Text('PASTORAL CATEQUÉTICA',
-                style: pw.TextStyle(font: fontBold, fontSize: 14, color: primaryColor)),
+            pw.Image(logoImage, width: 48, height: 48),
             pw.SizedBox(height: 8),
-            pw.Divider(color: primaryColor),
+            pw.Text(
+              'PARÓQUIA NOSSA SENHORA AUXILIADORA',
+              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor, letterSpacing: 0.5),
+            ),
+            pw.Text(
+              'PASTORAL CATEQUÉTICA',
+              style: pw.TextStyle(font: fontBold, fontSize: 12, color: primaryColor, letterSpacing: 0.8),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(color: primaryColor, thickness: 1),
             pw.SizedBox(height: 12),
           ],
         ),
         build: (context) => [
-          pw.Text('Histórico de Matrículas',
-              style: pw.TextStyle(font: fontBold, fontSize: 22, color: textColor)),
+          pw.Text('Histórico de Matrículas', style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor)),
           pw.SizedBox(height: 4),
-          pw.Text(catequizando.nome.toUpperCase(),
-              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor)),
+          pw.Text(catequizando.nome.toUpperCase(), style: pw.TextStyle(font: fontBold, fontSize: 14, color: primaryColor)),
           pw.SizedBox(height: 20),
           if (historico.isEmpty)
-            pw.Text('Nenhum registro encontrado.',
-                style: pw.TextStyle(font: font, fontSize: 12, color: textColor))
+            pw.Text('Nenhum registro encontrado.', style: pw.TextStyle(font: font, fontSize: 11, color: textColor))
           else
             pw.Table.fromTextArray(
-              headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
-              headerDecoration: pw.BoxDecoration(color: primaryColor),
-              cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
+              border: pw.TableBorder(
+                horizontalInside: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+                bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.8),
+              ),
+              headerStyle: pw.TextStyle(font: fontBold, fontSize: 9, color: PdfColors.white),
+              headerDecoration: pw.BoxDecoration(
+                color: primaryColor,
+                borderRadius: const pw.BorderRadius.vertical(top: pw.Radius.circular(4)),
+              ),
+              cellStyle: pw.TextStyle(font: font, fontSize: 9, color: textColor),
+              cellPadding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 10),
               cellAlignments: {
                 0: pw.Alignment.centerLeft,
                 1: pw.Alignment.center,
@@ -180,7 +215,7 @@ class CertificateGenerator {
               }).toList(),
             ),
           pw.SizedBox(height: 30),
-          pw.Divider(color: PdfColor.fromHex('#8B00004D')),
+          pw.Divider(color: PdfColors.grey300, thickness: 0.5),
           pw.SizedBox(height: 8),
           pw.Text(
             'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
@@ -203,7 +238,7 @@ class CertificateGenerator {
     final pdf = pw.Document();
     final font = await PdfGoogleFonts.latoRegular();
     final fontBold = await PdfGoogleFonts.latoBold();
-    final primaryColor = PdfColor.fromHex('#8B0000');
+    final primaryColor = PdfColor.fromHex('#9E9E9E');
     final textColor = PdfColor.fromHex('#2F4F4F');
 
     final matriculaVm = Get.find<MatriculaViewModel>();
@@ -220,29 +255,43 @@ class CertificateGenerator {
       return age;
     }
 
+    // Gerador de campos estruturado (estilo formulário administrativo)
     pw.Widget field(String label, String value) {
-      return pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(label,
-              style: pw.TextStyle(font: fontBold, fontSize: 9, color: primaryColor)),
-          pw.SizedBox(height: 2),
-          pw.Text(value.isEmpty ? '-' : value,
-              style: pw.TextStyle(font: font, fontSize: 12, color: textColor)),
-          pw.SizedBox(height: 6),
-        ],
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 8),
+        padding: const pw.EdgeInsets.only(bottom: 3),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5)),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              label.toUpperCase(),
+              style: pw.TextStyle(font: fontBold, fontSize: 8, color: primaryColor, letterSpacing: 0.5),
+            ),
+            pw.SizedBox(height: 2),
+            pw.Text(
+              value.isEmpty ? '-' : value,
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+            ),
+          ],
+        ),
       );
     }
 
     pw.Widget sectionHeader(String title) {
       return pw.Container(
-        padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        margin: const pw.EdgeInsets.only(top: 14, bottom: 8),
+        padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: pw.BoxDecoration(
           color: primaryColor,
-          borderRadius: pw.BorderRadius.circular(3),
+          borderRadius: pw.BorderRadius.circular(4),
         ),
-        child: pw.Text(title,
-            style: pw.TextStyle(font: fontBold, fontSize: 11, color: PdfColors.white)),
+        child: pw.Text(
+          title,
+          style: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white, letterSpacing: 0.5),
+        ),
       );
     }
 
@@ -255,98 +304,97 @@ class CertificateGenerator {
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
-            pw.Image(logoImage, width: 50, height: 50),
-            pw.SizedBox(height: 6),
-            pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
-                style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
-            pw.Text('PASTORAL CATEQUÉTICA',
-                style: pw.TextStyle(font: fontBold, fontSize: 14, color: primaryColor)),
-            pw.SizedBox(height: 6),
-            pw.Divider(color: primaryColor),
+            pw.Image(logoImage, width: 48, height: 48),
             pw.SizedBox(height: 8),
-            pw.Text('FICHA DE CADASTRO',
-                style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor)),
-            pw.SizedBox(height: 16),
+            pw.Text(
+              'PARÓQUIA NOSSA SENHORA AUXILIADORA',
+              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor, letterSpacing: 0.5),
+            ),
+            pw.Text(
+              'PASTORAL CATEQUÉTICA',
+              style: pw.TextStyle(font: fontBold, fontSize: 12, color: primaryColor, letterSpacing: 0.8),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(color: primaryColor, thickness: 1),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'FICHA DE CADASTRO',
+              style: pw.TextStyle(font: fontBold, fontSize: 18, color: textColor, letterSpacing: 0.5),
+            ),
+            pw.SizedBox(height: 12),
           ],
         ),
         build: (context) {
-          final widgets = <pw.Widget>[
+          return [
             sectionHeader('IDENTIFICAÇÃO'),
-            pw.SizedBox(height: 8),
             field('Nome', catequizando.nome),
             pw.Row(
               children: [
                 pw.Expanded(child: field('Sexo', catequizando.sexo)),
-                pw.SizedBox(width: 24),
-                pw.Expanded(child: field('Data de Nascimento',
-                    DateFormat('dd/MM/yyyy').format(catequizando.dataNascimento))),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: field('Data de Nascimento', DateFormat('dd/MM/yyyy').format(catequizando.dataNascimento))),
               ],
             ),
             pw.Row(
               children: [
                 pw.Expanded(child: field('Idade', '${idade()} anos')),
-                pw.SizedBox(width: 24),
+                pw.SizedBox(width: 16),
                 pw.Expanded(child: field('Status', catequizando.status)),
               ],
             ),
-            field('Turma',
-                matriculaVm.getNomeTurmaAtual(catequizando.id, turmaVm.turmas) ?? '-'),
+            field('Turma', matriculaVm.getNomeTurmaAtual(catequizando.id, turmaVm.turmas) ?? '-'),
 
-            pw.SizedBox(height: 16),
             sectionHeader('HISTÓRICO SACRAMENTAL'),
-            pw.SizedBox(height: 8),
             field('Batizado', catequizando.batizado ? 'Sim' : 'Não'),
             if (catequizando.batizado) ...[
               field('Local do Batismo', catequizando.localBatismo ?? '-'),
-              field('Primeira Eucaristia',
-                  catequizando.fezPrimeiraEucaristia == true ? 'Sim' : 'Não'),
+              field('Primeira Eucaristia', catequizando.fezPrimeiraEucaristia == true ? 'Sim' : 'Não'),
             ],
 
-            pw.SizedBox(height: 16),
             sectionHeader('CONTATOS E RESPONSÁVEIS'),
-            pw.SizedBox(height: 8),
-            field('Responsável', catequizando.responsavel),
-            field('Parentesco', catequizando.parentesco),
+            pw.Row(
+              children: [
+                pw.Expanded(child: field('Responsável', catequizando.responsavel)),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: field('Parentesco', catequizando.parentesco)),
+              ],
+            ),
             field('Telefone', catequizando.telefone),
             pw.Row(
               children: [
                 pw.Expanded(child: field('Endereço', catequizando.endereco)),
-                pw.SizedBox(width: 24),
+                pw.SizedBox(width: 16),
                 pw.Expanded(child: field('Número', catequizando.numero)),
               ],
             ),
             pw.Row(
               children: [
                 pw.Expanded(child: field('Bairro', catequizando.bairro)),
-                pw.SizedBox(width: 24),
+                pw.SizedBox(width: 16),
                 pw.Expanded(child: field('CEP', catequizando.cep)),
               ],
             ),
 
-            pw.SizedBox(height: 16),
             sectionHeader('SAÚDE E CUIDADOS'),
-            pw.SizedBox(height: 8),
-            field('Possui restrição', catequizando.possuiRestricao ? 'Sim' : 'Não'),
+            field('Possui restrição de saúde', catequizando.possuiRestricao ? 'Sim' : 'Não'),
             if (catequizando.possuiRestricao)
-              field('Detalhamento', catequizando.detalheRestricao ?? '-'),
+              field('Detalhamento da Restrição', catequizando.detalheRestricao ?? '-'),
 
             if (withHistory) ...[
-              pw.SizedBox(height: 28),
-              pw.Text('Histórico de Matrículas',
-                  style: pw.TextStyle(font: fontBold, fontSize: 16, color: textColor)),
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: 18),
+              pw.Text('Histórico de Matrículas', style: pw.TextStyle(font: fontBold, fontSize: 13, color: textColor)),
+              pw.SizedBox(height: 8),
               _buildHistoricoWidget(catequizando, font, fontBold, primaryColor, textColor),
             ],
 
-            pw.SizedBox(height: 20),
-            pw.Divider(color: PdfColor.fromHex('#8B00004D')),
+            pw.SizedBox(height: 24),
+            pw.Divider(color: PdfColors.grey300, thickness: 0.5),
             pw.SizedBox(height: 6),
             pw.Text(
               'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
               style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
             ),
           ];
-          return widgets;
         },
       ),
     );
@@ -373,14 +421,18 @@ class CertificateGenerator {
     );
 
     if (historico.isEmpty) {
-      return pw.Text('Nenhum registro encontrado.',
-          style: pw.TextStyle(font: font, fontSize: 12, color: textColor));
+      return pw.Text('Nenhum registro encontrado.', style: pw.TextStyle(font: font, fontSize: 11, color: textColor));
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
+      border: pw.TableBorder(
+        horizontalInside: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+        bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.8),
+      ),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 9, color: PdfColors.white),
       headerDecoration: pw.BoxDecoration(color: primaryColor),
-      cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
+      cellStyle: pw.TextStyle(font: font, fontSize: 9, color: textColor),
+      cellPadding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       cellAlignments: {
         0: pw.Alignment.centerLeft,
         1: pw.Alignment.center,
@@ -406,8 +458,9 @@ class CertificateGenerator {
   static pw.Widget _buildDetail(String label, String value, PdfColor color, pw.Font font, pw.Font fontBold) {
     return pw.Column(
       children: [
-        pw.Text(label.toUpperCase(), style: pw.TextStyle(font: fontBold, fontSize: 10, color: color)),
-        pw.Text(value, style: pw.TextStyle(font: fontBold, fontSize: 14, color: color)),
+        pw.Text(label.toUpperCase(), style: pw.TextStyle(font: fontBold, fontSize: 8, color: color, letterSpacing: 0.5)),
+        pw.SizedBox(height: 2),
+        pw.Text(value, style: pw.TextStyle(font: fontBold, fontSize: 12, color: color)),
       ],
     );
   }

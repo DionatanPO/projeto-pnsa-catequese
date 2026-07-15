@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../routes/app_pages.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/google_drive_service.dart';
 import '../services/user_service.dart';
 
 class AuthController extends GetxController {
@@ -54,6 +55,7 @@ class AuthController extends GetxController {
 
   void logout() async {
     await _authService.logout();
+    await Get.find<GoogleDriveService>().signOut();
     firestoreUser.value = null;
     Get.offAllNamed(AppRoutes.login);
   }
