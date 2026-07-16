@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../modules/relatorio/viewmodels/relatorio_viewmodel.dart';
+import 'pdf_document_header.dart';
 
 class RelatorioGenerator {
   static Future<void> generate(RelatorioViewModel vm) async {
@@ -14,7 +15,6 @@ class RelatorioGenerator {
     final textColor = PdfColor.fromHex('#2F4F4F');
     final greyColor = PdfColors.grey600;
     final now = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    final agora = DateTime.now();
 
     final statusItems = vm.statusCounts;
     final etapasItems = vm.turmasPorEtapa;
@@ -61,18 +61,18 @@ class RelatorioGenerator {
         margin: const pw.EdgeInsets.all(40),
         header: (context) => pw.Column(
           children: [
-            pw.Image(logoImage, width: 50, height: 50),
-            pw.SizedBox(height: 6),
-            pw.Text('PARÓQUIA NOSSA SENHORA AUXILIADORA',
-                style: pw.TextStyle(font: fontBold, fontSize: 18, color: primaryColor)),
-            pw.Text('PASTORAL CATEQUÉTICA',
-                style: pw.TextStyle(font: fontBold, fontSize: 14, color: primaryColor)),
-            pw.SizedBox(height: 6),
+            buildPdfHeader(
+              logoImage: logoImage,
+              font: font,
+              fontBold: fontBold,
+              primaryColor: primaryColor,
+              textColor: textColor,
+              subtitle: 'RELATÓRIO GERENCIAL',
+              showSubtitle: true,
+              landscape: false,
+            ),
             pw.Divider(color: primaryColor),
             pw.SizedBox(height: 8),
-            pw.Text('RELATÓRIO GERENCIAL',
-                style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor)),
-            pw.SizedBox(height: 16),
           ],
         ),
         footer: (context) => pw.Text(

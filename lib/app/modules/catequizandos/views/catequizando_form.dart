@@ -444,29 +444,14 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
 
     return Container(
       constraints: BoxConstraints(maxWidth: widget.width),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        color: colors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 32,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(color: colors.outlineVariant.withOpacity(0.3)),
-      ),
+      color: colors.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Cabeçalho refinado
-          Container(
-            padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              color: colors.primaryContainer.withOpacity(0.3),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Row(
               children: [
                 Container(
@@ -545,6 +530,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _sexo,
+                            isExpanded: true,
                             autovalidateMode: AutovalidateMode.onUserInteraction,
                             decoration: _buildInputDecoration(
                               label: 'Sexo',
@@ -552,8 +538,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                               colors: colors,
                             ),
                             items: const [
-                              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-                              DropdownMenuItem(value: 'Feminino', child: Text('Feminino')),
+                              DropdownMenuItem(value: 'Masculino', child: Text('Masculino', overflow: TextOverflow.ellipsis)),
+                              DropdownMenuItem(value: 'Feminino', child: Text('Feminino', overflow: TextOverflow.ellipsis)),
                             ],
                             onChanged: (v) => setState(() => _sexo = v!),
                           ),
@@ -621,13 +607,14 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _status,
+                            isExpanded: true,
                             decoration: _buildInputDecoration(
-                              label: 'Status do Catequizando',
+                              label: 'Status',
                               prefixIcon: Icons.info_outline_rounded,
                               colors: colors,
                             ),
                             items: Catequizando.statusOptions.map((s) =>
-                              DropdownMenuItem(value: s, child: Text(s))
+                              DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))
                             ).toList(),
                             onChanged: (v) => setState(() => _status = v!),
                           ),
@@ -720,45 +707,57 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                     const SizedBox(height: 12),
 
                     // Linha com Responsável e Parentesco lado a lado
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: _responsavelCtrl,
-                            autovalidateMode: AutovalidateMode.onUserInteraction,
-                            decoration: _buildInputDecoration(
-                              label: 'Nome do Responsável Principal',
-                              prefixIcon: Icons.person_outline_rounded,
-                              colors: colors,
-                            ),
-                            textCapitalization: TextCapitalization.words,
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isNarrow = constraints.maxWidth < 420;
+                        final responsavelField = TextFormField(
+                          controller: _responsavelCtrl,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          decoration: _buildInputDecoration(
+                            label: 'Nome do Responsável Principal',
+                            prefixIcon: Icons.person_outline_rounded,
+                            colors: colors,
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButtonFormField<String>(
-                            value: _parentesco,
-                            autovalidateMode: AutovalidateMode.onUserInteraction,
-                            decoration: _buildInputDecoration(
-                              label: 'Parentesco',
-                              prefixIcon: Icons.family_restroom_rounded,
-                              colors: colors,
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'Mãe', child: Text('Mãe')),
-                              DropdownMenuItem(value: 'Pai', child: Text('Pai')),
-                              DropdownMenuItem(value: 'Avó', child: Text('Avó')),
-                              DropdownMenuItem(value: 'Avô', child: Text('Avô')),
-                              DropdownMenuItem(value: 'Tio(a)', child: Text('Tio(a)')),
-                              DropdownMenuItem(value: 'Outro', child: Text('Outro')),
+                          textCapitalization: TextCapitalization.words,
+                        );
+                        final parentescoField = DropdownButtonFormField<String>(
+                          value: _parentesco,
+                          isExpanded: true,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          decoration: _buildInputDecoration(
+                            label: 'Parentesco',
+                            prefixIcon: Icons.family_restroom_rounded,
+                            colors: colors,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'Mãe', child: Text('Mãe', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Pai', child: Text('Pai', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Avó', child: Text('Avó', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Avô', child: Text('Avô', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Tio(a)', child: Text('Tio(a)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Outro', child: Text('Outro', overflow: TextOverflow.ellipsis)),
+                          ],
+                          onChanged: (v) => setState(() => _parentesco = v!),
+                        );
+                        if (isNarrow) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              responsavelField,
+                              const SizedBox(height: 16),
+                              parentescoField,
                             ],
-                            onChanged: (v) => setState(() => _parentesco = v!),
-                          ),
-                        ),
-                      ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: responsavelField),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 2, child: parentescoField),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
 

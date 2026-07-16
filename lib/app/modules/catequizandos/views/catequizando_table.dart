@@ -425,12 +425,16 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                a.status,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: catequizandoStatusColor(a.status),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
+                              Flexible(
+                                child: Text(
+                                  a.status,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: catequizandoStatusColor(a.status),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ),
                             ],

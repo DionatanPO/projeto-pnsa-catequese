@@ -6,7 +6,7 @@ import '../../catequizandos/viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../viewmodels/turma_viewmodel.dart';
 import '../models/turma_model.dart';
-import 'turma_form.dart';
+import '../widgets/turma_form_bottom_sheet.dart';
 import 'turma_table.dart';
 import 'gerenciar_turma_page.dart';
 
@@ -466,20 +466,11 @@ void showConcluirComTransferenciaDialog(
 }
 
 void showTurmaDialog(BuildContext context, TurmaViewModel vm, {TurmaModel? turma}) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final dialogWidth = screenWidth > 900 ? 560.0 : screenWidth > 600 ? 480.0 : screenWidth * 0.92;
-
-  showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: TurmaForm(turma: turma, vm: vm, width: dialogWidth),
-    ),
-  );
+  TurmaFormBottomSheet.show(context, vm, turma: turma);
 }
 
 void showNovaTurmaDialog(BuildContext context, TurmaViewModel vm) {
-  showTurmaDialog(context, vm);
+  TurmaFormBottomSheet.show(context, vm);
 }
 
 class TurmaPage extends StatelessWidget {
@@ -511,20 +502,64 @@ class TurmaPage extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        // Filtros Rápidos (Chips)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Obx(() {
+            final cs = theme.colorScheme;
+            final currentStatus = vm.filterStatus.value;
+            return Row(
+              children: [
+                _buildFilterChip(
+                  label: 'Todas',
+                  isSelected: currentStatus == 'Todos',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Todos';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: cs.primary,
+                ),
+                _buildFilterChip(
+                  label: 'Ativas',
+                  isSelected: currentStatus == 'Ativa',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Ativa';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.green.shade700,
+                ),
+                _buildFilterChip(
+                  label: 'Inativas',
+                  isSelected: currentStatus == 'Inativa',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Inativa';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.grey.shade600,
+                ),
+              ],
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+
         Obx(() {
           final list = vm.paginatedTurmas;
           if (list.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                child: Text(
-                  'Nenhuma turma encontrada',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                ),
-              ),
+            final hasFilter = vm.searchQuery.value.isNotEmpty || vm.filterStatus.value != 'Todos';
+            return _buildEmptyState(
+              theme: theme,
+              icon: hasFilter ? Icons.search_off_rounded : Icons.school_outlined,
+              title: hasFilter ? 'Nenhum resultado encontrado' : 'Nenhuma turma cadastrada',
+              subtitle: hasFilter
+                  ? 'Tente ajustar os filtros ou o termo de busca.'
+                  : 'Clique no botão "+" para adicionar a primeira turma.',
             );
           }
           return LayoutBuilder(
@@ -609,6 +644,83 @@ class TurmaPage extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+    required ThemeData theme,
+    required Color activeColor,
+  }) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: onSelected,
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Colors.white : cs.onSurfaceVariant,
+        ),
+        selectedColor: activeColor,
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.4),
+        checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isSelected ? activeColor : cs.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: cs.primary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-
-

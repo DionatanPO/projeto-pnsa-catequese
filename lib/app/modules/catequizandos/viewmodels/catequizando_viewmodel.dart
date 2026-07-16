@@ -15,6 +15,10 @@ class CatequizandoViewModel extends GetxController {
   final RxInt sortColumn = (-1).obs;
   final RxBool sortAscending = true.obs;
 
+  final RxString filterStatus = 'Todos'.obs;
+  // Filtros de sacramentos: 'Todos', 'Pendente Batismo', 'Pendente Eucaristia', 'Pendente Crisma'
+  final RxString filterSacramento = 'Todos'.obs;
+
   int pageSize = 25;
   Timer? _debounce;
 
@@ -28,9 +32,29 @@ class CatequizandoViewModel extends GetxController {
     catequizandos.value = list;
   }
 
-  List<Catequizando> get paginatedCatequizandos {
+  List<Catequizando> get filteredCatequizandos {
     var list = catequizandos as List<Catequizando>;
 
+    // 1. Filtro por status
+    if (filterStatus.value != 'Todos') {
+      list = list.where((a) => a.status == filterStatus.value).toList();
+    }
+
+    // 2. Filtro por sacramento pendente
+    if (filterSacramento.value != 'Todos') {
+      list = list.where((a) {
+        if (filterSacramento.value == 'Pendente Batismo') {
+          return !a.batizado;
+        } else if (filterSacramento.value == 'Pendente Eucaristia') {
+          return a.fezPrimeiraEucaristia != true;
+        } else if (filterSacramento.value == 'Pendente Crisma') {
+          return a.fezCrisma != true;
+        }
+        return true;
+      }).toList();
+    }
+
+    // 3. Filtro por query de busca
     final query = searchQuery.value.toLowerCase().trim();
     if (query.isNotEmpty) {
       final matriculaVm = Get.find<MatriculaViewModel>();
@@ -43,6 +67,7 @@ class CatequizandoViewModel extends GetxController {
       }).toList();
     }
 
+    // 4. Ordenação
     if (sortColumn.value >= 0) {
       final matriculaVm = Get.find<MatriculaViewModel>();
       final turmas = Get.find<TurmaViewModel>().turmas;
@@ -54,6 +79,11 @@ class CatequizandoViewModel extends GetxController {
       });
     }
 
+    return list;
+  }
+
+  List<Catequizando> get paginatedCatequizandos {
+    final list = filteredCatequizandos;
     final start = currentPage.value * pageSize;
     final end = (start + pageSize).clamp(0, list.length);
     if (start >= list.length) return [];
@@ -77,16 +107,7 @@ class CatequizandoViewModel extends GetxController {
   }
 
   int get _totalCount {
-    final query = searchQuery.value.toLowerCase().trim();
-    if (query.isEmpty) return catequizandos.length;
-    final matriculaVm = Get.find<MatriculaViewModel>();
-    final turmas = Get.find<TurmaViewModel>().turmas;
-    return catequizandos.where((a) {
-      final turmaAtual = matriculaVm.getNomeTurmaAtual(a.id, turmas) ?? '';
-      return a.nome.toLowerCase().contains(query) ||
-          turmaAtual.toLowerCase().contains(query) ||
-          a.responsavel.toLowerCase().contains(query);
-    }).length;
+    return filteredCatequizandos.length;
   }
 
   void sortBy(int column) {

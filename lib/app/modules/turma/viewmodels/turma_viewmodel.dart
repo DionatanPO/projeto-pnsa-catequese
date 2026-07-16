@@ -17,6 +17,8 @@ class TurmaViewModel extends GetxController {
   final RxInt sortColumn = (-1).obs;
   final RxBool sortAscending = true.obs;
 
+  final RxString filterStatus = 'Todos'.obs;
+
   int pageSize = 25;
   Timer? _debounce;
 
@@ -30,9 +32,15 @@ class TurmaViewModel extends GetxController {
     turmas.value = list;
   }
 
-  List<TurmaModel> get paginatedTurmas {
+  List<TurmaModel> get filteredTurmas {
     var list = turmas.toList();
 
+    // Filtro de Status
+    if (filterStatus.value != 'Todos') {
+      list = list.where((t) => t.status == filterStatus.value).toList();
+    }
+
+    // Filtro por busca
     final query = searchQuery.value.toLowerCase().trim();
     if (query.isNotEmpty) {
       list = list.where((t) =>
@@ -43,6 +51,7 @@ class TurmaViewModel extends GetxController {
       ).toList();
     }
 
+    // Ordenação
     if (sortColumn.value >= 0) {
       list = List<TurmaModel>.from(list);
       list.sort((a, b) {
@@ -52,6 +61,11 @@ class TurmaViewModel extends GetxController {
       });
     }
 
+    return list;
+  }
+
+  List<TurmaModel> get paginatedTurmas {
+    final list = filteredTurmas;
     final start = currentPage.value * pageSize;
     final end = (start + pageSize).clamp(0, list.length);
     if (start >= list.length) return [];
@@ -77,14 +91,7 @@ class TurmaViewModel extends GetxController {
   }
 
   int get _totalCount {
-    final query = searchQuery.value.toLowerCase().trim();
-    if (query.isEmpty) return turmas.length;
-    return turmas.where((t) =>
-      t.nome.toLowerCase().contains(query) ||
-      t.catequistas.any((c) => c.toLowerCase().contains(query)) ||
-      t.diaHorario.toLowerCase().contains(query) ||
-      t.etapa.toLowerCase().contains(query)
-    ).length;
+    return filteredTurmas.length;
   }
 
   void sortBy(int column) {

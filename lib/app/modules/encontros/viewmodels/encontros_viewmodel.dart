@@ -179,6 +179,51 @@ class EncontrosViewModel extends GetxController {
     ).length;
   }
 
+  /// Encontros agrupados por turma (após aplicar filtro de busca)
+  Map<String, List<EncontroItem>> get encontrosAgrupadosPorTurma {
+    var list = _allItems as List<EncontroItem>;
+
+    final query = searchQuery.value.toLowerCase().trim();
+    if (query.isNotEmpty) {
+      list = list.where((item) =>
+        item.turmaNome.toLowerCase().contains(query) ||
+        item.encontro.descricao.toLowerCase().contains(query) ||
+        '${item.encontro.data.day.toString().padLeft(2, '0')}/${item.encontro.data.month.toString().padLeft(2, '0')}/${item.encontro.data.year}'.contains(query)
+      ).toList();
+    }
+
+    if (sortColumn.value >= 0) {
+      list = List<EncontroItem>.from(list);
+      list.sort((a, b) {
+        final ka = _sortKey(a);
+        final kb = _sortKey(b);
+        return sortAscending.value ? ka.compareTo(kb) : kb.compareTo(ka);
+      });
+    }
+
+    final grouped = <String, List<EncontroItem>>{};
+    for (final item in list) {
+      grouped.putIfAbsent(item.turmaNome, () => []).add(item);
+    }
+
+    // Ordenar turmas alfabeticamente
+    final sortedKeys = grouped.keys.toList()..sort();
+    final result = <String, List<EncontroItem>>{};
+    for (final k in sortedKeys) {
+      result[k] = grouped[k]!;
+    }
+    return result;
+  }
+
+  /// Total de encontros (após filtro)
+  int get totalEncontrosFiltrados {
+    var count = 0;
+    for (final list in encontrosAgrupadosPorTurma.values) {
+      count += list.length;
+    }
+    return count;
+  }
+
   void sortBy(int column) {
     if (sortColumn.value == column) {
       sortAscending.value = !sortAscending.value;

@@ -3,24 +3,15 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../viewmodels/coordenador_viewmodel.dart';
 import '../models/coordenador_model.dart';
-import 'coordenador_form.dart';
+import '../widgets/coordenador_form_bottom_sheet.dart';
 import 'coordenador_table.dart';
 
 void showCoordenadorDialog(BuildContext context, CoordenadorViewModel vm, {Coordenador? coordenador}) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final dialogWidth = screenWidth > 900 ? 560.0 : screenWidth > 600 ? 480.0 : screenWidth * 0.92;
-
-  showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: CoordenadorForm(coordenador: coordenador, vm: vm, width: dialogWidth),
-    ),
-  );
+  CoordenadorFormBottomSheet.show(context, vm, coordenador: coordenador);
 }
 
 void showNovaCoordenadorDialog(BuildContext context, CoordenadorViewModel vm) {
-  showCoordenadorDialog(context, vm);
+  CoordenadorFormBottomSheet.show(context, vm);
 }
 
 class CoordenadorPage extends StatelessWidget {

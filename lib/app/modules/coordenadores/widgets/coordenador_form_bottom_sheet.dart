@@ -1,34 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import '../viewmodels/coordenador_viewmodel.dart';
+import 'package:get/get.dart';
 import '../models/coordenador_model.dart';
+import '../viewmodels/coordenador_viewmodel.dart';
 
-class CoordenadorForm extends StatefulWidget {
+class CoordenadorFormBottomSheet extends StatefulWidget {
   final Coordenador? coordenador;
   final CoordenadorViewModel vm;
-  final double width;
 
-  const CoordenadorForm({
+  const CoordenadorFormBottomSheet({
     super.key,
     this.coordenador,
     required this.vm,
-    this.width = 480,
   });
 
+  static void show(BuildContext context, CoordenadorViewModel vm, {Coordenador? coordenador}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CoordenadorFormBottomSheet(coordenador: coordenador, vm: vm),
+    );
+  }
+
   @override
-  State<CoordenadorForm> createState() => _CoordenadorFormState();
+  State<CoordenadorFormBottomSheet> createState() => _CoordenadorFormBottomSheetState();
 }
 
-class _CoordenadorFormState extends State<CoordenadorForm> {
+class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet> {
   late final TextEditingController _nomeCtrl;
   late final TextEditingController _emailCtrl;
   late final TextEditingController _telefoneCtrl;
   late final TextEditingController _areaCtrl;
-  late String _currentStatus;
   late final GlobalKey<FormState> _formKey;
+  final _salvando = false.obs;
 
+  late String _currentStatus;
   late final MaskTextInputFormatter _phoneMask;
-  bool _isLoading = false;
 
   bool get _isEditing => widget.coordenador != null;
 
@@ -67,25 +76,16 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
       (c) => c.email.toLowerCase() == email.toLowerCase() && c.id != widget.coordenador?.id,
     );
     if (existe) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Coordenador já cadastrado'),
-          content: Text('Já existe um coordenador com o e-mail "$email".'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Ok'),
-            ),
-          ],
-        ),
-      );
+      Get.dialog(AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Coordenador já cadastrado'),
+        content: Text('Já existe um coordenador com o e-mail "$email".'),
+        actions: [TextButton(onPressed: () => Get.back(), child: const Text('Ok'))],
+      ));
       return;
     }
 
-    setState(() => _isLoading = true);
-
+    _salvando.value = true;
     try {
       final model = Coordenador(
         id: widget.coordenador?.id ?? '',
@@ -101,18 +101,13 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
       } else {
         await widget.vm.addCoordenador(model);
       }
-      
-      if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      // Opcional: Adicionar tratamento de erro visual aqui se necessário
+
+      if (context.mounted) Navigator.pop(context);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      _salvando.value = false;
     }
   }
 
-  // Helper para padronizar os estilos de inputs em todos os formulários
   InputDecoration _buildInputDecoration({
     required String label,
     String? hint,
@@ -154,82 +149,37 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final isWide = MediaQuery.of(context).size.width >= 600;
 
     return Container(
-      constraints: BoxConstraints(maxWidth: widget.width),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+        maxWidth: isWide ? 560 : double.infinity,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
         color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 32,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, -8),
           ),
         ],
-        border: Border.all(color: colors.outlineVariant.withOpacity(0.3)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Cabeçalho unificado
-          Container(
-            padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              color: colors.primaryContainer.withOpacity(0.3),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    _isEditing ? Icons.manage_accounts_rounded : Icons.person_add_alt_1_rounded,
-                    color: colors.onPrimary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _isEditing ? 'Editar Coordenador' : 'Novo Coordenador',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _isEditing ? 'Atualize as informações de coordenação' : 'Preencha os dados do coordenador',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Corpo do Formulário com Rolagem Segura
+          _buildHandle(colors),
+          _buildHeader(theme, colors),
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(32, 28, 32, 16),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Campo Nome completo
                     TextFormField(
                       controller: _nomeCtrl,
                       decoration: _buildInputDecoration(
@@ -245,13 +195,10 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
-
-                    // Seção de Email e Telefone em linha
+                    const SizedBox(height: 16),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isCompact = constraints.maxWidth < 400;
-
                         final emailField = TextFormField(
                           controller: _emailCtrl,
                           decoration: _buildInputDecoration(
@@ -267,7 +214,6 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
                             return null;
                           },
                         );
-
                         final phoneField = TextFormField(
                           controller: _telefoneCtrl,
                           decoration: _buildInputDecoration(
@@ -280,40 +226,22 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
                           inputFormatters: [_phoneMask],
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-                            if (v.replaceAll(RegExp(r'\D'), '').length < 11) {
-                              return 'Telefone incompleto';
-                            }
+                            if (v.replaceAll(RegExp(r'\D'), '').length < 11) return 'Telefone incompleto';
                             return null;
                           },
                         );
-
-                        if (isCompact) {
-                          return Column(
-                            children: [
-                              emailField,
-                              const SizedBox(height: 20),
-                              phoneField,
-                            ],
-                          );
-                        } else {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(child: emailField),
-                              const SizedBox(width: 16),
-                              Expanded(child: phoneField),
-                            ],
-                          );
-                        }
+                        if (isCompact) return Column(children: [emailField, const SizedBox(height: 16), phoneField]);
+                        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Expanded(child: emailField),
+                          const SizedBox(width: 16),
+                          Expanded(child: phoneField),
+                        ]);
                       },
                     ),
-                    const SizedBox(height: 20),
-
-                    // Seção de Área e Status em linha
+                    const SizedBox(height: 16),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isCompact = constraints.maxWidth < 400;
-
                         final areaField = TextFormField(
                           controller: _areaCtrl,
                           decoration: _buildInputDecoration(
@@ -324,7 +252,6 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
                         );
-
                         final statusField = DropdownButtonFormField<String>(
                           value: _currentStatus,
                           decoration: _buildInputDecoration(
@@ -335,25 +262,12 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
                           items: ['Ativo', 'Inativo'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                           onChanged: (v) => setState(() => _currentStatus = v!),
                         );
-
-                        if (isCompact) {
-                          return Column(
-                            children: [
-                              areaField,
-                              const SizedBox(height: 20),
-                              statusField,
-                            ],
-                          );
-                        } else {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(child: areaField),
-                              const SizedBox(width: 16),
-                              Expanded(child: statusField),
-                            ],
-                          );
-                        }
+                        if (isCompact) return Column(children: [areaField, const SizedBox(height: 16), statusField]);
+                        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Expanded(child: areaField),
+                          const SizedBox(width: 16),
+                          Expanded(child: statusField),
+                        ]);
                       },
                     ),
                     const SizedBox(height: 16),
@@ -362,49 +276,87 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
               ),
             ),
           ),
+          _buildFooter(theme, colors),
+        ],
+      ),
+    );
+  }
 
-          // Botões de Ação do Rodapé
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 16, 32, 28),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+  Widget _buildHandle(ColorScheme colors) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      width: 40, height: 4,
+      decoration: BoxDecoration(
+        color: colors.outlineVariant,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme, ColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              _isEditing ? Icons.manage_accounts_rounded : Icons.person_add_alt_1_rounded,
+              color: colors.onPrimary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    'Cancelar',
-                    style: TextStyle(color: colors.onSurfaceVariant),
-                  ),
+                Text(
+                  _isEditing ? 'Editar Coordenador' : 'Novo Coordenador',
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: colors.onSurface),
                 ),
-                const SizedBox(width: 12),
-                FilledButton.icon(
-                  onPressed: _isLoading ? null : _save,
-                  icon: _isLoading
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colors.onPrimary,
-                          ),
-                        )
-                      : Icon(_isEditing ? Icons.save_rounded : Icons.check_rounded, size: 18),
-                  label: Text(_isLoading ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  _isEditing ? 'Atualize as informações de coordenação' : 'Preencha os dados do coordenador',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(ThemeData theme, ColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: _salvando.value ? null : () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Cancelar', style: TextStyle(color: colors.onSurfaceVariant)),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: _salvando.value ? null : _save,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: _salvando.value
+                ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
+                : Icon(_isEditing ? Icons.save_rounded : Icons.check_rounded, size: 18),
+            label: Text(_salvando.value ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
           ),
         ],
       ),

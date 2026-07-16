@@ -3,24 +3,15 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../viewmodels/catequista_viewmodel.dart';
 import '../models/catequista_model.dart';
-import 'catequista_form.dart';
+import '../widgets/catequista_form_bottom_sheet.dart';
 import 'catequista_table.dart';
 
 void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequista? catequista}) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final dialogWidth = screenWidth > 900 ? 640.0 : screenWidth > 600 ? 560.0 : screenWidth * 0.95;
-
-  showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: CatequistaForm(catequista: catequista, vm: vm, width: dialogWidth),
-    ),
-  );
+  CatequistaFormBottomSheet.show(context, vm, catequista: catequista);
 }
 
 void showNovaCatequistaDialog(BuildContext context, CatequistaViewModel vm) {
-  showCatequistaDialog(context, vm);
+  CatequistaFormBottomSheet.show(context, vm);
 }
 
 class CatequistaPage extends StatelessWidget {
@@ -55,16 +46,17 @@ class CatequistaPage extends StatelessWidget {
         Obx(() {
           final list = vm.paginatedCatequistas;
           if (list.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                child: Text(
-                  'Nenhum catequista encontrado',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                ),
-              ),
+            return _buildEmptyState(
+              theme: theme,
+              icon: vm.searchQuery.value.isNotEmpty
+                  ? Icons.search_off_rounded
+                  : Icons.person_outline_rounded,
+              title: vm.searchQuery.value.isNotEmpty
+                  ? 'Nenhum resultado encontrado'
+                  : 'Nenhum catequista cadastrado',
+              subtitle: vm.searchQuery.value.isNotEmpty
+                  ? 'Tente ajustar o termo de busca.'
+                  : 'Clique no botão "+" para adicionar o primeiro catequista.',
             );
           }
           return LayoutBuilder(
@@ -92,6 +84,49 @@ class CatequistaPage extends StatelessWidget {
           return PaginationControls(vm: vm);
         }),
       ],
+    );
+  }
+
+  Widget _buildEmptyState({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: cs.primary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

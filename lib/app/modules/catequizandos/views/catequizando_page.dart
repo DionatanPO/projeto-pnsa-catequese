@@ -14,8 +14,8 @@ import '../viewmodels/catequizando_viewmodel.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
 import '../../turma/models/turma_model.dart';
 import '../../../core/utils/certificate_generator.dart';
-import 'catequizando_form.dart';
 import 'catequizando_table.dart';
+import '../widgets/editar_catequizando_bottom_sheet.dart';
 import '../../configuracao/views/configuracao_drive_page.dart';
 
 void showHistoricoDialog(BuildContext context, Catequizando catequizando, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
@@ -583,26 +583,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
 
 void showEditarCatequizandoDialog(BuildContext context, CatequizandoViewModel vm,
     {required Catequizando catequizando, List<TurmaModel> turmas = const []}) {
-  final screenWidth = MediaQuery.of(context).size.width;
-  final dialogWidth = screenWidth > 900 ? 640.0 : screenWidth > 600 ? 560.0 : screenWidth * 0.95;
-
-  showDialog(
-    context: context,
-    builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        constraints: const BoxConstraints(maxHeight: 700),
-        child: CatequizandoForm(
-          catequizando: catequizando,
-          vm: vm,
-          turmas: turmas,
-          matriculaVm: Get.find<MatriculaViewModel>(),
-          width: dialogWidth,
-        ),
-      ),
-    ),
-  );
+  showEditarCatequizandoBottomSheet(context, vm, catequizando: catequizando, turmas: turmas);
 }
 
 void _showExportDialog(BuildContext context, Catequizando catequizando, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
@@ -764,21 +745,131 @@ class CatequizandoPage extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+
+        // Filtros Rápidos (Chips)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Obx(() {
+            final cs = theme.colorScheme;
+            final currentStatus = vm.filterStatus.value;
+            final currentSacra = vm.filterSacramento.value;
+
+            return Row(
+              children: [
+                // Grupo 1: Status
+                _buildFilterChip(
+                  label: 'Todos',
+                  isSelected: currentStatus == 'Todos',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Todos';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: cs.primary,
+                ),
+                _buildFilterChip(
+                  label: 'Em Andamento',
+                  isSelected: currentStatus == 'Em Andamento',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Em Andamento';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.blue.shade700,
+                ),
+                _buildFilterChip(
+                  label: 'Formado',
+                  isSelected: currentStatus == 'Formado',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Formado';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.green.shade700,
+                ),
+                _buildFilterChip(
+                  label: 'Desistente',
+                  isSelected: currentStatus == 'Desistente',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Desistente';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.red.shade700,
+                ),
+                _buildFilterChip(
+                  label: 'Inativo',
+                  isSelected: currentStatus == 'Inativo',
+                  onSelected: (_) {
+                    vm.filterStatus.value = 'Inativo';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.grey.shade600,
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: SizedBox(height: 20, child: VerticalDivider(width: 1, thickness: 1)),
+                ),
+
+                // Grupo 2: Sacramentos
+                _buildFilterChip(
+                  label: 'Sem Restrição',
+                  isSelected: currentSacra == 'Todos',
+                  onSelected: (_) {
+                    vm.filterSacramento.value = 'Todos';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: cs.secondary,
+                ),
+                _buildFilterChip(
+                  label: 'Pendente Batismo',
+                  isSelected: currentSacra == 'Pendente Batismo',
+                  onSelected: (_) {
+                    vm.filterSacramento.value = 'Pendente Batismo';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.deepPurple.shade600,
+                ),
+                _buildFilterChip(
+                  label: 'Pendente 1ª Eucaristia',
+                  isSelected: currentSacra == 'Pendente Eucaristia',
+                  onSelected: (_) {
+                    vm.filterSacramento.value = 'Pendente Eucaristia';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.teal.shade700,
+                ),
+                _buildFilterChip(
+                  label: 'Pendente Crisma',
+                  isSelected: currentSacra == 'Pendente Crisma',
+                  onSelected: (_) {
+                    vm.filterSacramento.value = 'Pendente Crisma';
+                    vm.currentPage.value = 0;
+                  },
+                  theme: theme,
+                  activeColor: Colors.indigo.shade700,
+                ),
+              ],
+            );
+          }),
+        ),
         const SizedBox(height: 16),
         Obx(() {
           final paginated = vm.paginatedCatequizandos;
           final total = vm.totalPages;
           if (vm.catequizandos.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                child: Text(
-                  'Nenhum catequizando encontrado',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                ),
-              ),
+            return _buildEmptyState(
+              theme: theme,
+              icon: Icons.people_outline_rounded,
+              title: 'Nenhum catequizando cadastrado',
+              subtitle: 'Clique no botão "+" para adicionar o primeiro catequizando.',
             );
           }
           return LayoutBuilder(
@@ -787,16 +878,11 @@ class CatequizandoPage extends StatelessWidget {
                 return Column(
                   children: [
                     if (paginated.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 48),
-                        child: Center(
-                          child: Text(
-                            'Nenhum resultado para essa busca',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                          ),
-                        ),
+                      _buildEmptyState(
+                        theme: theme,
+                        icon: Icons.search_off_rounded,
+                        title: 'Nenhum resultado encontrado',
+                        subtitle: 'Tente ajustar os filtros ou o termo de busca.',
                       )
                     else
                       ListView.builder(
@@ -850,16 +936,11 @@ class CatequizandoPage extends StatelessWidget {
               return Column(
                 children: [
                   if (paginated.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 48),
-                      child: Center(
-                        child: Text(
-                          'Nenhum resultado para essa busca',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
+                    _buildEmptyState(
+                      theme: theme,
+                      icon: Icons.search_off_rounded,
+                      title: 'Nenhum resultado encontrado',
+                      subtitle: 'Tente ajustar os filtros ou o termo de busca.',
                     )
                   else
                     CatequizandoTable(
@@ -906,6 +987,85 @@ class CatequizandoPage extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+    required ThemeData theme,
+    required Color activeColor,
+  }) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: onSelected,
+        showCheckmark: false,
+        labelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Colors.white : cs.onSurfaceVariant,
+        ),
+        selectedColor: activeColor,
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.4),
+        checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isSelected ? activeColor : cs.outlineVariant.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64, horizontal: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: cs.primary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

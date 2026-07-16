@@ -180,26 +180,30 @@ class CatequistaTable extends StatelessWidget {
     return InkWell(
       onTap: () => vm.sortBy(col),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 16),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: contentColor),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-                fontSize: 12,
-                color: contentColor,
-                letterSpacing: 0.3,
+            Icon(icon, size: 14, color: contentColor),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 12,
+                  color: contentColor,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
             if (isActive) ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               Icon(
                 vm.sortAscending.value ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                size: 14,
+                size: 13,
                 color: contentColor,
               ),
             ],
