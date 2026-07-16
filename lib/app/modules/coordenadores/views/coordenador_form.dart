@@ -61,6 +61,28 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final nome = _nomeCtrl.text.trim();
+    final existe = widget.vm.data.value.coordenadores.any(
+      (c) => c.nome.toLowerCase() == nome.toLowerCase() && c.id != widget.coordenador?.id,
+    );
+    if (existe) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Coordenador já cadastrado'),
+          content: Text('Já existe um coordenador com o nome "$nome".'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Ok'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {

@@ -168,6 +168,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   late final TextEditingController _detalheEucaristiaCtrl;
   late final TextEditingController _detalheCrismaCtrl;
   late final TextEditingController _detalheRestricaoCtrl;
+  late final TextEditingController _observacoesCtrl;
   late final TextEditingController _responsavelCtrl;
   late final TextEditingController _telefoneCtrl;
   late final TextEditingController _cepCtrl;
@@ -182,8 +183,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   String _sexo = 'Masculino';
   DateTime? _dataNascimento;
   bool _batizado = false;
-  bool? _fezPrimeiraEucaristia;
-  bool? _fezCrisma;
+  bool _fezPrimeiraEucaristia = false;
+  bool _fezCrisma = false;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
   String? _selectedTurmaId;
@@ -200,6 +201,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     _detalheEucaristiaCtrl = TextEditingController(text: c?.detalheEucaristia ?? '');
     _detalheCrismaCtrl = TextEditingController(text: c?.detalheCrisma ?? '');
     _detalheRestricaoCtrl = TextEditingController(text: c?.detalheRestricao ?? '');
+    _observacoesCtrl = TextEditingController(text: c?.observacoes ?? '');
     _responsavelCtrl = TextEditingController(text: c?.responsavel ?? '');
     _telefoneCtrl = TextEditingController(text: c?.telefone ?? '');
     _cepCtrl = TextEditingController(text: c?.cep ?? '');
@@ -217,8 +219,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       _sexo = c.sexo;
       _dataNascimento = c.dataNascimento;
       _batizado = c.batizado;
-      _fezPrimeiraEucaristia = c.fezPrimeiraEucaristia;
-      _fezCrisma = c.fezCrisma;
+      _fezPrimeiraEucaristia = c.fezPrimeiraEucaristia ?? false;
+      _fezCrisma = c.fezCrisma ?? false;
       _parentesco = c.parentesco;
       _possuiRestricao = c.possuiRestricao;
       _status = c.status;
@@ -251,6 +253,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     _detalheEucaristiaCtrl.dispose();
     _detalheCrismaCtrl.dispose();
     _detalheRestricaoCtrl.dispose();
+    _observacoesCtrl.dispose();
     _responsavelCtrl.dispose();
     _telefoneCtrl.dispose();
     _cepCtrl.dispose();
@@ -295,6 +298,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       bairro: _bairroCtrl.text.trim(),
       possuiRestricao: _possuiRestricao,
       detalheRestricao: _possuiRestricao ? _detalheRestricaoCtrl.text.trim() : null,
+      observacoes: _observacoesCtrl.text.trim().isEmpty ? null : _observacoesCtrl.text.trim(),
       status: _status,
       aceiteTermos: widget.catequizando?.aceiteTermos ?? false,
       assinaturaResponsavel: widget.catequizando?.assinaturaResponsavel,
@@ -306,6 +310,30 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   Future<void> _save() async {
     final dados = _buildModel();
     if (dados == null) return;
+
+    if (widget.vm != null) {
+      final nome = dados.nome.trim();
+      final existe = widget.vm!.catequizandos.any(
+        (c) => c.nome.toLowerCase() == nome.toLowerCase() && c.id != dados.id,
+      );
+      if (existe) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Catequizando já cadastrado'),
+            content: Text('Já existe um catequizando com o nome "$nome".'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Ok'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
 
@@ -646,7 +674,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                     const SizedBox(height: 20),
                     radioGroup<bool>(
                       label: 'Já fez a Primeira Eucaristia?',
-                      value: _fezPrimeiraEucaristia ?? false,
+                      value: _fezPrimeiraEucaristia,
                       options: const [true, false],
                       labels: const ['Sim', 'Não'],
                       theme: theme,
@@ -667,7 +695,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                     const SizedBox(height: 20),
                     radioGroup<bool>(
                       label: 'Já recebeu a Crisma?',
-                      value: _fezCrisma ?? false,
+                      value: _fezCrisma,
                       options: const [true, false],
                       labels: const ['Sim', 'Não'],
                       theme: theme,
@@ -706,11 +734,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                               colors: colors,
                             ),
                             textCapitalization: TextCapitalization.words,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-                              if (v.trim().split(' ').length < 2) return 'Digite o nome completo';
-                              return null;
-                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -751,13 +774,6 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                         colors: colors,
                       ),
                       keyboardType: TextInputType.phone,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Campo obrigatório';
-                        if (v.replaceAll(RegExp(r'\D'), '').length < 11) {
-                          return 'Telefone incompleto';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 20),
 
@@ -847,6 +863,22 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                         textCapitalization: TextCapitalization.sentences,
                       ),
                     ],
+                    const SizedBox(height: 8),
+
+                    // SEÇÃO: OBSERVAÇÕES GERAIS
+                    _buildSectionHeader('Observações Gerais', Icons.notes_rounded, theme),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _observacoesCtrl,
+                      decoration: _buildInputDecoration(
+                        label: 'Observações Gerais',
+                        hint: 'Descreva as observações',
+                        prefixIcon: Icons.notes_rounded,
+                        colors: colors,
+                      ),
+                      maxLines: 4,
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
                     const SizedBox(height: 8),
                   ],
                 ),

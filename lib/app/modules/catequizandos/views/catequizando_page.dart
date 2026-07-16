@@ -729,20 +729,40 @@ class CatequizandoPage extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(hPad, 8, hPad, hPad),
       children: [
         const SizedBox(height: 16),
-        Obx(
-          () => TextField(
-            onChanged: vm.setSearch,
-            decoration: AppTheme.searchInputDecoration(
-              theme.colorScheme,
-              hintText: 'Buscar catequizando por nome, turma ou responsável...',
-              suffixIcon: vm.searchQuery.value.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
-                      onPressed: () => vm.setSearch(''),
-                    )
-                  : null,
+        Row(
+          children: [
+            Expanded(
+              child: Obx(
+                () => TextField(
+                  onChanged: vm.setSearch,
+                  decoration: AppTheme.searchInputDecoration(
+                    theme.colorScheme,
+                    hintText: 'Buscar catequizando por nome, turma ou responsável...',
+                    suffixIcon: vm.searchQuery.value.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear_rounded, color: theme.colorScheme.onSurfaceVariant),
+                            onPressed: () => vm.setSearch(''),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: CertificateGenerator.generateFichaBranca,
+                icon: Icon(Icons.edit_note_rounded, size: 20, color: theme.colorScheme.primary),
+                label: Text('Imprimir Ficha', style: TextStyle(fontSize: 13, color: theme.colorScheme.primary)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Obx(() {

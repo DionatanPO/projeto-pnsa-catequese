@@ -731,15 +731,15 @@ class _GerenciarTurmaPageState extends State<GerenciarTurmaPage> {
           actions: [
             TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
             FilledButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 for (final c in catequizandos) {
                   if (selectedTurmaId != null) {
-                    matriculaVm.matricular(c.id, selectedTurmaId!);
+                    await matriculaVm.matricular(c.id, selectedTurmaId!);
                   } else {
-                    matriculaVm.concluir(c.id);
+                    await matriculaVm.concluir(c.id);
                   }
                 }
-                Get.back();
+                if (context.mounted) Get.back();
                 this.setState(() => _selectedIds.clear());
               },
               icon: Icon(selectedTurmaId != null ? Icons.swap_horiz_rounded : Icons.check_circle_outline_rounded, size: 16),
@@ -796,9 +796,9 @@ class _GerenciarTurmaPageState extends State<GerenciarTurmaPage> {
             FilledButton.icon(
               onPressed: selectedTurmaId == null
                   ? null
-                  : () {
-                      matriculaVm.matricular(catequizando.id, selectedTurmaId!);
-                      Get.back();
+                  : () async {
+                      await matriculaVm.matricular(catequizando.id, selectedTurmaId!);
+                      if (context.mounted) Get.back();
                       this.setState(() => _selectedIds.remove(catequizando.id));
                     },
               icon: const Icon(Icons.swap_horiz_rounded, size: 16),
@@ -854,11 +854,11 @@ class _GerenciarTurmaPageState extends State<GerenciarTurmaPage> {
             FilledButton.icon(
               onPressed: selectedTurmaId == null
                   ? null
-                  : () {
+                  : () async {
                       for (final c in catequizandos) {
-                        matriculaVm.matricular(c.id, selectedTurmaId!);
+                        await matriculaVm.matricular(c.id, selectedTurmaId!);
                       }
-                      Get.back();
+                      if (context.mounted) Get.back();
                       this.setState(() => _selectedIds.clear());
                     },
               icon: const Icon(Icons.swap_horiz_rounded, size: 16),

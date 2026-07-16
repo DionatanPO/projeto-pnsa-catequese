@@ -101,6 +101,28 @@ class _CatequistaFormState extends State<CatequistaForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final nome = _nomeCtrl.text.trim();
+    final existe = widget.vm.data.value.catequistas.any(
+      (c) => c.nome.toLowerCase() == nome.toLowerCase() && c.id != widget.catequista?.id,
+    );
+    if (existe) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Catequista já cadastrado'),
+          content: Text('Já existe um catequista com o nome "$nome".'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Ok'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {

@@ -156,9 +156,9 @@ class CatequizandoCard extends StatelessWidget {
                     children: [
                       _chip('B', aluno.batizado, colors.primary, colors),
                       const SizedBox(width: 6),
-                      _chip('E', aluno.fezPrimeiraEucaristia == true, colors.tertiary, colors),
+                      _chip('E', aluno.fezPrimeiraEucaristia == true, colors.primary, colors),
                       const SizedBox(width: 6),
-                      _chip('C', aluno.fezCrisma == true, colors.secondary, colors),
+                      _chip('C', aluno.fezCrisma == true, colors.primary, colors),
                     ],
                   ),
                 ],
@@ -446,9 +446,9 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                         children: [
                           _sacraChip('B', a.batizado, colors.primary, colors),
                           const SizedBox(width: 4),
-                          _sacraChip('E', a.fezPrimeiraEucaristia == true, colors.tertiary, colors),
+                          _sacraChip('E', a.fezPrimeiraEucaristia == true, colors.primary, colors),
                           const SizedBox(width: 4),
-                          _sacraChip('C', a.fezCrisma == true, colors.secondary, colors),
+                          _sacraChip('C', a.fezCrisma == true, colors.primary, colors),
                         ],
                       ),
                     ),

@@ -23,6 +23,7 @@ class Catequizando {
 
   final bool possuiRestricao;
   final String? detalheRestricao;
+  final String? observacoes;
 
   final String status;
   final bool aceiteTermos;
@@ -59,6 +60,7 @@ class Catequizando {
     this.bairro = '',
     this.possuiRestricao = false,
     this.detalheRestricao,
+    this.observacoes,
     this.status = 'Em Andamento',
     this.aceiteTermos = false,
     this.assinaturaResponsavel,
@@ -88,6 +90,7 @@ class Catequizando {
       bairro: map['bairro'] as String? ?? '',
       possuiRestricao: map['possuiRestricao'] as bool? ?? false,
       detalheRestricao: map['detalheRestricao'] as String?,
+      observacoes: map['observacoes'] as String?,
       status: map['status'] as String? ?? 'Em Andamento',
       aceiteTermos: map['aceiteTermos'] as bool? ?? false,
       assinaturaResponsavel: map['assinaturaResponsavel'] as String?,
@@ -120,6 +123,7 @@ documentosAnexados: (map['documentosAnexados'] as List<dynamic>?)
       'bairro': bairro,
       'possuiRestricao': possuiRestricao,
       'detalheRestricao': detalheRestricao,
+      'observacoes': observacoes,
       'status': status,
       'aceiteTermos': aceiteTermos,
       'assinaturaResponsavel': assinaturaResponsavel,

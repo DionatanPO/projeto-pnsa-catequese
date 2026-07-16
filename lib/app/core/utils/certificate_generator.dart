@@ -8,6 +8,7 @@ import '../../modules/catequizandos/models/catequizando_model.dart';
 import '../../modules/matricula/models/matricula_model.dart';
 import '../../modules/matricula/viewmodels/matricula_viewmodel.dart';
 import '../../modules/turma/viewmodels/turma_viewmodel.dart';
+import 'pdf_document_header.dart';
 
 class CertificateGenerator {
   static Future<void> generate(Catequizando catequizando) async {
@@ -45,18 +46,14 @@ class CertificateGenerator {
                 padding: const pw.EdgeInsets.symmetric(horizontal: 48, vertical: 36),
                 child: pw.Column(
                   children: [
-                    // Cabeçalho Paroquial
-                    pw.Image(logoImage, width: 64, height: 64),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      'PARÓQUIA NOSSA SENHORA AUXILIADORA',
-                      style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor, letterSpacing: 0.5),
-                    ),
-                    pw.Text('Iporá - GO', style: textStyle.copyWith(fontSize: 13, color: PdfColors.grey700)),
-                    pw.SizedBox(height: 6),
-                    pw.Text(
-                      'PASTORAL CATEQUÉTICA',
-                      style: pw.TextStyle(font: fontBold, fontSize: 14, color: borderColor, letterSpacing: 1.0),
+                    buildPdfHeader(
+                      logoImage: logoImage,
+                      font: font,
+                      fontBold: fontBold,
+                      primaryColor: borderColor,
+                      textColor: textColor,
+                      showSubtitle: false,
+                      landscape: true,
                     ),
 
                     pw.Spacer(flex: 2),
@@ -157,22 +154,13 @@ class CertificateGenerator {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        header: (context) => pw.Column(
-          children: [
-            pw.Image(logoImage, width: 48, height: 48),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              'PARÓQUIA NOSSA SENHORA AUXILIADORA',
-              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor, letterSpacing: 0.5),
-            ),
-            pw.Text(
-              'PASTORAL CATEQUÉTICA',
-              style: pw.TextStyle(font: fontBold, fontSize: 12, color: primaryColor, letterSpacing: 0.8),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Divider(color: primaryColor, thickness: 1),
-            pw.SizedBox(height: 12),
-          ],
+        header: (context) => buildPdfHeader(
+          logoImage: logoImage,
+          font: font,
+          fontBold: fontBold,
+          primaryColor: primaryColor,
+          textColor: textColor,
+          showSubtitle: false,
         ),
         build: (context) => [
           pw.Text('Histórico de Matrículas', style: pw.TextStyle(font: fontBold, fontSize: 20, color: textColor)),
@@ -302,27 +290,13 @@ class CertificateGenerator {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
-        header: (context) => pw.Column(
-          children: [
-            pw.Image(logoImage, width: 48, height: 48),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              'PARÓQUIA NOSSA SENHORA AUXILIADORA',
-              style: pw.TextStyle(font: fontBold, fontSize: 16, color: primaryColor, letterSpacing: 0.5),
-            ),
-            pw.Text(
-              'PASTORAL CATEQUÉTICA',
-              style: pw.TextStyle(font: fontBold, fontSize: 12, color: primaryColor, letterSpacing: 0.8),
-            ),
-            pw.SizedBox(height: 8),
-            pw.Divider(color: primaryColor, thickness: 1),
-            pw.SizedBox(height: 10),
-            pw.Text(
-              'FICHA DE CADASTRO',
-              style: pw.TextStyle(font: fontBold, fontSize: 18, color: textColor, letterSpacing: 0.5),
-            ),
-            pw.SizedBox(height: 12),
-          ],
+        header: (context) => buildPdfHeader(
+          logoImage: logoImage,
+          font: font,
+          fontBold: fontBold,
+          primaryColor: primaryColor,
+          textColor: textColor,
+          subtitle: 'FICHA DE CADASTRO',
         ),
         build: (context) {
           return [
@@ -380,6 +354,12 @@ class CertificateGenerator {
             if (catequizando.possuiRestricao)
               field('Detalhamento da Restrição', catequizando.detalheRestricao ?? '-'),
 
+            if (catequizando.observacoes != null &&
+                catequizando.observacoes!.trim().isNotEmpty) ...[
+              sectionHeader('OBSERVAÇÕES'),
+              field('Observações', catequizando.observacoes!),
+            ],
+
             if (withHistory) ...[
               pw.SizedBox(height: 18),
               pw.Text('Histórico de Matrículas', style: pw.TextStyle(font: fontBold, fontSize: 13, color: textColor)),
@@ -402,6 +382,227 @@ class CertificateGenerator {
     await Printing.sharePdf(
       bytes: await pdf.save(),
       filename: 'ficha_${catequizando.nome.replaceAll(' ', '_')}.pdf',
+    );
+  }
+
+  static Future<void> generateFichaBranca() async {
+    final pdf = pw.Document();
+    final font = await PdfGoogleFonts.latoRegular();
+    final fontBold = await PdfGoogleFonts.latoBold();
+    final primaryColor = PdfColor.fromHex('#9E9E9E');
+    final textColor = PdfColor.fromHex('#2F4F4F');
+
+    pw.Widget blankField(String label) {
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 8),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              label.toUpperCase(),
+              style: pw.TextStyle(font: fontBold, fontSize: 8, color: primaryColor, letterSpacing: 0.5),
+            ),
+            pw.SizedBox(height: 14),
+            pw.Container(height: 1, color: PdfColors.grey300),
+          ],
+        ),
+      );
+    }
+
+    pw.Widget _termItem(String text) {
+      return pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 6),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('•  ', style: pw.TextStyle(font: fontBold, fontSize: 10, color: textColor)),
+            pw.Expanded(
+              child: pw.Text(
+                text,
+                style: pw.TextStyle(font: font, fontSize: 10, color: textColor, lineSpacing: 1.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    pw.Widget sectionHeader(String title) {
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(top: 14, bottom: 8),
+        padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        decoration: pw.BoxDecoration(
+          color: primaryColor,
+          borderRadius: pw.BorderRadius.circular(4),
+        ),
+        child: pw.Text(
+          title,
+          style: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white, letterSpacing: 0.5),
+        ),
+      );
+    }
+
+    final logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final logoImage = pw.MemoryImage(logoBytes);
+
+    // ── Página 1: Ficha de Cadastro ──
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => buildPdfHeader(
+          logoImage: logoImage,
+          font: font,
+          fontBold: fontBold,
+          primaryColor: primaryColor,
+          textColor: textColor,
+          subtitle: 'FICHA DE CADASTRO',
+        ),
+        build: (context) {
+          return [
+            sectionHeader('IDENTIFICAÇÃO'),
+            blankField('Nome'),
+            pw.Row(
+              children: [
+                pw.Expanded(child: blankField('Sexo')),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: blankField('Data de Nascimento')),
+              ],
+            ),
+
+            sectionHeader('HISTÓRICO SACRAMENTAL'),
+            blankField('Batizado (Sim / Não)'),
+            blankField('Local do Batismo'),
+            blankField('Primeira Eucaristia (Sim / Não)'),
+            blankField('Detalhes da Eucaristia'),
+            blankField('Crisma (Sim / Não)'),
+            blankField('Detalhes da Crisma'),
+
+            sectionHeader('CONTATOS E RESPONSÁVEIS'),
+            pw.Row(
+              children: [
+                pw.Expanded(child: blankField('Responsável')),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: blankField('Parentesco')),
+              ],
+            ),
+            blankField('Telefone / WhatsApp'),
+            pw.Row(
+              children: [
+                pw.Expanded(child: blankField('Endereço')),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: blankField('Número')),
+              ],
+            ),
+            pw.Row(
+              children: [
+                pw.Expanded(child: blankField('Bairro')),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: blankField('CEP')),
+              ],
+            ),
+
+            sectionHeader('SAÚDE E CUIDADOS'),
+            blankField('Possui alergia, problema de saúde ou restrição? (Sim / Não)'),
+            blankField('Detalhamento'),
+            pw.SizedBox(height: 12),
+            sectionHeader('OBSERVAÇÕES'),
+            pw.SizedBox(height: 4),
+            blankField(''),
+            blankField(''),
+            blankField(''),
+            blankField(''),
+          ];
+        },
+      ),
+    );
+
+    // ── Página 2: Termo de Compromisso ──
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => buildPdfHeader(
+          logoImage: logoImage,
+          font: font,
+          fontBold: fontBold,
+          primaryColor: primaryColor,
+          textColor: textColor,
+          subtitle: 'TERMO DE COMPROMISSO',
+        ),
+        build: (context) {
+          return [
+            pw.SizedBox(height: 8),
+            pw.Text(
+              'Declaro que estou ciente de que a catequese é um processo contínuo de formação cristã, da igreja '
+              'e da família, e como responsável comprometo-me a:',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor, lineSpacing: 1.6),
+              textAlign: pw.TextAlign.justify,
+            ),
+            pw.SizedBox(height: 12),
+            _termItem('Incentivar a participação assídua nos encontros;'),
+            _termItem('Acompanhar e motivar a participação na Santa Missa;'),
+            _termItem('Comprometo-me a garantir a frequência mínima de 75% nos encontros;'),
+            _termItem('Justificar previamente qualquer falta ou dificuldade;'),
+            _termItem('Participar de reuniões e formações quando convocado(a);'),
+            _termItem('Colaborar com as atividades propostas pela Paróquia Nossa Senhora Auxiliadora;'),
+            pw.SizedBox(height: 8),
+            pw.Text(
+              'Em caso de faltas excessivas, indisciplina grave ou desinteresse contínuo, '
+              'o catequizando não seguirá para o ano subsequente, inclusive o sacramento '
+              'poderá ser adiado para o próximo ano, ou até que seja cumprido todo itinerário proposto.',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor, lineSpacing: 1.6, fontStyle: pw.FontStyle.italic),
+              textAlign: pw.TextAlign.justify,
+            ),
+            pw.SizedBox(height: 8),
+            _termItem('Autorizo o uso de imagem para fins pastorais e evangelizadores, sem fins lucrativos.'),
+            pw.SizedBox(height: 32),
+
+            pw.Row(
+              children: [
+                pw.Expanded(child: blankField('Nome do Responsável')),
+                pw.SizedBox(width: 16),
+                pw.Expanded(child: blankField('Parentesco')),
+              ],
+            ),
+            pw.SizedBox(height: 4),
+            blankField('RG / CPF do Responsável'),
+            pw.SizedBox(height: 32),
+            pw.Container(
+              height: 1,
+              color: PdfColors.grey300,
+              margin: const pw.EdgeInsets.only(bottom: 4),
+            ),
+            pw.Text(
+              'Assinatura do Responsável                                                      Data: ____/____/________',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+            ),
+            pw.SizedBox(height: 32),
+            pw.Container(
+              height: 1,
+              color: PdfColors.grey300,
+              margin: const pw.EdgeInsets.only(bottom: 4),
+            ),
+            pw.Text(
+              'Assinatura do Catequizando (maior de 18 anos)                                   Data: ____/____/________',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+            ),
+
+            pw.SizedBox(height: 24),
+            pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+            pw.SizedBox(height: 6),
+            pw.Text(
+              'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
+              style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'ficha_cadastro_branca.pdf',
     );
   }
 

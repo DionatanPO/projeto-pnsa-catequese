@@ -147,8 +147,4 @@ class CatequistaViewModel extends GetxController {
     await _loadData();
   }
 
-  Future<void> removeCatequista(String id) async {
-    await _repository.remove(id);
-    await _loadData();
-  }
 }

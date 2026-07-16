@@ -38,6 +38,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   final detalheEucaristiaCtrl = TextEditingController();
   final detalheCrismaCtrl = TextEditingController();
   final detalheRestricaoCtrl = TextEditingController();
+  final observacoesCtrl = TextEditingController();
   final responsavelCtrl = TextEditingController();
   final telefoneCtrl = TextEditingController();
   final cepCtrl = TextEditingController();
@@ -61,11 +62,10 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   DateTime? _dataNascimento;
   String? _turmaSelecionadaId;
   bool _batizado = false;
-  bool? _fezPrimeiraEucaristia;
-  bool? _fezCrisma;
+  bool _fezPrimeiraEucaristia = false;
+  bool _fezCrisma = false;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
-  bool _aceiteTermos = false;
   bool _submitting = false;
   String _status = 'Em Andamento';
   final List<PlatformFile> _arquivosAnexados = [];
@@ -78,13 +78,12 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     'Contatos',
     'Saúde',
     'Documentos',
-    'Termos',
   ];
 
   @override
   void dispose() {
     for (final ctrl in [
-      nomeCtrl, dataNascimentoCtrl, localBatismoCtrl, detalheRestricaoCtrl,
+      nomeCtrl, dataNascimentoCtrl, localBatismoCtrl, detalheRestricaoCtrl, observacoesCtrl,
       responsavelCtrl, telefoneCtrl, cepCtrl, enderecoCtrl,
       numeroCtrl, bairroCtrl,
     ]) {
@@ -102,13 +101,26 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
 
   void _avancar() {
     if (!_podeAvancar) return;
-    if (_currentStep == 1) {
-      if (_fezPrimeiraEucaristia == null) {
-        Get.snackbar('Atenção', 'Informe se já fez a Primeira Eucaristia');
-        return;
-      }
-      if (_fezCrisma == null) {
-        Get.snackbar('Atenção', 'Informe se já recebeu a Crisma');
+    if (_currentStep == 0) {
+      final nome = nomeCtrl.text.trim();
+      final existe = widget.vm.catequizandos.any(
+        (c) => c.nome.toLowerCase() == nome.toLowerCase(),
+      );
+      if (existe) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Catequizando já cadastrado'),
+            content: Text('Já existe um catequizando com o nome "$nome".'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Ok'),
+              ),
+            ],
+          ),
+        );
         return;
       }
     }
@@ -155,10 +167,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   }
 
   Future<void> _finalizar() async {
-    if (!_aceiteTermos) {
-      Get.snackbar('Atenção', 'Aceite os termos para finalizar');
-      return;
-    }
     if (_dataNascimento == null) {
       Get.snackbar('Erro', 'Data de nascimento não informada');
       return;
@@ -259,8 +267,9 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       bairro: bairroCtrl.text.trim(),
       possuiRestricao: _possuiRestricao,
       detalheRestricao: _possuiRestricao ? detalheRestricaoCtrl.text.trim() : null,
+      observacoes: observacoesCtrl.text.trim().isEmpty ? null : observacoesCtrl.text.trim(),
       status: _status,
-      aceiteTermos: _aceiteTermos,
+      aceiteTermos: false,
       documentosAnexados: docsEnviados,
       driveFolderId: pastaCatequizandoId,
     );
@@ -362,7 +371,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   Widget _desktopSidebar(ThemeData theme) {
     return Container(
       width: 200,
-      color: theme.colorScheme.primary,
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,6 +399,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     required bool isLast,
     required ThemeData theme,
   }) {
+    final colors = theme.colorScheme;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,23 +411,19 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                 height: 32,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive
-                      ? theme.colorScheme.onPrimary.withOpacity(0.25)
-                      : isDone
-                          ? theme.colorScheme.onPrimary.withOpacity(0.25)
-                          : theme.colorScheme.onPrimary.withOpacity(0.15),
+                  color: isActive || isDone
+                      ? colors.primary.withOpacity(0.15)
+                      : colors.surfaceContainerHighest,
                 ),
                 child: Center(
                   child: isDone
-                      ? Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.onPrimary)
+                      ? Icon(Icons.check_rounded, size: 16, color: colors.primary)
                       : Text(
                           '$number',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
-                            color: isActive
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurfaceVariant,
+                            color: isActive ? colors.primary : colors.onSurfaceVariant,
                           ),
                         ),
                 ),
@@ -429,8 +435,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
                       color: isDone
-                          ? theme.colorScheme.onPrimary.withOpacity(0.4)
-                          : theme.colorScheme.onPrimary.withOpacity(0.15),
+                          ? colors.primary.withOpacity(0.4)
+                          : colors.surfaceContainerHighest,
                     ),
                   ),
                 ),
@@ -448,11 +454,9 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: isActive
-                          ? theme.colorScheme.onPrimary
-                          : isDone
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onPrimary.withOpacity(0.6),
+                      color: isActive || isDone
+                          ? colors.onSurface
+                          : colors.onSurfaceVariant,
                     ),
                   ),
                   if (isActive) ...[
@@ -461,7 +465,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
                       'Passo atual',
                       style: TextStyle(
                         fontSize: 11,
-                        color: theme.colorScheme.onPrimary.withOpacity(0.6),
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -559,8 +563,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
           1 => _step2(theme),
           2 => _step3(theme),
           3 => _step4(theme),
-          4 => _step5(theme),
-          _ => _step6(theme),
+          _ => _step5(theme),
         },
         const SizedBox(height: 24),
       ],
@@ -689,7 +692,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         const SizedBox(height: 20),
         radioGroup<bool>(
           label: 'Já fez a Primeira Eucaristia?',
-          value: _fezPrimeiraEucaristia ?? false,
+          value: _fezPrimeiraEucaristia,
           options: const [true, false],
           labels: const ['Sim', 'Não'],
           theme: theme,
@@ -709,7 +712,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
         const SizedBox(height: 20),
         radioGroup<bool>(
           label: 'Já recebeu a Crisma?',
-          value: _fezCrisma ?? false,
+          value: _fezCrisma,
           options: const [true, false],
           labels: const ['Sim', 'Não'],
           theme: theme,
@@ -767,7 +770,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             prefixIcon: Icon(Icons.person_rounded),
           ),
           textCapitalization: TextCapitalization.words,
-          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
         ),
         const SizedBox(height: 20),
         DropdownButtonFormField<String>(
@@ -798,7 +800,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             prefixIcon: Icon(Icons.phone_rounded),
           ),
           keyboardType: TextInputType.phone,
-          validator: (v) => v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
         ),
         const SizedBox(height: 20),
         Row(
@@ -879,6 +880,19 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
+        const SizedBox(height: 24),
+        _stepHeader('Observações Gerais', 'Informações adicionais', Icons.notes_rounded, theme),
+        const SizedBox(height: 20),
+        TextFormField(
+          controller: observacoesCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Observações Gerais',
+            hintText: 'Descreva as observações',
+            prefixIcon: Icon(Icons.notes_rounded),
+          ),
+          maxLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+        ),
       ],
     );
   }
@@ -1007,113 +1021,6 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   }
 
   // ── Step 6: Termos e Confirmação ──
-  Widget _step6(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _stepHeader('Termo de Compromisso', 'Leia e aceite os termos', Icons.verified_rounded, theme),
-        const SizedBox(height: 20),
-        Container(
-          height: 320,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('TERMO DE COMPROMISSO', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Eu, ${responsavelCtrl.text.isNotEmpty ? responsavelCtrl.text : '_________________________'}, '
-                    'responsável pelo catequizando acima descrito, declaro que estou ciente de que a catequese '
-                    'é um processo contínuo de formação cristã, da igreja e da família, e comprometo-me a:',
-                    style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
-                  ),
-                  const SizedBox(height: 12),
-                  _termItem('Incentivar a participação assídua nos encontros;'),
-                  _termItem('Acompanhar e motivar a participação na Santa Missa;'),
-                  _termItem('Comprometo-me a garantir a frequência mínima de 75% nos encontros;'),
-                  _termItem('Justificar previamente qualquer falta ou dificuldade;'),
-                  _termItem('Participar de reuniões e formações quando convocado(a);'),
-                  _termItem('Colaborar com as atividades propostas pela Paróquia Nossa Senhora Auxiliadora;'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Em caso de faltas excessivas, indisciplina grave ou desinteresse contínuo, '
-                    'o catequizando não seguirá para o ano subsequente, inclusive o sacramento '
-                    'poderá ser adiado para o próximo ano, ou até que seja cumprido todo itinerário proposto.',
-                    style: theme.textTheme.bodySmall?.copyWith(height: 1.5, fontStyle: FontStyle.italic),
-                  ),
-                  const SizedBox(height: 8),
-                  _termItem('Autorizo o uso de imagem para fins pastorais e evangelizadores, sem fins lucrativos.'),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _aceiteTermos,
-          onChanged: (v) => setState(() => _aceiteTermos = v!),
-          title: Text(
-            'Li e aceito os termos acima',
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-          ),
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_outline_rounded, size: 18, color: theme.colorScheme.tertiary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Ao marcar "Li e aceito os termos acima", '
-                  'você confirma que as informações estão corretas e concorda com os termos.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onTertiaryContainer),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _termItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.green),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: TextStyle(fontSize: 13, height: 1.4)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBottomBar(ThemeData theme, bool isLarge) {
     return Container(
       padding: EdgeInsets.fromLTRB(isLarge ? 40 : 24, 12, isLarge ? 40 : 24, isLarge ? 24 : 24),
@@ -1150,7 +1057,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             child: const Text('Cancelar'),
           ),
         const SizedBox(width: 12),
-        if (_currentStep < 5)
+        if (_currentStep < 4)
           FilledButton.icon(
             onPressed: _avancar,
             icon: const Icon(Icons.arrow_forward_rounded, size: 18),

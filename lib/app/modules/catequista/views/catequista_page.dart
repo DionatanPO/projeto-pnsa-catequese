@@ -180,26 +180,7 @@ class _CatequistaCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _smallIconButton(Icons.edit_outlined, theme.colorScheme.primary, 'Editar', () => showCatequistaDialog(context, vm, catequista: catequista)),
-                      const SizedBox(width: 4),
-                      _smallIconButton(Icons.delete_outline, theme.colorScheme.error, 'Excluir', () {
-                        Get.dialog(
-                          AlertDialog(
-                            title: const Text('Confirmar Exclusão'),
-                            content: Text('Deseja excluir "${catequista.nome}"?'),
-                            actions: [
-                              TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
-                              FilledButton(
-                                onPressed: () {
-                                  vm.removeCatequista(catequista.id);
-                                  Get.back();
-                                },
-                                style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.error),
-                                child: const Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
+
                     ],
                   ),
                 ],

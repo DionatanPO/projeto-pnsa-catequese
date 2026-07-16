@@ -158,50 +158,7 @@ class CatequistaTable extends StatelessWidget {
                               tooltip: 'Editar',
                             ),
                           ),
-                          SizedBox(
-                            width: 38,
-                            height: 38,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.error),
-                              onPressed: () {
-                                Get.dialog(
-                                  AlertDialog(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                    title: Row(
-                                      children: [
-                                        Icon(Icons.warning_amber_rounded, color: colors.error, size: 28),
-                                        const SizedBox(width: 12),
-                                        const Text('Confirmar Exclusão'),
-                                      ],
-                                    ),
-                                    content: Text(
-                                      'Deseja realmente excluir "${c.nome}"? Esta ação não poderá ser desfeita.',
-                                      style: TextStyle(color: colors.onSurfaceVariant),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Get.back(),
-                                        child: Text('Cancelar', style: TextStyle(color: colors.onSurfaceVariant)),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () {
-                                          vm.removeCatequista(c.id);
-                                          Get.back();
-                                        },
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: colors.error,
-                                          foregroundColor: colors.onError,
-                                        ),
-                                        child: const Text('Excluir'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              tooltip: 'Excluir',
-                            ),
-                          ),
+
                         ],
                       ),
                     ),

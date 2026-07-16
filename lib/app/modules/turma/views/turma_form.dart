@@ -77,6 +77,28 @@ class _TurmaFormState extends State<TurmaForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final nome = _nomeCtrl.text.trim();
+    final existe = widget.vm.turmas.any(
+      (t) => t.nome.toLowerCase() == nome.toLowerCase() && t.id != widget.turma?.id,
+    );
+    if (existe) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Turma já cadastrada'),
+          content: Text('Já existe uma turma com o nome "$nome".'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Ok'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final model = TurmaModel(
       id: widget.turma?.id ?? '',
       nome: _nomeCtrl.text.trim(),

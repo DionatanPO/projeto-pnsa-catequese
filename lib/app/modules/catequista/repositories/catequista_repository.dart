@@ -27,10 +27,4 @@ class CatequistaRepository {
         .update(c.toMap());
   }
 
-  Future<void> remove(String id) async {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(id)
-        .update({'ativo': false});
-  }
 }
