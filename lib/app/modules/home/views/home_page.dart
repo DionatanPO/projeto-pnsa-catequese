@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../../catequista/views/catequista_page.dart';
 import '../../turma/views/turma_page.dart';
+import '../../avisos/views/aviso_page.dart';
 import '../../encontros/views/encontro_page.dart';
 import '../../encontros/views/encontros_page.dart';
 import '../../catequizandos/views/catequizando_page.dart';
@@ -76,7 +77,9 @@ Widget? _buildFab(BuildContext context, HomeViewModel vm) {
         icon: const Icon(Icons.add),
         label: const Text('Novo Encontro'),
       );
-    case 6:
+    case 5:
+      return const SizedBox.shrink();
+    case 7:
       return FloatingActionButton.extended(
         onPressed: () => showNovaCoordenadorDialog(context, vm.coordenadorVm),
         icon: const Icon(Icons.add),
@@ -194,6 +197,8 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
         case 4:
           return EncontrosPage(encontrosVm: vm.encontrosVm, turmas: vm.turmaVm.turmas, catequizandoVm: vm.catequizandoVm);
         case 5:
+          return AvisoPage(catequistaVm: vm.catequistaVm);
+        case 6:
           return RelatorioPage(
             relatorioVm: vm.relatorioVm,
             catequizandoVm: vm.catequizandoVm,
@@ -201,15 +206,15 @@ Widget _buildBody(HomeViewModel vm, ThemeData theme) {
             encontrosVm: vm.encontrosVm,
             matriculaVm: vm.matriculaVm,
           );
-        case 6:
-          return vm.isRestricted(6)
+        case 7:
+          return vm.isRestricted(7)
               ? _InicioContent(vm: vm, theme: theme)
               : CoordenadorPage(vm: vm.coordenadorVm);
-        case 7:
-          return ProfilePage(vm: vm.profileVm);
         case 8:
-          return const SobrePage();
+          return ProfilePage(vm: vm.profileVm);
         case 9:
+          return const SobrePage();
+        case 10:
           return const ConfiguracaoDrivePage();
         default:
           return const SizedBox.shrink();
@@ -366,6 +371,52 @@ class _InicioContent extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: statusData.map((s) => SizedBox(
+                  width: (constraints.maxWidth - 8) / 2,
+                  child: _StatusCard(label: s.$1, value: s.$2, color: s.$3),
+                )).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 32),
+
+          // --- Sacramentos Section ---
+          Text(
+            'Catequizandos por Histórico Sacramental',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Quantidade de catequizandos por sacramento recebido',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 20),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              final catequizandos = vm.catequizandoVm.catequizandos;
+              final sacraData = [
+                ('Batizados', catequizandos.where((c) => c.batizado).length, theme.colorScheme.primary),
+                ('Primeira Eucaristia', catequizandos.where((c) => c.fezPrimeiraEucaristia == true).length, theme.colorScheme.tertiary),
+                ('Crisma', catequizandos.where((c) => c.fezCrisma == true).length, theme.colorScheme.secondary),
+              ];
+              if (isWide) {
+                return Row(
+                  children: sacraData.map((s) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _StatusCard(label: s.$1, value: s.$2, color: s.$3),
+                    ),
+                  )).toList(),
+                );
+              }
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sacraData.map((s) => SizedBox(
                   width: (constraints.maxWidth - 8) / 2,
                   child: _StatusCard(label: s.$1, value: s.$2, color: s.$3),
                 )).toList(),

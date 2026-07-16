@@ -17,13 +17,15 @@ void main() async {
   );
 
   final driveService = Get.put(GoogleDriveService(), permanent: true);
-  await driveService.tryAutoSignIn();
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await driveService.tryAutoSignIn();
+  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  final user = FirebaseAuth.instance.currentUser;
   runApp(MainApp(isLoggedIn: user != null));
 }
 

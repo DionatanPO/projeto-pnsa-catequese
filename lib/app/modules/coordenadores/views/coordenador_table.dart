@@ -150,7 +150,7 @@ class _CoordenadorTableState extends State<CoordenadorTable> {
           3: FlexColumnWidth(1.6),
           4: FlexColumnWidth(2),
           5: FlexColumnWidth(2),
-          6: FixedColumnWidth(96),
+          6: FixedColumnWidth(80),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
         border: TableBorder(
@@ -222,68 +222,55 @@ class _CoordenadorTableState extends State<CoordenadorTable> {
                       ],
                     ),
                   ),
-                  // Coluna de ações refinada com AlertDialog unificado
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(Icons.edit_outlined, size: 18, color: colors.primary),
-                            onPressed: () => widget.onEdit(c),
-                            tooltip: 'Editar',
-                          ),
-                        ),
-                        SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.error),
-                            onPressed: () {
-                              Get.dialog(
-                                AlertDialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: Row(
-                                    children: [
-                                      Icon(Icons.warning_amber_rounded, color: colors.error, size: 28),
-                                      const SizedBox(width: 12),
-                                      const Text('Confirmar Exclusão'),
-                                    ],
-                                  ),
-                                  content: Text(
-                                    'Deseja realmente excluir o coordenador "${c.nome}"? Esta ação não poderá ser desfeita.',
-                                    style: TextStyle(color: colors.onSurfaceVariant),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Get.back(),
-                                      child: Text('Cancelar', style: TextStyle(color: colors.onSurfaceVariant)),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () {
-                                        widget.vm.removeCoordenador(c.id);
-                                        Get.back();
-                                      },
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: colors.error,
-                                        foregroundColor: colors.onError,
-                                      ),
-                                      child: const Text('Excluir'),
-                                    ),
-                                  ],
+                  // Dropdown de ações
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.more_horiz_rounded, color: colors.onSurfaceVariant),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onSelected: (v) {
+                      switch (v) {
+                        case 'edit':
+                          widget.onEdit(c);
+                        case 'delete':
+                          Get.dialog(
+                            AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              title: Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: colors.error, size: 28),
+                                  const SizedBox(width: 12),
+                                  const Text('Confirmar Exclusão'),
+                                ],
+                              ),
+                              content: Text(
+                                'Deseja realmente excluir o coordenador "${c.nome}"? Esta ação não poderá ser desfeita.',
+                                style: TextStyle(color: colors.onSurfaceVariant),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Get.back(),
+                                  child: Text('Cancelar', style: TextStyle(color: colors.onSurfaceVariant)),
                                 ),
-                              );
-                            },
-                            tooltip: 'Excluir',
-                          ),
-                        ),
-                      ],
-                    ),
+                                FilledButton(
+                                  onPressed: () {
+                                    widget.vm.removeCoordenador(c.id);
+                                    Get.back();
+                                  },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: colors.error,
+                                    foregroundColor: colors.onError,
+                                  ),
+                                  child: const Text('Excluir'),
+                                ),
+                              ],
+                            ),
+                          );
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'edit', child: _menuItem(Icons.edit_outlined, 'Editar', colors.primary)),
+                      PopupMenuItem(value: 'delete', child: _menuItem(Icons.delete_outline_rounded, 'Excluir', colors.error)),
+                    ],
                   ),
                 ],
               );
@@ -352,6 +339,16 @@ class _CoordenadorTableState extends State<CoordenadorTable> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _menuItem(IconData icon, String label, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Text(label, style: TextStyle(color: color)),
+      ],
     );
   }
 

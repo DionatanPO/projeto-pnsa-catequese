@@ -8,7 +8,7 @@ import 'catequista_table.dart';
 
 void showCatequistaDialog(BuildContext context, CatequistaViewModel vm, {Catequista? catequista}) {
   final screenWidth = MediaQuery.of(context).size.width;
-  final dialogWidth = screenWidth > 900 ? 560.0 : screenWidth > 600 ? 480.0 : screenWidth * 0.92;
+  final dialogWidth = screenWidth > 900 ? 640.0 : screenWidth > 600 ? 560.0 : screenWidth * 0.95;
 
   showDialog(
     context: context,
@@ -143,6 +143,8 @@ class _CatequistaCard extends StatelessWidget {
                       runSpacing: 4,
                       children: [
                         _infoChip(Icons.email_outlined, catequista.email, theme),
+                        _infoChip(Icons.cake_outlined, catequista.dataNascimento.isNotEmpty ? catequista.dataNascimento : 'Sem data', theme),
+                        _infoChip(Icons.favorite_outline, catequista.casado ? 'Casado(a)' : 'Solteiro(a)', theme),
                         _infoChip(Icons.info_outline_rounded, catequista.status, theme),
                       ],
                     ),

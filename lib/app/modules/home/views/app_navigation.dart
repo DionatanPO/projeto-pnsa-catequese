@@ -2,10 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/controllers/auth_controller.dart';
 import '../viewmodels/home_viewmodel.dart';
+import '../../catequista/models/catequista_model.dart';
+import '../../catequista/viewmodels/catequista_viewmodel.dart';
+
+int _birthdayCount(List<Catequista> list) {
+  final mes = DateTime.now().month;
+  return list.where((c) {
+    final parts = c.dataNascimento.split('/');
+    if (parts.length != 3) return false;
+    return int.tryParse(parts[1]) == mes;
+  }).length;
+}
 
 const menuLabels = [
   'Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros',
-  'Relatórios', 'Coordenadores', 'Perfil', 'Sobre', 'Config. Drive',
+  'Avisos', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre', 'Config. Drive',
 ];
 
 const destinations = [
@@ -33,6 +44,11 @@ const destinations = [
     icon: Icon(Icons.event_outlined),
     selectedIcon: Icon(Icons.event_rounded),
     label: Text('Encontros'),
+  ),
+  NavigationRailDestination(
+    icon: Icon(Icons.campaign_outlined),
+    selectedIcon: Icon(Icons.campaign_rounded),
+    label: Text('Avisos'),
   ),
   NavigationRailDestination(
     icon: Icon(Icons.bar_chart_outlined),
@@ -67,6 +83,7 @@ const menuIcons = [
   Icons.group_rounded,
   Icons.school_rounded,
   Icons.event_rounded,
+  Icons.campaign_rounded,
   Icons.bar_chart_rounded,
   Icons.admin_panel_settings_rounded,
   Icons.person_rounded,
@@ -81,25 +98,55 @@ IconData? getSelectedIcon(int index) {
     case 2: return Icons.group_rounded;
     case 3: return Icons.school_rounded;
     case 4: return Icons.event_rounded;
-    case 5: return Icons.bar_chart_rounded;
-    case 6: return Icons.admin_panel_settings_rounded;
-    case 7: return Icons.person_rounded;
-    case 8: return Icons.info_rounded;
-    case 9: return Icons.cloud_rounded;
+    case 5: return Icons.campaign_rounded;
+    case 6: return Icons.bar_chart_rounded;
+    case 7: return Icons.admin_panel_settings_rounded;
+    case 8: return Icons.person_rounded;
+    case 9: return Icons.info_rounded;
+    case 10: return Icons.cloud_rounded;
     default: return null;
   }
 }
 
-String _initials(String nome) {
-  if (nome.isEmpty) return '?';
-  return nome.split(' ').map((e) => e[0]).take(2).join().toUpperCase();
-}
+class _AppSideLogo extends StatelessWidget {
+  final bool extended;
+  final ThemeData theme;
 
-String _roleLabel(String role) {
-  switch (role) {
-    case 'administrador': return 'Administrador';
-    case 'coordenador': return 'Coordenador';
-    default: return 'Catequista';
+  const _AppSideLogo({required this.extended, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = theme.colorScheme.primary;
+
+    return Padding(
+      padding: EdgeInsets.only(top: extended ? 24 : 12, bottom: extended ? 20 : 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'assets/images/logo.jpg',
+              width: extended ? 48 : 36,
+              height: extended ? 48 : 36,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(Icons.church_rounded, size: extended ? 36 : 28, color: primary),
+            ),
+          ),
+          if (extended) ...[
+            const SizedBox(height: 8),
+            Text(
+              'PNSA Catequese',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -150,157 +197,42 @@ class AppSideMenu extends StatelessWidget {
               ),
             ),
           ),
-          child: NavigationRail(
-            selectedIndex: visualSelected,
-            onDestinationSelected: (i) =>
-                vm.selectedIndex = vm.mapVisualToActual(i),
-            labelType: extended
-                ? NavigationRailLabelType.none
-                : NavigationRailLabelType.all,
-            extended: extended,
-            minExtendedWidth: 240,
-            groupAlignment: -0.85,
-            leading: AppSideMenuHeader(extended: extended, theme: theme),
-            destinations: visible.map((i) => destinations[i]).toList(),
-            trailing: AppSideMenuFooter(extended: extended, theme: theme),
-          ),
+            child: Obx(() {
+              final count = _birthdayCount(Get.find<CatequistaViewModel>().data.value.catequistas);
+              return NavigationRail(
+              selectedIndex: visualSelected,
+              onDestinationSelected: (i) =>
+                  vm.selectedIndex = vm.mapVisualToActual(i),
+              labelType: extended
+                  ? NavigationRailLabelType.none
+                  : NavigationRailLabelType.all,
+              extended: extended,
+              minExtendedWidth: 240,
+              groupAlignment: -1.0,
+              leading: _AppSideLogo(extended: extended, theme: theme),
+              destinations: visible.map((i) {
+                if (i == 5) {
+                  return NavigationRailDestination(
+                    icon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      child: const Icon(Icons.campaign_outlined),
+                    ),
+                    selectedIcon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      child: const Icon(Icons.campaign_rounded),
+                    ),
+                    label: const Text('Avisos'),
+                  );
+                }
+                return destinations[i];
+              }).toList(),
+            );
+            }),
         );
       },
     );
-  }
-}
-
-class AppSideMenuHeader extends StatelessWidget {
-  final bool extended;
-  final ThemeData theme;
-
-  const AppSideMenuHeader({
-    super.key, 
-    required this.extended, 
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = theme.colorScheme;
-    final user = Get.find<AuthController>().firestoreUser.value;
-    final nome = user?.nome ?? '';
-    final role = user?.role ?? '';
-
-    return Padding(
-      padding: EdgeInsets.only(
-        top: extended ? 24 : 12, 
-        bottom: extended ? 20 : 12,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colors.primary.withOpacity(0.15)),
-            ),
-            child: CircleAvatar(
-              radius: extended ? 32 : 20,
-              backgroundColor: colors.primaryContainer.withOpacity(0.4),
-              child: Text(
-                _initials(nome),
-                style: TextStyle(
-                  color: colors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: extended ? 22 : 14,
-                ),
-              ),
-            ),
-          ),
-          if (extended) ...[
-            const SizedBox(height: 16),
-            Text(
-              nome,
-              style: TextStyle(
-                color: colors.onSurface,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _roleLabel(role).toUpperCase(),
-              style: TextStyle(
-                color: colors.primary,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-          SizedBox(height: extended ? 24 : 16),
-        ],
-      ),
-    );
-  }
-}
-
-class AppSideMenuFooter extends StatelessWidget {
-  final bool extended;
-  final ThemeData theme;
-
-  const AppSideMenuFooter({
-    super.key, 
-    required this.extended, 
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = theme.colorScheme;
-
-    if (extended) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: SizedBox(
-          width: 208,
-          child: ListTile(
-            onTap: () => Get.find<AuthController>().logout(),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            hoverColor: colors.errorContainer.withOpacity(0.15),
-            leading: Icon(Icons.logout_rounded, size: 20, color: colors.error),
-            title: Text(
-              'Sair',
-              style: TextStyle(
-                color: colors.error,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Tooltip(
-          message: 'Sair',
-          child: IconButton(
-            onPressed: () => Get.find<AuthController>().logout(),
-            style: IconButton.styleFrom(
-              foregroundColor: colors.error,
-              backgroundColor: colors.errorContainer.withOpacity(0.12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(12),
-            ),
-            icon: const Icon(Icons.logout_rounded, size: 20),
-          ),
-        ),
-      );
-    }
   }
 }
 
@@ -313,108 +245,55 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = theme.colorScheme;
-    final user = Get.find<AuthController>().firestoreUser.value;
-    final nome = user?.nome ?? '';
-    final email = user?.email ?? '';
-    final role = user?.role ?? '';
 
     return Drawer(
       backgroundColor: colors.surface,
-      child: Column(
-        children: [
-          // Header Modernizado Flat (M3 Flat Design)
-          Container(
-            width: double.infinity,
-            color: colors.surfaceContainerLow,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: colors.primaryContainer.withOpacity(0.4),
-                      child: Text(
-                        _initials(nome),
-                        style: TextStyle(
-                          color: colors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                        ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(top: 8),
+                children: [
+                  for (final i in vm.visibleIndices)
+                    if (i == 5)
+                      Obx(() {
+                        final count = _birthdayCount(Get.find<CatequistaViewModel>().data.value.catequistas);
+                        return AppDrawerItem(
+                          icon: i == vm.selectedIndex
+                              ? (getSelectedIcon(i) ?? menuIcons[i])
+                              : menuIcons[i],
+                          label: menuLabels[i],
+                          selected: vm.selectedIndex == i,
+                          theme: theme,
+                          badgeCount: count,
+                          onTap: () {
+                            vm.selectedIndex = i;
+                            Navigator.pop(context);
+                          },
+                        );
+                      })
+                    else
+                      AppDrawerItem(
+                        icon: i == vm.selectedIndex
+                            ? (getSelectedIcon(i) ?? menuIcons[i])
+                            : menuIcons[i],
+                        label: menuLabels[i],
+                        selected: vm.selectedIndex == i,
+                        theme: theme,
+                        onTap: () {
+                          vm.selectedIndex = i;
+                          Navigator.pop(context);
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      nome,
-                      style: TextStyle(
-                        color: colors.onSurface,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colors.secondaryContainer.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _roleLabel(role),
-                        style: TextStyle(
-                          color: colors.onSecondaryContainer,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                for (final i in vm.visibleIndices)
-                  AppDrawerItem(
-                    icon: i == vm.selectedIndex
-                        ? (getSelectedIcon(i) ?? menuIcons[i])
-                        : menuIcons[i],
-                    label: menuLabels[i],
-                    selected: vm.selectedIndex == i,
-                    theme: theme,
-                    onTap: () {
-                      vm.selectedIndex = i;
-                      Navigator.pop(context);
-                    },
-                  ),
-              ],
+            Container(
+              height: 1,
+              color: colors.outlineVariant.withOpacity(0.3),
             ),
-          ),
-          Container(
-            height: 1,
-            color: colors.outlineVariant.withOpacity(0.3),
-          ),
-          SafeArea(
-            top: false,
-            child: AppDrawerItem(
+            AppDrawerItem(
               icon: Icons.logout_rounded,
               label: 'Sair',
               theme: theme,
@@ -424,8 +303,8 @@ class AppDrawer extends StatelessWidget {
                 Get.find<AuthController>().logout();
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -438,6 +317,7 @@ class AppDrawerItem extends StatelessWidget {
   final bool isDestructive;
   final ThemeData theme;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const AppDrawerItem({
     super.key,
@@ -447,6 +327,7 @@ class AppDrawerItem extends StatelessWidget {
     required this.onTap,
     this.selected = false,
     this.isDestructive = false,
+    this.badgeCount = 0,
   });
 
   @override
@@ -480,7 +361,13 @@ class AppDrawerItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
-          leading: Icon(icon, color: iconColor, size: 20),
+          leading: badgeCount > 0
+              ? Badge(
+                  isLabelVisible: true,
+                  label: Text('$badgeCount'),
+                  child: Icon(icon, color: iconColor, size: 20),
+                )
+              : Icon(icon, color: iconColor, size: 20),
           title: Text(
             label,
             style: TextStyle(

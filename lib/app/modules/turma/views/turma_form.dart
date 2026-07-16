@@ -31,12 +31,12 @@ class _TurmaFormState extends State<TurmaForm> {
 
   final List<String> _statusOptions = ['Ativa', 'Concluída', 'Suspensa'];
 
-  String? _selectedCatequista;
+  final Set<String> _selectedCatequistas = {};
   String _selectedStatus = 'Ativa';
 
   bool get _isEditing => widget.turma != null;
 
-  List<String> get _catequistas {
+  List<String> get _catequistasList {
     try {
       final catequistaVm = Get.find<CatequistaViewModel>();
       return catequistaVm.data.value.catequistas
@@ -59,9 +59,7 @@ class _TurmaFormState extends State<TurmaForm> {
     _observacoesCtrl = TextEditingController(text: widget.turma?.observacoes ?? '');
     _formKey = GlobalKey<FormState>();
 
-    _selectedCatequista = widget.turma != null && _catequistas.contains(widget.turma!.catequista)
-        ? widget.turma!.catequista
-        : null;
+    _selectedCatequistas.addAll(widget.turma?.catequistas ?? []);
     _selectedStatus = widget.turma?.status ?? 'Ativa';
   }
 
@@ -87,7 +85,7 @@ class _TurmaFormState extends State<TurmaForm> {
       diaHorario: _diaHorarioCtrl.text.trim(),
       localSala: _localSalaCtrl.text.trim(),
       status: _selectedStatus,
-      catequista: _selectedCatequista!,
+      catequistas: _selectedCatequistas.toList()..sort(),
       observacoes: _observacoesCtrl.text.trim(),
     );
 
@@ -277,20 +275,70 @@ class _TurmaFormState extends State<TurmaForm> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Seleção do Catequista
-                    DropdownButtonFormField<String>(
-                      value: _selectedCatequista,
-                      isExpanded: true,
-                      decoration: _buildInputDecoration(
-                        label: 'Catequista',
-                        hint: 'Selecione o catequista',
-                        prefixIcon: Icons.assignment_ind_outlined,
-                        colors: colors,
-                      ),
-                      items: _catequistas.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                      onChanged: (v) => setState(() => _selectedCatequista = v),
-                      validator: (v) => v == null ? 'Selecione um catequista' : null,
-                    ),
+                    // Seleção dos Catequistas (multi-select)
+                    Obx(() {
+                      final catequistas = _catequistasList;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: colors.outlineVariant.withOpacity(0.4)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.assignment_ind_outlined, size: 20, color: colors.onSurfaceVariant),
+                                      const SizedBox(width: 12),
+                                      Text('Catequistas', style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                ),
+                                if (catequistas.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12, left: 32),
+                                    child: Text('Nenhum catequista ativo disponível',
+                                      style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant.withOpacity(0.5))),
+                                  )
+                                else
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: catequistas.map((c) => FilterChip(
+                                        label: Text(c, style: const TextStyle(fontSize: 12)),
+                                        selected: _selectedCatequistas.contains(c),
+                                        visualDensity: VisualDensity.compact,
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        onSelected: (sel) => setState(() {
+                                          if (sel) { _selectedCatequistas.add(c); }
+                                          else { _selectedCatequistas.remove(c); }
+                                        }),
+                                      )).toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (_selectedCatequistas.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 16),
+                              child: Text(
+                                '${_selectedCatequistas.length} selecionado(s)',
+                                style: TextStyle(fontSize: 11, color: colors.primary),
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
                     const SizedBox(height: 20),
 
                     // Dia/Horário e Local/Sala em linha

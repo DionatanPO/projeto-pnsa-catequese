@@ -9,6 +9,9 @@ class Catequizando {
   final bool batizado;
   final String? localBatismo;
   final bool? fezPrimeiraEucaristia;
+  final String? detalheEucaristia;
+  final bool? fezCrisma;
+  final String? detalheCrisma;
 
   final String responsavel;
   final String parentesco;
@@ -44,6 +47,9 @@ class Catequizando {
     this.batizado = false,
     this.localBatismo,
     this.fezPrimeiraEucaristia,
+    this.detalheEucaristia,
+    this.fezCrisma,
+    this.detalheCrisma,
     required this.responsavel,
     required this.parentesco,
     required this.telefone,
@@ -70,6 +76,9 @@ class Catequizando {
       batizado: map['batizado'] as bool? ?? false,
       localBatismo: map['localBatismo'] as String?,
       fezPrimeiraEucaristia: map['fezPrimeiraEucaristia'] as bool?,
+      detalheEucaristia: map['detalheEucaristia'] as String?,
+      fezCrisma: map['fezCrisma'] as bool?,
+      detalheCrisma: map['detalheCrisma'] as String?,
       responsavel: map['responsavel'] as String? ?? '',
       parentesco: map['parentesco'] as String? ?? '',
       telefone: map['telefone'] as String? ?? '',
@@ -99,6 +108,9 @@ documentosAnexados: (map['documentosAnexados'] as List<dynamic>?)
       'batizado': batizado,
       'localBatismo': localBatismo,
       'fezPrimeiraEucaristia': fezPrimeiraEucaristia,
+      'detalheEucaristia': detalheEucaristia,
+      'fezCrisma': fezCrisma,
+      'detalheCrisma': detalheCrisma,
       'responsavel': responsavel,
       'parentesco': parentesco,
       'telefone': telefone,

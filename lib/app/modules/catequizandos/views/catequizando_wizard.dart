@@ -35,6 +35,8 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   final nomeCtrl = TextEditingController();
   final dataNascimentoCtrl = TextEditingController();
   final localBatismoCtrl = TextEditingController();
+  final detalheEucaristiaCtrl = TextEditingController();
+  final detalheCrismaCtrl = TextEditingController();
   final detalheRestricaoCtrl = TextEditingController();
   final responsavelCtrl = TextEditingController();
   final telefoneCtrl = TextEditingController();
@@ -60,6 +62,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
   String? _turmaSelecionadaId;
   bool _batizado = false;
   bool? _fezPrimeiraEucaristia;
+  bool? _fezCrisma;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
   bool _aceiteTermos = false;
@@ -97,20 +100,17 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     return true;
   }
 
-  bool get _requerEucaristia {
-    if (_turmaSelecionadaId == null) return false;
-    final turma = widget.turmas.firstWhereOrNull((t) => t.id == _turmaSelecionadaId);
-    final nome = turma?.nome.toLowerCase() ?? '';
-    return nome.contains('perseverança') ||
-        nome.contains('perseveranca') ||
-        nome.contains('crisma');
-  }
-
   void _avancar() {
     if (!_podeAvancar) return;
-    if (_currentStep == 1 && _batizado && _requerEucaristia && _fezPrimeiraEucaristia == null) {
-      Get.snackbar('Atenção', 'Informe se já fez a Primeira Eucaristia');
-      return;
+    if (_currentStep == 1) {
+      if (_fezPrimeiraEucaristia == null) {
+        Get.snackbar('Atenção', 'Informe se já fez a Primeira Eucaristia');
+        return;
+      }
+      if (_fezCrisma == null) {
+        Get.snackbar('Atenção', 'Informe se já recebeu a Crisma');
+        return;
+      }
     }
     setState(() => _currentStep++);
   }
@@ -246,7 +246,10 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       dataNascimento: _dataNascimento!,
       batizado: _batizado,
       localBatismo: _batizado ? localBatismoCtrl.text.trim() : null,
-      fezPrimeiraEucaristia: _batizado && _requerEucaristia ? _fezPrimeiraEucaristia! : null,
+      fezPrimeiraEucaristia: _fezPrimeiraEucaristia,
+      detalheEucaristia: _fezPrimeiraEucaristia == true ? detalheEucaristiaCtrl.text.trim() : null,
+      fezCrisma: _fezCrisma,
+      detalheCrisma: _fezCrisma == true ? detalheCrismaCtrl.text.trim() : null,
       responsavel: responsavelCtrl.text.trim(),
       parentesco: _parentesco,
       telefone: telefoneCtrl.text.trim(),
@@ -620,12 +623,11 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             prefixIcon: Icon(Icons.auto_stories_rounded),
           ),
           items: widget.turmas.map((t) => DropdownMenuItem(value: t.id, child: Text(t.nome))).toList(),
-          onChanged: (v) {
-            setState(() {
-              _turmaSelecionadaId = v;
-              if (!_requerEucaristia) _fezPrimeiraEucaristia = null;
-            });
-          },
+                  onChanged: (v) {
+                    setState(() {
+                      _turmaSelecionadaId = v;
+                    });
+                  },
           validator: (v) => null,
         ),
         const SizedBox(height: 20),
@@ -662,7 +664,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _stepHeader('Histórico Sacramental', 'Batismo e Primeira Eucaristia', Icons.check_circle_outline_rounded, theme),
+        _stepHeader('Histórico Sacramental', 'Batismo, Primeira Eucaristia e Crisma', Icons.check_circle_outline_rounded, theme),
         const SizedBox(height: 24),
         radioGroup<bool>(
           label: 'Já é Batizado(a)?',
@@ -678,21 +680,50 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
             controller: localBatismoCtrl,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: const InputDecoration(
-              labelText: 'Local do Batismo (opcional)',
-              hintText: 'Igreja / Paróquia onde foi batizado',
+              labelText: 'Detalhes do Batismo (opcional)',
+              hintText: 'Igreja, data, padre...',
               prefixIcon: Icon(Icons.church_rounded),
             ),
           ),
         ],
-        if (_batizado && _requerEucaristia) ...[
+        const SizedBox(height: 20),
+        radioGroup<bool>(
+          label: 'Já fez a Primeira Eucaristia?',
+          value: _fezPrimeiraEucaristia ?? false,
+          options: const [true, false],
+          labels: const ['Sim', 'Não'],
+          theme: theme,
+          onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
+        ),
+        if (_fezPrimeiraEucaristia == true) ...[
           const SizedBox(height: 20),
-          radioGroup<bool>(
-            label: 'Já fez a Primeira Eucaristia?',
-            value: _fezPrimeiraEucaristia ?? false,
-            options: const [true, false],
-            labels: const ['Sim', 'Não'],
-            theme: theme,
-            onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
+          TextFormField(
+            controller: detalheEucaristiaCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Detalhes da Primeira Eucaristia (opcional)',
+              hintText: 'Igreja, data, padre...',
+              prefixIcon: Icon(Icons.edit_note_rounded),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        radioGroup<bool>(
+          label: 'Já recebeu a Crisma?',
+          value: _fezCrisma ?? false,
+          options: const [true, false],
+          labels: const ['Sim', 'Não'],
+          theme: theme,
+          onChanged: (v) => setState(() => _fezCrisma = v),
+        ),
+        if (_fezCrisma == true) ...[
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: detalheCrismaCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Detalhes da Crisma (opcional)',
+              hintText: 'Igreja, data, padre...',
+              prefixIcon: Icon(Icons.edit_note_rounded),
+            ),
           ),
         ],
         if (_batizado) ...[

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/googleapis_auth.dart' as auth;
@@ -32,6 +33,9 @@ class GoogleDriveService {
   String? get emailLogado => _email;
 
   Future<bool> tryAutoSignIn() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) return false;
+
     const storage = FlutterSecureStorage();
     final skip = await storage.read(key: _driveSkipAutoSignInKey);
     if (skip == 'true') return false;
@@ -62,63 +66,32 @@ class GoogleDriveService {
     try {
       const storage = FlutterSecureStorage();
       final saved = await storage.read(key: _driveCredsKey);
-      debugPrint('[Drive] F5 Restauração - Tem dados salvos? ${saved != null}');
+      debugPrint('[Drive] Auto restauração - Tem dados salvos? ${saved != null}');
       
-      if (saved != null) {
-        final creds = auth.AccessCredentials.fromJson(
-          jsonDecode(saved) as Map<String, dynamic>,
-        );
-        
-        debugPrint('[Drive] F5 Restauração - Expirou? ${creds.accessToken.hasExpired}');
-        if (!creds.accessToken.hasExpired) {
-          _webHttpClient = auth.authenticatedClient(http.Client(), creds);
-          _driveApi = drive.DriveApi(_webHttpClient!);
-          
-          final savedEmail = await storage.read(key: 'google_drive_email');
-          _email = savedEmail ?? DriveConfig.allowedEmail;
-          
-          debugPrint('[Drive] F5 Restauração - Sucesso!');
-          return true;
-        } else {
-          debugPrint('[Drive] F5 Restauração - Token expirado!');
-          await storage.delete(key: _driveCredsKey);
-          await storage.delete(key: 'google_drive_email');
-        }
-      }
-
-      _googleSignIn ??= GoogleSignIn(
-        clientId: DriveConfig.webClientId,
-        scopes: _scopes,
-      );
-      final account = await _googleSignIn!.signInSilently();
-      debugPrint('[Drive] signInSilently - Tem conta? ${account?.email}');
-
-      if (account == null) return false;
-
-      final httpClient = await _googleSignIn!.authenticatedClient();
-      if (httpClient == null) {
-        debugPrint('[Drive] authenticatedClient falhou.');
+      if (saved == null) {
+        debugPrint('[Drive] Sem token salvo - auto-login ignorado');
         return false;
       }
 
-      _webHttpClient = httpClient;
-      _driveApi = drive.DriveApi(httpClient);
-      _email = account.email;
+      final creds = auth.AccessCredentials.fromJson(
+        jsonDecode(saved) as Map<String, dynamic>,
+      );
       
-      // Save the new token if silent login somehow retrieved it
-      final authData = await account.authentication;
-      if (authData.accessToken != null) {
-        final token = auth.AccessToken(
-          'Bearer',
-          authData.accessToken!,
-          DateTime.now().toUtc().add(const Duration(hours: 1)),
-        );
-        final credentials = auth.AccessCredentials(token, null, _scopes);
-        await storage.write(key: _driveCredsKey, value: jsonEncode(credentials.toJson()));
-        await storage.write(key: 'google_drive_email', value: _email);
-        debugPrint('[Drive] Token de Acesso salvo no Storage.');
+      debugPrint('[Drive] Auto restauração - Expirou? ${creds.accessToken.hasExpired}');
+      if (creds.accessToken.hasExpired) {
+        debugPrint('[Drive] Auto restauração - Token expirado!');
+        await storage.delete(key: _driveCredsKey);
+        await storage.delete(key: 'google_drive_email');
+        return false;
       }
 
+      _webHttpClient = auth.authenticatedClient(http.Client(), creds);
+      _driveApi = drive.DriveApi(_webHttpClient!);
+      
+      final savedEmail = await storage.read(key: 'google_drive_email');
+      _email = savedEmail ?? DriveConfig.allowedEmail;
+      
+      debugPrint('[Drive] Auto restauração - Sucesso!');
       return true;
     } catch (e) {
       debugPrint('[Drive] Web auto sign-in falhou: $e');

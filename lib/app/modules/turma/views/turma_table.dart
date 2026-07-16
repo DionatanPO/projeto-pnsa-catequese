@@ -116,7 +116,7 @@ class TurmaCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          turma.catequista, 
+                          turma.catequistas.join(', '), 
                           style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -229,7 +229,7 @@ class TurmaTable extends StatelessWidget {
             3: FlexColumnWidth(1.2),
             4: FlexColumnWidth(1),
             5: FlexColumnWidth(2.2),
-            6: FixedColumnWidth(120),
+             6: FixedColumnWidth(56),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           border: TableBorder(
@@ -293,7 +293,7 @@ class TurmaTable extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _bodyCell(t.catequista),
+                    _bodyCell(t.catequistas.join(', ')),
                     _bodyCell(t.diaHorario),
                     // Badge de Status
                     Padding(
@@ -338,32 +338,23 @@ class TurmaTable extends StatelessWidget {
                       t.observacoes != null && t.observacoes!.isNotEmpty ? t.observacoes! : '-',
                       maxLines: 2,
                     ),
-                    // Botões de ação da linha
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _tableActionButton(
-                            Icons.people_outline_rounded,
-                            colors.tertiary,
-                            () => onManage(t),
-                            'Ver Catequizandos',
-                          ),
-                          _tableActionButton(
-                            Icons.edit_outlined,
-                            colors.primary,
-                            () => onEdit(t),
-                            'Editar',
-                          ),
-                          _tableActionButton(
-                            Icons.delete_outline_rounded,
-                            colors.error,
-                            () => onDelete(t),
-                            'Excluir',
-                          ),
-                        ],
-                      ),
+                    // Dropdown de ações
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(Icons.more_horiz_rounded, color: colors.onSurfaceVariant),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (v) {
+                        switch (v) {
+                          case 'manage': onManage(t);
+                          case 'edit': onEdit(t);
+                          case 'delete': onDelete(t);
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: 'manage', child: _menuItem(Icons.people_outline_rounded, 'Gerenciar', colors.tertiary)),
+                        PopupMenuItem(value: 'edit', child: _menuItem(Icons.edit_outlined, 'Editar', colors.primary)),
+                        PopupMenuItem(value: 'delete', child: _menuItem(Icons.delete_outline_rounded, 'Excluir', colors.error)),
+                      ],
                     ),
                   ],
                 );
@@ -375,16 +366,13 @@ class TurmaTable extends StatelessWidget {
     );
   }
 
-  Widget _tableActionButton(IconData icon, Color color, VoidCallback onPressed, String tooltip) {
-    return SizedBox(
-      width: 36,
-      height: 38,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(icon, size: 18, color: color),
-        onPressed: onPressed,
-        tooltip: tooltip,
-      ),
+  Widget _menuItem(IconData icon, String label, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Text(label, style: TextStyle(color: color)),
+      ],
     );
   }
 

@@ -7,7 +7,7 @@ class TurmaModel {
   final String localSala;
   final String status;
   final int totalCatequizandos;
-  final String catequista;
+  final List<String> catequistas;
   final String? observacoes;
 
   TurmaModel({
@@ -19,7 +19,7 @@ class TurmaModel {
     required this.localSala,
     required this.status,
     this.totalCatequizandos = 0,
-    required this.catequista,
+    this.catequistas = const [],
     this.observacoes,
   });
 
@@ -33,9 +33,18 @@ class TurmaModel {
       localSala: map['localSala'] as String? ?? '',
       status: map['status'] as String? ?? 'Ativa',
       totalCatequizandos: map['totalCatequizandos'] as int? ?? 0,
-      catequista: map['catequista'] as String? ?? '',
+      catequistas: _parseCatequistas(map['catequistas']),
       observacoes: map['observacoes'] as String?,
     );
+  }
+
+  static List<String> _parseCatequistas(dynamic value) {
+    if (value is List) return value.cast<String>();
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? [] : [trimmed];
+    }
+    return [];
   }
 
   Map<String, dynamic> toMap() {
@@ -47,7 +56,7 @@ class TurmaModel {
       'localSala': localSala,
       'status': status,
       'totalCatequizandos': totalCatequizandos,
-      'catequista': catequista,
+      'catequistas': catequistas,
       'observacoes': observacoes,
     };
   }

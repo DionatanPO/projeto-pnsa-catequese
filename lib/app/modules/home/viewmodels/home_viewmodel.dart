@@ -16,7 +16,7 @@ class HomeViewModel extends GetxController {
   int _selectedIndex = 0;
   final catequistaVm = Get.put(CatequistaViewModel());
   final turmaVm = Get.put(TurmaViewModel());
-  final catequizandoVm = CatequizandoViewModel();
+  final catequizandoVm = Get.put(CatequizandoViewModel());
   final matriculaVm = Get.put(MatriculaViewModel());
   final encontrosVm = EncontrosViewModel();
   final relatorioVm = RelatorioViewModel();
@@ -50,7 +50,7 @@ class HomeViewModel extends GetxController {
   void _updateRestrictions() {
     _restrictedIndices.clear();
     if (_role != 'administrador') {
-      _restrictedIndices.add(6);
+      _restrictedIndices.add(7);
     }
     if (_role == 'catequista') {
       _restrictedIndices.add(1);
@@ -59,7 +59,7 @@ class HomeViewModel extends GetxController {
 
   List<int> get visibleIndices {
     _updateRestrictions();
-    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         .where((i) => !_restrictedIndices.contains(i))
         .toList();
   }

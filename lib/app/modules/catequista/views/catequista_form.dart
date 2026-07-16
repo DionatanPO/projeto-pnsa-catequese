@@ -23,10 +23,20 @@ class _CatequistaFormState extends State<CatequistaForm> {
   late final TextEditingController _nomeCtrl;
   late final TextEditingController _emailCtrl;
   late final TextEditingController _telefoneCtrl;
+  late final TextEditingController _dataNascimentoCtrl;
+  late final TextEditingController _logradouroCtrl;
+  late final TextEditingController _numeroCtrl;
+  late final TextEditingController _bairroCtrl;
+  late final TextEditingController _cidadeCtrl;
+  late final TextEditingController _estadoCtrl;
+  late final TextEditingController _cepCtrl;
   late String _currentStatus;
+  late bool _casado;
   late final GlobalKey<FormState> _formKey;
 
   late final MaskTextInputFormatter _phoneMask;
+  late final MaskTextInputFormatter _cepMask;
+  DateTime? _selectedDate;
   bool _isLoading = false;
 
   bool get _isEditing => widget.catequista != null;
@@ -37,11 +47,37 @@ class _CatequistaFormState extends State<CatequistaForm> {
     _nomeCtrl = TextEditingController(text: widget.catequista?.nome ?? '');
     _emailCtrl = TextEditingController(text: widget.catequista?.email ?? '');
     _telefoneCtrl = TextEditingController(text: widget.catequista?.telefone ?? '');
+    _dataNascimentoCtrl = TextEditingController(text: widget.catequista?.dataNascimento ?? '');
+    _logradouroCtrl = TextEditingController(text: widget.catequista?.logradouro ?? '');
+    _numeroCtrl = TextEditingController(text: widget.catequista?.numero ?? '');
+    _bairroCtrl = TextEditingController(text: widget.catequista?.bairro ?? '');
+    _cidadeCtrl = TextEditingController(text: widget.catequista?.cidade ?? '');
+    _estadoCtrl = TextEditingController(text: widget.catequista?.estado ?? '');
+    _cepCtrl = TextEditingController(text: widget.catequista?.cep ?? '');
     _currentStatus = widget.catequista?.status ?? 'Ativo';
+    _casado = widget.catequista?.casado ?? false;
     _formKey = GlobalKey<FormState>();
+
+    final nascimento = widget.catequista?.dataNascimento ?? '';
+    if (nascimento.isNotEmpty) {
+      final parts = nascimento.split('/');
+      if (parts.length == 3) {
+        _selectedDate = DateTime(
+          int.tryParse(parts[2]) ?? 2000,
+          int.tryParse(parts[1]) ?? 1,
+          int.tryParse(parts[0]) ?? 1,
+        );
+      }
+    }
 
     _phoneMask = MaskTextInputFormatter(
       mask: '(##) #####-####',
+      filter: {"#": RegExp(r'[0-9]')},
+      type: MaskAutoCompletionType.lazy,
+    );
+
+    _cepMask = MaskTextInputFormatter(
+      mask: '#####-###',
       filter: {"#": RegExp(r'[0-9]')},
       type: MaskAutoCompletionType.lazy,
     );
@@ -52,6 +88,13 @@ class _CatequistaFormState extends State<CatequistaForm> {
     _nomeCtrl.dispose();
     _emailCtrl.dispose();
     _telefoneCtrl.dispose();
+    _dataNascimentoCtrl.dispose();
+    _logradouroCtrl.dispose();
+    _numeroCtrl.dispose();
+    _bairroCtrl.dispose();
+    _cidadeCtrl.dispose();
+    _estadoCtrl.dispose();
+    _cepCtrl.dispose();
     super.dispose();
   }
 
@@ -67,6 +110,14 @@ class _CatequistaFormState extends State<CatequistaForm> {
         email: _emailCtrl.text.trim(),
         telefone: _telefoneCtrl.text.trim(),
         status: _currentStatus,
+        dataNascimento: _dataNascimentoCtrl.text.trim(),
+        logradouro: _logradouroCtrl.text.trim(),
+        numero: _numeroCtrl.text.trim(),
+        bairro: _bairroCtrl.text.trim(),
+        cidade: _cidadeCtrl.text.trim(),
+        estado: _estadoCtrl.text.trim(),
+        cep: _cepCtrl.text.trim(),
+        casado: _casado,
       );
 
       if (_isEditing) {
@@ -77,7 +128,6 @@ class _CatequistaFormState extends State<CatequistaForm> {
       
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
-      // Opcional: Adicionar tratamento de erro visual aqui se necessário
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -282,7 +332,216 @@ class _CatequistaFormState extends State<CatequistaForm> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Status - Uso de SegmentedButton (Material 3)
+                    // Data de Nascimento
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate ?? DateTime(2000),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                          locale: const Locale('pt', 'BR'),
+                        );
+                        if (date != null) {
+                          _selectedDate = date;
+                          _dataNascimentoCtrl.text =
+                              '${date.day.toString().padLeft(2, '0')}/'
+                              '${date.month.toString().padLeft(2, '0')}/'
+                              '${date.year}';
+                        }
+                      },
+                      child: TextFormField(
+                        controller: _dataNascimentoCtrl,
+                        decoration: _buildInputDecoration(
+                          label: 'Data de Nascimento',
+                          hint: 'DD/MM/AAAA',
+                          prefixIcon: Icons.cake_outlined,
+                          colors: colors,
+                        ),
+                        enabled: false,
+                        readOnly: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Endereço
+                    Text(
+                      'Endereço',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 400;
+
+                        final logradouroField = TextFormField(
+                          controller: _logradouroCtrl,
+                          decoration: _buildInputDecoration(
+                            label: 'Logradouro',
+                            hint: 'Rua, Av...',
+                            prefixIcon: Icons.streetview_outlined,
+                            colors: colors,
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                        );
+
+                        final numeroField = TextFormField(
+                          controller: _numeroCtrl,
+                          decoration: _buildInputDecoration(
+                            label: 'Número',
+                            hint: 'S/N',
+                            prefixIcon: Icons.numbers_outlined,
+                            colors: colors,
+                          ),
+                        );
+
+                        if (isCompact) {
+                          return Column(
+                            children: [
+                              logradouroField,
+                              const SizedBox(height: 20),
+                              numeroField,
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: logradouroField),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 1, child: numeroField),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _bairroCtrl,
+                      decoration: _buildInputDecoration(
+                        label: 'Bairro',
+                        hint: 'Centro',
+                        prefixIcon: Icons.map_outlined,
+                        colors: colors,
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 20),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 400;
+
+                        final cidadeField = TextFormField(
+                          controller: _cidadeCtrl,
+                          decoration: _buildInputDecoration(
+                            label: 'Cidade',
+                            hint: 'Goiânia',
+                            prefixIcon: Icons.location_city_outlined,
+                            colors: colors,
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                        );
+
+                        final estadoField = TextFormField(
+                          controller: _estadoCtrl,
+                          decoration: _buildInputDecoration(
+                            label: 'Estado',
+                            hint: 'GO',
+                            prefixIcon: Icons.map_rounded,
+                            colors: colors,
+                          ),
+                          textCapitalization: TextCapitalization.characters,
+                          maxLength: 2,
+                        );
+
+                        final cepField = TextFormField(
+                          controller: _cepCtrl,
+                          decoration: _buildInputDecoration(
+                            label: 'CEP',
+                            hint: '74000-000',
+                            prefixIcon: Icons.mail_outlined,
+                            colors: colors,
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [_cepMask],
+                        );
+
+                        if (isCompact) {
+                          return Column(
+                            children: [
+                              cidadeField,
+                              const SizedBox(height: 20),
+                              estadoField,
+                              const SizedBox(height: 20),
+                              cepField,
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 2, child: cidadeField),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 1, child: estadoField),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 1, child: cepField),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Estado Civil
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Estado Civil',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<bool>(
+                            segments: [
+                              ButtonSegment<bool>(
+                                value: false,
+                                label: const Text('Solteiro(a)'),
+                                icon: Icon(Icons.person_outline, color: colors.primary, size: 18),
+                              ),
+                              ButtonSegment<bool>(
+                                value: true,
+                                label: const Text('Casado(a)'),
+                                icon: Icon(Icons.favorite_border_outlined, color: colors.tertiary, size: 18),
+                              ),
+                            ],
+                            selected: {_casado},
+                            onSelectionChanged: (newSelection) {
+                              setState(() {
+                                _casado = newSelection.first;
+                              });
+                            },
+                            showSelectedIcon: false,
+                            style: SegmentedButton.styleFrom(
+                              selectedBackgroundColor: colors.primaryContainer,
+                              selectedForegroundColor: colors.onPrimaryContainer,
+                              side: BorderSide(color: colors.outlineVariant.withOpacity(0.5)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Status
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

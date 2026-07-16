@@ -68,7 +68,9 @@ class CatequistaViewModel extends GetxController {
       case 1: return c.nome;
       case 2: return c.status;
       case 3: return c.email;
-      case 4: return c.telefone;
+      case 4: return c.dataNascimento;
+      case 5: return c.casado ? 'Casado' : 'Solteiro';
+      case 6: return c.telefone;
       default: return '';
     }
   }

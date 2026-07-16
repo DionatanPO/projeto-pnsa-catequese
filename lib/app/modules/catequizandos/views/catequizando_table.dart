@@ -148,7 +148,17 @@ class CatequizandoCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      _infoChip(Icons.person_outline_rounded, aluno.responsavel, theme),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _chip('B', aluno.batizado, colors.primary, colors),
+                      const SizedBox(width: 6),
+                      _chip('E', aluno.fezPrimeiraEucaristia == true, colors.tertiary, colors),
+                      const SizedBox(width: 6),
+                      _chip('C', aluno.fezCrisma == true, colors.secondary, colors),
                     ],
                   ),
                 ],
@@ -158,19 +168,33 @@ class CatequizandoCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Idade Badge
+                // Nascimento e Idade
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: colors.tertiaryContainer.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    '${aluno.idade} anos',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colors.onTertiaryContainer,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${aluno.dataNascimento.day.toString().padLeft(2, '0')}/'
+                        '${aluno.dataNascimento.month.toString().padLeft(2, '0')}/'
+                        '${aluno.dataNascimento.year}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: colors.onTertiaryContainer,
+                        ),
+                      ),
+                      Text(
+                        '${aluno.idade} anos',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.onTertiaryContainer,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -207,20 +231,27 @@ class CatequizandoCard extends StatelessWidget {
     );
   }
 
-  Widget _infoChip(IconData icon, String label, ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            label, 
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            overflow: TextOverflow.ellipsis,
-          ),
+  Widget _chip(String letter, bool active, Color color, ColorScheme colors) {
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? color.withOpacity(0.15) : colors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: active ? color.withOpacity(0.4) : colors.outlineVariant.withOpacity(0.3),
+          width: 1,
         ),
-      ],
+      ),
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: active ? color : colors.onSurfaceVariant.withOpacity(0.4),
+        ),
+      ),
     );
   }
 }
@@ -277,11 +308,11 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
         child: Table(
           columnWidths: const {
             0: FlexColumnWidth(0.5),
-            1: FlexColumnWidth(3),
-            2: FlexColumnWidth(1.6),
-            3: FlexColumnWidth(1.4),
-            4: FlexColumnWidth(2),
-            5: FixedColumnWidth(80),
+            1: FlexColumnWidth(2.5),
+            2: FlexColumnWidth(1.5),
+            3: FlexColumnWidth(1.2),
+            4: FlexColumnWidth(1.6),
+            5: FlexColumnWidth(1.6),
             6: FixedColumnWidth(168),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
@@ -300,8 +331,8 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                 _sortableHeader('Nome', Icons.person_outline_rounded, 1),
                 _sortableHeader('Turma', Icons.menu_book_rounded, 2),
                 _sortableHeader('Status', Icons.info_outline_rounded, 3),
-                _sortableHeader('Responsável', Icons.assignment_ind_outlined, 4),
-                _sortableHeader('Idade', Icons.cake_outlined, 5),
+                _headerCell('Sacramentos', Icons.check_circle_outline_rounded),
+                _sortableHeader('Nasc./Idade', Icons.cake_outlined, 4),
                 _headerCell('Ações', Icons.touch_app_outlined),
               ],
             ),
@@ -407,44 +438,52 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                         ),
                       ),
                     ),
-                    // Telefone / Contato
+                    // Sacramentos
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.phone_outlined, size: 14, color: colors.onSurfaceVariant.withOpacity(0.5)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              a.telefone,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-                            ),
-                          ),
+                          _sacraChip('B', a.batizado, colors.primary, colors),
+                          const SizedBox(width: 4),
+                          _sacraChip('E', a.fezPrimeiraEucaristia == true, colors.tertiary, colors),
+                          const SizedBox(width: 4),
+                          _sacraChip('C', a.fezCrisma == true, colors.secondary, colors),
                         ],
                       ),
                     ),
-                    // Idade
+                    // Nascimento e Idade
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: colors.tertiaryContainer.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${a.idade}',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.onTertiaryContainer,
-                              fontSize: 12,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${a.dataNascimento.day.toString().padLeft(2, '0')}/'
+                            '${a.dataNascimento.month.toString().padLeft(2, '0')}/'
+                            '${a.dataNascimento.year}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurface,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors.tertiaryContainer.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${a.idade} anos',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colors.onTertiaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     // Ações da linha (dropdown)
@@ -541,6 +580,30 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sacraChip(String letter, bool active, Color color, ColorScheme colors) {
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? color.withOpacity(0.15) : colors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: active ? color.withOpacity(0.4) : colors.outlineVariant.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: active ? color : colors.onSurfaceVariant.withOpacity(0.4),
+        ),
       ),
     );
   }

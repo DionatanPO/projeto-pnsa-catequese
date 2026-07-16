@@ -78,12 +78,14 @@ class CatequistaTable extends StatelessWidget {
         ),
         child: Table(
           columnWidths: const {
-            0: FlexColumnWidth(0.6),
-            1: FlexColumnWidth(3),
-            2: FlexColumnWidth(1.6),
-            3: FlexColumnWidth(2.5),
-            4: FlexColumnWidth(2),
-            5: FixedColumnWidth(96),
+            0: FlexColumnWidth(0.5),
+            1: FlexColumnWidth(2.5),
+            2: FlexColumnWidth(1.4),
+            3: FlexColumnWidth(2),
+            4: FlexColumnWidth(1.5),
+            5: FlexColumnWidth(1.2),
+            6: FlexColumnWidth(1.8),
+            7: FixedColumnWidth(88),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           border: TableBorder(
@@ -101,7 +103,9 @@ class CatequistaTable extends StatelessWidget {
                 _sortableHeader('Nome', Icons.person_outline_rounded, 1),
                 _sortableHeader('Status', Icons.info_outline_rounded, 2),
                 _sortableHeader('Email', Icons.mail_outline_rounded, 3),
-                _sortableHeader('Telefone', Icons.phone_outlined, 4),
+                _sortableHeader('Nascimento', Icons.cake_outlined, 4),
+                _sortableHeader('Estado Civil', Icons.favorite_outline, 5),
+                _sortableHeader('Telefone', Icons.phone_outlined, 6),
                 _headerCell('Ações', Icons.touch_app_outlined),
               ],
             ),
@@ -135,24 +139,9 @@ class CatequistaTable extends StatelessWidget {
                     _bodyCell(c.nome, isBold: true),
                     _buildStatusBadge(c.status, colors),
                     _bodyCell(c.email),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
-                        children: [
-                          Icon(Icons.phone_outlined, size: 14, color: colors.onSurfaceVariant.withOpacity(0.6)),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              c.telefone,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _bodyCell(c.dataNascimento.isNotEmpty ? c.dataNascimento : '-'),
+                    _bodyCell(c.casado ? 'Casado(a)' : 'Solteiro(a)'),
+                    _bodyCell(c.telefone),
                     // Coluna de ações com botões discretos e dialog atualizado
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),

@@ -65,8 +65,7 @@ class CatequizandoViewModel extends GetxController {
       case 1: return a.nome;
       case 2: return matriculaVm.getNomeTurmaAtual(a.id, turmas) ?? '';
       case 3: return a.status;
-      case 4: return a.responsavel;
-      case 5: return a.idade.toString().padLeft(3, '0');
+      case 4: return a.dataNascimento.toIso8601String();
       default: return '';
     }
   }

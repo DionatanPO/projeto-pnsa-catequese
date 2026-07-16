@@ -165,6 +165,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   late final TextEditingController _nomeCtrl;
   late final TextEditingController _dataNascimentoCtrl;
   late final TextEditingController _localBatismoCtrl;
+  late final TextEditingController _detalheEucaristiaCtrl;
+  late final TextEditingController _detalheCrismaCtrl;
   late final TextEditingController _detalheRestricaoCtrl;
   late final TextEditingController _responsavelCtrl;
   late final TextEditingController _telefoneCtrl;
@@ -181,6 +183,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
   DateTime? _dataNascimento;
   bool _batizado = false;
   bool? _fezPrimeiraEucaristia;
+  bool? _fezCrisma;
   String _parentesco = 'Mãe';
   bool _possuiRestricao = false;
   String? _selectedTurmaId;
@@ -188,21 +191,14 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
 
   bool get _isEditing => widget.catequizando != null;
 
-  bool get _requerEucaristia {
-    if (_selectedTurmaId == null) return false;
-    final turma = widget.turmas.firstWhereOrNull((t) => t.id == _selectedTurmaId);
-    final nome = turma?.nome.toLowerCase() ?? '';
-    return nome.contains('perseverança') ||
-        nome.contains('perseveranca') ||
-        nome.contains('crisma');
-  }
-
   @override
   void initState() {
     super.initState();
     final c = widget.catequizando;
     _nomeCtrl = TextEditingController(text: c?.nome ?? '');
     _localBatismoCtrl = TextEditingController(text: c?.localBatismo ?? '');
+    _detalheEucaristiaCtrl = TextEditingController(text: c?.detalheEucaristia ?? '');
+    _detalheCrismaCtrl = TextEditingController(text: c?.detalheCrisma ?? '');
     _detalheRestricaoCtrl = TextEditingController(text: c?.detalheRestricao ?? '');
     _responsavelCtrl = TextEditingController(text: c?.responsavel ?? '');
     _telefoneCtrl = TextEditingController(text: c?.telefone ?? '');
@@ -222,6 +218,7 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       _dataNascimento = c.dataNascimento;
       _batizado = c.batizado;
       _fezPrimeiraEucaristia = c.fezPrimeiraEucaristia;
+      _fezCrisma = c.fezCrisma;
       _parentesco = c.parentesco;
       _possuiRestricao = c.possuiRestricao;
       _status = c.status;
@@ -251,6 +248,8 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
     _nomeCtrl.dispose();
     _dataNascimentoCtrl.dispose();
     _localBatismoCtrl.dispose();
+    _detalheEucaristiaCtrl.dispose();
+    _detalheCrismaCtrl.dispose();
     _detalheRestricaoCtrl.dispose();
     _responsavelCtrl.dispose();
     _telefoneCtrl.dispose();
@@ -283,7 +282,10 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
       dataNascimento: _dataNascimento!,
       batizado: _batizado,
       localBatismo: _batizado ? _localBatismoCtrl.text.trim() : null,
-      fezPrimeiraEucaristia: _batizado ? _fezPrimeiraEucaristia : null,
+      fezPrimeiraEucaristia: _fezPrimeiraEucaristia,
+      detalheEucaristia: _fezPrimeiraEucaristia == true ? _detalheEucaristiaCtrl.text.trim() : null,
+      fezCrisma: _fezCrisma,
+      detalheCrisma: _fezCrisma == true ? _detalheCrismaCtrl.text.trim() : null,
       responsavel: _responsavelCtrl.text.trim(),
       parentesco: _parentesco,
       telefone: _telefoneCtrl.text.trim(),
@@ -634,22 +636,53 @@ class _CatequizandoFormState extends State<CatequizandoForm> {
                       TextFormField(
                         controller: _localBatismoCtrl,
                         decoration: _buildInputDecoration(
-                          label: 'Local do Batismo (opcional)',
-                          hint: 'Igreja / Paróquia onde foi batizado',
+                          label: 'Detalhes do Batismo (opcional)',
+                          hint: 'Igreja, data, padre...',
                           prefixIcon: Icons.church_rounded,
                           colors: colors,
                         ),
                       ),
                     ],
-                    if (_batizado && _requerEucaristia) ...[
+                    const SizedBox(height: 20),
+                    radioGroup<bool>(
+                      label: 'Já fez a Primeira Eucaristia?',
+                      value: _fezPrimeiraEucaristia ?? false,
+                      options: const [true, false],
+                      labels: const ['Sim', 'Não'],
+                      theme: theme,
+                      onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
+                    ),
+                    if (_fezPrimeiraEucaristia == true) ...[
                       const SizedBox(height: 20),
-                      radioGroup<bool>(
-                        label: 'Já fez a Primeira Eucaristia?',
-                        value: _fezPrimeiraEucaristia ?? false,
-                        options: const [true, false],
-                        labels: const ['Sim', 'Não'],
-                        theme: theme,
-                        onChanged: (v) => setState(() => _fezPrimeiraEucaristia = v),
+                      TextFormField(
+                        controller: _detalheEucaristiaCtrl,
+                        decoration: _buildInputDecoration(
+                          label: 'Detalhes da Primeira Eucaristia (opcional)',
+                          hint: 'Igreja, data, padre...',
+                          prefixIcon: Icons.edit_note_rounded,
+                          colors: colors,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    radioGroup<bool>(
+                      label: 'Já recebeu a Crisma?',
+                      value: _fezCrisma ?? false,
+                      options: const [true, false],
+                      labels: const ['Sim', 'Não'],
+                      theme: theme,
+                      onChanged: (v) => setState(() => _fezCrisma = v),
+                    ),
+                    if (_fezCrisma == true) ...[
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _detalheCrismaCtrl,
+                        decoration: _buildInputDecoration(
+                          label: 'Detalhes da Crisma (opcional)',
+                          hint: 'Igreja, data, padre...',
+                          prefixIcon: Icons.edit_note_rounded,
+                          colors: colors,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 24),

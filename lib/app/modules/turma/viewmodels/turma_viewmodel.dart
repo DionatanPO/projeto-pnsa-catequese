@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../models/turma_model.dart';
 import '../../catequizandos/models/catequizando_model.dart';
 import '../../matricula/viewmodels/matricula_viewmodel.dart';
+import '../../encontros/repositories/encontros_repository.dart';
+import '../../encontros/repositories/chamada_repository.dart';
 import '../repositories/turma_repository.dart';
 
 class TurmaViewModel extends GetxController {
@@ -35,7 +37,7 @@ class TurmaViewModel extends GetxController {
     if (query.isNotEmpty) {
       list = list.where((t) =>
         t.nome.toLowerCase().contains(query) ||
-        t.catequista.toLowerCase().contains(query) ||
+        t.catequistas.any((c) => c.toLowerCase().contains(query)) ||
         t.diaHorario.toLowerCase().contains(query) ||
         t.etapa.toLowerCase().contains(query)
       ).toList();
@@ -59,7 +61,7 @@ class TurmaViewModel extends GetxController {
   String _sortKey(TurmaModel t) {
     switch (sortColumn.value) {
       case 0: return t.nome;
-      case 1: return t.catequista;
+      case 1: return t.catequistas.join(', ');
       case 2: return t.diaHorario;
       case 3: return t.status;
       case 4: return Get.find<MatriculaViewModel>().totalAlunosNaTurma(t.id).toString().padLeft(6, '0');
@@ -79,7 +81,7 @@ class TurmaViewModel extends GetxController {
     if (query.isEmpty) return turmas.length;
     return turmas.where((t) =>
       t.nome.toLowerCase().contains(query) ||
-      t.catequista.toLowerCase().contains(query) ||
+      t.catequistas.any((c) => c.toLowerCase().contains(query)) ||
       t.diaHorario.toLowerCase().contains(query) ||
       t.etapa.toLowerCase().contains(query)
     ).length;
@@ -151,6 +153,13 @@ class TurmaViewModel extends GetxController {
   }
 
   Future<void> removeTurma(String id) async {
+    final encontrosRepo = EncontrosRepository();
+    final chamadaRepo = ChamadaRepository();
+    final encontros = await encontrosRepo.encontrosDaTurma(id);
+    for (final e in encontros) {
+      await chamadaRepo.deletarPorEncontro(e.id);
+      await encontrosRepo.remove(e);
+    }
     await _repository.remove(id);
     await _loadData();
   }
