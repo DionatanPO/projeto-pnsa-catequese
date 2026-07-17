@@ -701,16 +701,6 @@ class _Footer extends StatelessWidget {
           child: Icon(Icons.church_rounded, size: 24, color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 20),
-        Text(
-          'Desenvolvido para a glória de Deus e o bem da catequese',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.9),
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-          ),
-        ),
         const SizedBox(height: 8),
         Text(
           'PNSA Catequese © ${DateTime.now().year}',

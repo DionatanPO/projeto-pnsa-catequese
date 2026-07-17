@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/services/google_drive_service.dart';
 
@@ -83,7 +84,7 @@ class _ConfiguracaoDrivePageState extends State<ConfiguracaoDrivePage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'O sistema utiliza a conta compartilhada sistemapnsacatequese@gmail.com '
+                      'O sistema utiliza a conta compartilhada drivesistemapnsa@gmail.com '
                       'para armazenar todos os arquivos enviados (documentos dos catequizandos, '
                       'fotos, certificados, etc.) no Google Drive da paróquia.',
                       style: theme.textTheme.bodySmall?.copyWith(color: Colors.black87),
@@ -110,6 +111,61 @@ class _ConfiguracaoDrivePageState extends State<ConfiguracaoDrivePage> {
                             child: Text(
                               'O sistema só aceita essa conta. Conectar com outra resultará em erro.',
                               style: theme.textTheme.bodySmall?.copyWith(color: Colors.black87),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.email_rounded, color: theme.colorScheme.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Conta do Drive', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.cloud_rounded, size: 20, color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'drivesistemapnsa@gmail.com',
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(const ClipboardData(text: 'drivesistemapnsa@gmail.com'));
+                              Get.snackbar('Copiado', 'Email copiado para a área de transferência');
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.copy_rounded, size: 18, color: theme.colorScheme.primary),
                             ),
                           ),
                         ],

@@ -70,7 +70,6 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final nome = _nomeCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final existe = widget.vm.data.value.coordenadores.any(
       (c) => c.email.toLowerCase() == email.toLowerCase() && c.id != widget.coordenador?.id,

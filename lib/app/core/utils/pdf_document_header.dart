@@ -23,19 +23,18 @@ pw.Widget buildPdfHeader({
         'PARÓQUIA NOSSA SENHORA AUXILIADORA',
         style: pw.TextStyle(font: fontBold, fontSize: titleSize, color: textColor, letterSpacing: 0.5),
       ),
-      pw.SizedBox(height: 2),
-      pw.Text(
-        'Iporá - GO',
-        style: pw.TextStyle(font: font, fontSize: infoSize + 2, color: PdfColors.grey700),
-      ),
-      pw.SizedBox(height: 4),
+      pw.SizedBox(height: 6),
       pw.Text(
         'PASTORAL CATEQUÉTICA',
         style: pw.TextStyle(font: fontBold, fontSize: pastoralSize, color: primaryColor, letterSpacing: 1.0),
       ),
       pw.SizedBox(height: 4),
       pw.Text(
-        'Telefone: (64) 99999-0000  |  Rua dos Catequistas, 123, Centro, Iporá-GO',
+        'Praça da Matriz, Centro, Iporá-GO  |  (64) 3674-3149',
+        style: pw.TextStyle(font: font, fontSize: infoSize, color: PdfColors.grey600),
+      ),
+      pw.Text(
+        'Av. Pará, 491 - Centro, Iporá-GO, 76200-000  |  auxiliadoraipora@gmail.com',
         style: pw.TextStyle(font: font, fontSize: infoSize, color: PdfColors.grey600),
       ),
     ],

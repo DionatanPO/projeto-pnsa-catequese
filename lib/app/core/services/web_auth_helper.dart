@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:js_interop';
 
 import 'package:google_identity_services_web/loader.dart' as gis_loader;
 import 'package:google_identity_services_web/oauth2.dart' as gis;

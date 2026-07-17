@@ -228,6 +228,41 @@ class AppSideMenu extends StatelessWidget {
                 }
                 return destinations[i];
               }).toList(),
+              trailing: Expanded(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: InkWell(
+                      onTap: () => Get.find<AuthController>().logout(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: 8.0, 
+                          horizontal: extended ? 16.0 : 8.0,
+                        ),
+                        child: extended 
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.logout_rounded, color: theme.colorScheme.error),
+                                const SizedBox(width: 16),
+                                Text('Sair', style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.bold)),
+                              ],
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.logout_rounded, color: theme.colorScheme.error),
+                                const SizedBox(height: 4),
+                                Text('Sair', style: TextStyle(color: theme.colorScheme.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
             }),
         );

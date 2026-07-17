@@ -148,7 +148,7 @@ void showHistoricoDialog(BuildContext context, Catequizando catequizando, Matric
                                       Icon(Icons.calendar_today_rounded, size: 13, color: colorScheme.onSurfaceVariant),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '${DateFormat('MMM/yyyy').format(m.dataMatricula)}',
+                                        DateFormat('MMM/yyyy').format(m.dataMatricula),
                                         style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                                       ),
                                       if (m.dataConclusao != null) ...[
@@ -156,7 +156,7 @@ void showHistoricoDialog(BuildContext context, Catequizando catequizando, Matric
                                         Icon(Icons.arrow_forward_rounded, size: 13, color: colorScheme.onSurfaceVariant),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '${DateFormat('MMM/yyyy').format(m.dataConclusao!)}',
+                                          DateFormat('MMM/yyyy').format(m.dataConclusao!),
                                           style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                                         ),
                                       ],
@@ -222,7 +222,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
   final uploading = false.obs;
   String? pastaId = catequizando.driveFolderId;
 
-  Future<void> _baixarArquivo(DocumentoAnexado doc) async {
+  Future<void> baixarArquivo(DocumentoAnexado doc) async {
     try {
       final bytes = await driveService.downloadFile(doc.driveFileId!);
       downloadBytes(bytes, '${doc.nome}.${doc.extensao}');
@@ -508,7 +508,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                                   padding: EdgeInsets.zero,
                                   iconSize: 18,
                                   icon: Icon(Icons.download_rounded, color: theme.colorScheme.primary),
-                                  onPressed: () => _baixarArquivo(doc),
+                                  onPressed: () => baixarArquivo(doc),
                                   tooltip: 'Baixar arquivo',
                                 ),
                               ),
@@ -591,102 +591,145 @@ void _showExportDialog(BuildContext context, Catequizando catequizando, Matricul
   final colorScheme = theme.colorScheme;
   final historico = matriculaVm.getHistoricoComTurma(catequizando.id, turmas);
 
-  showDialog(
+  showGeneralDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.all(16),
-      titlePadding: EdgeInsets.zero,
-      contentPadding: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      content: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.85)],
+    barrierDismissible: true,
+    barrierLabel: 'Fechar',
+    barrierColor: Colors.black.withOpacity(0.4),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (ctx, animation, secondaryAnimation) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          width: MediaQuery.of(context).size.width < 600
+              ? MediaQuery.of(context).size.width
+              : 400,
+          height: double.infinity,
+          margin: EdgeInsets.only(
+            left: MediaQuery.of(context).size.width < 600 ? 0 : 0,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 40,
+                offset: const Offset(-8, 0),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 48, 24, 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.picture_as_pdf_rounded, color: colorScheme.primary, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Exportar Dados', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                          Text(catequizando.nome, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onPrimary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Exportar Dados', style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
-                        Text(catequizando.nome, style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.9))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                  children: [
+                ListTile(
+                  leading: Icon(Icons.description_outlined, color: colorScheme.primary),
+                  title: const Text('Ficha de Cadastro'),
+                  subtitle: const Text('Apenas os dados cadastrais'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    CertificateGenerator.generateFicha(catequizando, withHistory: false);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.history_rounded, color: colorScheme.tertiary),
+                  title: const Text('Histórico de Matrículas'),
+                  subtitle: const Text('Apenas o histórico de matrículas'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    CertificateGenerator.generateHistorico(catequizando, historico);
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: Icon(Icons.archive_rounded, color: colorScheme.secondary),
+                  title: const Text('Ficha + Histórico'),
+                  subtitle: const Text('Documento completo com ambos'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    CertificateGenerator.generateFicha(catequizando, withHistory: true);
+                  },
+                ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+              leading: Icon(Icons.swap_horiz_rounded, color: colorScheme.error),
+              title: const Text('Ficha de Transferência'),
+              subtitle: const Text('Documento completo para transferência'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                CertificateGenerator.generateFicha(catequizando, withHistory: true, subtitle: 'FICHA DE TRANSFERÊNCIA');
+              },
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-              ListTile(
-                leading: Icon(Icons.description_outlined, color: colorScheme.primary),
-                title: const Text('Ficha de Cadastro'),
-                subtitle: const Text('Apenas os dados cadastrais'),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  CertificateGenerator.generateFicha(catequizando, withHistory: false);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.history_rounded, color: colorScheme.tertiary),
-                title: const Text('Histórico de Matrículas'),
-                subtitle: const Text('Apenas o histórico de matrículas'),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  CertificateGenerator.generateHistorico(catequizando, historico);
-                },
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              ListTile(
-                leading: Icon(Icons.archive_rounded, color: colorScheme.secondary),
-                title: const Text('Ficha + Histórico'),
-                subtitle: const Text('Documento completo com ambos'),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  CertificateGenerator.generateFicha(catequizando, withHistory: true);
-                },
-              ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancelar'),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+              leading: Icon(Icons.edit_note_rounded, color: colorScheme.primary),
+              title: const Text('Ficha e Termo em Branco'),
+              subtitle: const Text('Formulário para preenchimento manual'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    CertificateGenerator.generateFichaBranca();
+                  },
+                ),
+                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
+    );
+    },
+    transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        )),
+        child: child,
+      );
+    },
   );
 }
 
@@ -726,20 +769,6 @@ class CatequizandoPage extends StatelessWidget {
                           )
                         : null,
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: CertificateGenerator.generateFichaBranca,
-                icon: Icon(Icons.edit_note_rounded, size: 20, color: theme.colorScheme.primary),
-                label: Text('Imprimir Ficha', style: TextStyle(fontSize: 13, color: theme.colorScheme.primary)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),

@@ -146,7 +146,7 @@ class GoogleDriveService {
 
   Future<void> _signOutWeb() async {
     await _googleSignIn?.signOut();
-    _googleSignIn?.disconnect().catchError((_) {});
+    _googleSignIn?.disconnect().catchError((_) => null);
     _webHttpClient?.close();
     _webHttpClient = null;
     _driveApi = null;

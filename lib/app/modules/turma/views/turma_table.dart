@@ -22,14 +22,14 @@ class TurmaCard extends StatelessWidget {
   final TurmaModel turma;
   final ThemeData theme;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onManage;
 
   const TurmaCard({
     super.key,
     required this.turma,
     required this.theme,
     required this.onEdit,
-    required this.onDelete,
+    this.onManage,
   });
 
   @override
@@ -164,8 +164,9 @@ class TurmaCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (onManage != null)
+                      _cardActionButton(Icons.people_outline_rounded, colors.tertiary, onManage!, 'Gerenciar'),
                     _cardActionButton(Icons.edit_outlined, colors.primary, onEdit, 'Editar'),
-                    _cardActionButton(Icons.delete_outline_rounded, colors.error, onDelete, 'Excluir'),
                   ],
                 ),
               ],
@@ -197,7 +198,6 @@ class TurmaTable extends StatelessWidget {
   final TurmaViewModel vm;
   final void Function(TurmaModel) onManage;
   final void Function(TurmaModel) onEdit;
-  final void Function(TurmaModel) onDelete;
 
   const TurmaTable({
     super.key,
@@ -206,7 +206,6 @@ class TurmaTable extends StatelessWidget {
     required this.vm,
     required this.onManage,
     required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -345,15 +344,13 @@ class TurmaTable extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       onSelected: (v) {
                         switch (v) {
-                          case 'manage': onManage(t);
-                          case 'edit': onEdit(t);
-                          case 'delete': onDelete(t);
+                          case 'manage': onManage(t); break;
+                          case 'edit': onEdit(t); break;
                         }
                       },
                       itemBuilder: (_) => [
                         PopupMenuItem(value: 'manage', child: _menuItem(Icons.people_outline_rounded, 'Gerenciar', colors.tertiary)),
                         PopupMenuItem(value: 'edit', child: _menuItem(Icons.edit_outlined, 'Editar', colors.primary)),
-                        PopupMenuItem(value: 'delete', child: _menuItem(Icons.delete_outline_rounded, 'Excluir', colors.error)),
                       ],
                     ),
                   ],

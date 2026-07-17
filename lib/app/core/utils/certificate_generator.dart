@@ -170,7 +170,7 @@ class CertificateGenerator {
           if (historico.isEmpty)
             pw.Text('Nenhum registro encontrado.', style: pw.TextStyle(font: font, fontSize: 11, color: textColor))
           else
-            pw.Table.fromTextArray(
+            pw.TableHelper.fromTextArray(
               border: pw.TableBorder(
                 horizontalInside: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
                 bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.8),
@@ -202,9 +202,20 @@ class CertificateGenerator {
                 ];
               }).toList(),
             ),
-          pw.SizedBox(height: 30),
-          pw.Divider(color: PdfColors.grey300, thickness: 0.5),
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 48),
+          pw.Container(
+            height: 1,
+            color: PdfColors.grey300,
+            margin: const pw.EdgeInsets.only(bottom: 4),
+          ),
+          pw.Center(
+            child: pw.Text(
+              'Assinatura do Pároco',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+            ),
+          ),
+
+          pw.SizedBox(height: 24),
           pw.Text(
             'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
             style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
@@ -222,6 +233,7 @@ class CertificateGenerator {
   static Future<void> generateFicha(
     Catequizando catequizando, {
     bool withHistory = false,
+    String subtitle = 'FICHA DE CADASTRO',
   }) async {
     final pdf = pw.Document();
     final font = await PdfGoogleFonts.latoRegular();
@@ -296,7 +308,7 @@ class CertificateGenerator {
           fontBold: fontBold,
           primaryColor: primaryColor,
           textColor: textColor,
-          subtitle: 'FICHA DE CADASTRO',
+          subtitle: subtitle,
         ),
         build: (context) {
           return [
@@ -354,11 +366,8 @@ class CertificateGenerator {
             if (catequizando.possuiRestricao)
               field('Detalhamento da Restrição', catequizando.detalheRestricao ?? '-'),
 
-            if (catequizando.observacoes != null &&
-                catequizando.observacoes!.trim().isNotEmpty) ...[
-              sectionHeader('OBSERVAÇÕES'),
-              field('Observações', catequizando.observacoes!),
-            ],
+            sectionHeader('OBSERVAÇÕES'),
+            field('Observações', catequizando.observacoes ?? ''),
 
             if (withHistory) ...[
               pw.SizedBox(height: 18),
@@ -367,9 +376,20 @@ class CertificateGenerator {
               _buildHistoricoWidget(catequizando, font, fontBold, primaryColor, textColor),
             ],
 
+            pw.SizedBox(height: 48),
+            pw.Container(
+              height: 1,
+              color: PdfColors.grey300,
+              margin: const pw.EdgeInsets.only(bottom: 4),
+            ),
+            pw.Center(
+              child: pw.Text(
+                'Assinatura do Pároco',
+                style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+              ),
+            ),
+
             pw.SizedBox(height: 24),
-            pw.Divider(color: PdfColors.grey300, thickness: 0.5),
-            pw.SizedBox(height: 6),
             pw.Text(
               'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
               style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
@@ -409,7 +429,7 @@ class CertificateGenerator {
       );
     }
 
-    pw.Widget _termItem(String text) {
+    pw.Widget termItem(String text) {
       return pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 6),
         child: pw.Row(
@@ -540,12 +560,12 @@ class CertificateGenerator {
               textAlign: pw.TextAlign.justify,
             ),
             pw.SizedBox(height: 12),
-            _termItem('Incentivar a participação assídua nos encontros;'),
-            _termItem('Acompanhar e motivar a participação na Santa Missa;'),
-            _termItem('Comprometo-me a garantir a frequência mínima de 75% nos encontros;'),
-            _termItem('Justificar previamente qualquer falta ou dificuldade;'),
-            _termItem('Participar de reuniões e formações quando convocado(a);'),
-            _termItem('Colaborar com as atividades propostas pela Paróquia Nossa Senhora Auxiliadora;'),
+            termItem('Incentivar a participação assídua nos encontros;'),
+            termItem('Acompanhar e motivar a participação na Santa Missa;'),
+            termItem('Comprometo-me a garantir a frequência mínima de 75% nos encontros;'),
+            termItem('Justificar previamente qualquer falta ou dificuldade;'),
+            termItem('Participar de reuniões e formações quando convocado(a);'),
+            termItem('Colaborar com as atividades propostas pela Paróquia Nossa Senhora Auxiliadora;'),
             pw.SizedBox(height: 8),
             pw.Text(
               'Em caso de faltas excessivas, indisciplina grave ou desinteresse contínuo, '
@@ -555,7 +575,7 @@ class CertificateGenerator {
               textAlign: pw.TextAlign.justify,
             ),
             pw.SizedBox(height: 8),
-            _termItem('Autorizo o uso de imagem para fins pastorais e evangelizadores, sem fins lucrativos.'),
+            termItem('Autorizo o uso de imagem para fins pastorais e evangelizadores, sem fins lucrativos.'),
             pw.SizedBox(height: 32),
 
             pw.Row(
@@ -574,7 +594,7 @@ class CertificateGenerator {
               margin: const pw.EdgeInsets.only(bottom: 4),
             ),
             pw.Text(
-              'Assinatura do Responsável                                                      Data: ____/____/________',
+              'Assinatura do Responsável',
               style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
             ),
             pw.SizedBox(height: 32),
@@ -584,13 +604,35 @@ class CertificateGenerator {
               margin: const pw.EdgeInsets.only(bottom: 4),
             ),
             pw.Text(
-              'Assinatura do Catequizando (maior de 18 anos)                                   Data: ____/____/________',
+              'Assinatura do Catequizando (maior de 18 anos)',
               style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
             ),
 
+            pw.SizedBox(height: 32),
+            pw.Container(
+              height: 1,
+              color: PdfColors.grey300,
+              margin: const pw.EdgeInsets.only(bottom: 4),
+            ),
+            pw.Text(
+              'Data: ____/____/________',
+              style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+            ),
+
+            pw.SizedBox(height: 48),
+            pw.Container(
+              height: 1,
+              color: PdfColors.grey300,
+              margin: const pw.EdgeInsets.only(bottom: 4),
+            ),
+            pw.Center(
+              child: pw.Text(
+                'Assinatura do Pároco',
+                style: pw.TextStyle(font: font, fontSize: 11, color: textColor),
+              ),
+            ),
+
             pw.SizedBox(height: 24),
-            pw.Divider(color: PdfColors.grey300, thickness: 0.5),
-            pw.SizedBox(height: 6),
             pw.Text(
               'Documento gerado em ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}.',
               style: pw.TextStyle(font: font, fontSize: 8, fontStyle: pw.FontStyle.italic, color: PdfColors.grey600),
@@ -625,7 +667,7 @@ class CertificateGenerator {
       return pw.Text('Nenhum registro encontrado.', style: pw.TextStyle(font: font, fontSize: 11, color: textColor));
     }
 
-    return pw.Table.fromTextArray(
+    return pw.TableHelper.fromTextArray(
       border: pw.TableBorder(
         horizontalInside: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
         bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.8),

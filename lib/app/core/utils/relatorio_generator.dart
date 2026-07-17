@@ -13,7 +13,7 @@ class RelatorioGenerator {
     final fontBold = await PdfGoogleFonts.latoBold();
     final primaryColor = PdfColor.fromHex('#9E9E9E');
     final textColor = PdfColor.fromHex('#2F4F4F');
-    final greyColor = PdfColors.grey600;
+    const greyColor = PdfColors.grey600;
     final now = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     final statusItems = vm.statusCounts;
@@ -91,7 +91,7 @@ class RelatorioGenerator {
               style: pw.TextStyle(font: font, fontSize: 10, color: textColor)));
           children.add(pw.SizedBox(height: 8));
 
-          children.add(pw.Table.fromTextArray(
+          children.add(pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
             headerDecoration: pw.BoxDecoration(color: primaryColor),
             cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
@@ -119,7 +119,7 @@ class RelatorioGenerator {
               style: pw.TextStyle(font: font, fontSize: 10, color: textColor)));
           children.add(pw.SizedBox(height: 8));
 
-          children.add(pw.Table.fromTextArray(
+          children.add(pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
             headerDecoration: pw.BoxDecoration(color: primaryColor),
             cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
@@ -146,7 +146,7 @@ class RelatorioGenerator {
               style: pw.TextStyle(font: font, fontSize: 10, color: textColor)));
           children.add(pw.SizedBox(height: 8));
 
-          children.add(pw.Table.fromTextArray(
+          children.add(pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
             headerDecoration: pw.BoxDecoration(color: primaryColor),
             cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),
@@ -173,7 +173,7 @@ class RelatorioGenerator {
               style: pw.TextStyle(font: font, fontSize: 10, color: textColor)));
           children.add(pw.SizedBox(height: 8));
 
-          children.add(pw.Table.fromTextArray(
+          children.add(pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.white),
             headerDecoration: pw.BoxDecoration(color: primaryColor),
             cellStyle: pw.TextStyle(font: font, fontSize: 10, color: textColor),

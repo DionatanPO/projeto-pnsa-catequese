@@ -574,29 +574,11 @@ class TurmaPage extends StatelessWidget {
                     return TurmaCard(
                       turma: t,
                       theme: theme,
+                      onManage: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => GerenciarTurmaPage(turma: t)),
+                      ),
                       onEdit: () => showTurmaDialog(context, vm, turma: t),
-                      onDelete: () {
-                        Get.dialog(
-                          AlertDialog(
-                            title: const Text('Confirmar Exclusão'),
-                            content: Text('Deseja excluir a turma "${t.nome}"?'),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Get.back(),
-                                  child: const Text('Cancelar')),
-                              FilledButton(
-                                onPressed: () {
-                                  vm.removeTurma(t.id);
-                                  Get.back();
-                                },
-                                style: FilledButton.styleFrom(
-                                    backgroundColor: theme.colorScheme.error),
-                                child: const Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
                     );
                   },
                 );
@@ -610,28 +592,6 @@ class TurmaPage extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => GerenciarTurmaPage(turma: t)),
                 ),
                 onEdit: (t) => showTurmaDialog(context, vm, turma: t),
-                onDelete: (t) {
-                  Get.dialog(
-                    AlertDialog(
-                      title: const Text('Confirmar Exclusão'),
-                      content: Text('Deseja excluir a turma "${t.nome}"?'),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Get.back(),
-                            child: const Text('Cancelar')),
-                        FilledButton(
-                          onPressed: () {
-                            vm.removeTurma(t.id);
-                            Get.back();
-                          },
-                          style: FilledButton.styleFrom(
-                              backgroundColor: theme.colorScheme.error),
-                          child: const Text('Excluir'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               );
             },
           );

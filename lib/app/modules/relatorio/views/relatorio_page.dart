@@ -717,7 +717,7 @@ class _EncontrosTab extends StatelessWidget {
                                 ),
                               ),
                               Expanded(flex: 2,
-                                child: Text('${item.mediaPresenca.toStringAsFixed(1)}',
+                                child: Text(item.mediaPresenca.toStringAsFixed(1),
                                     textAlign: TextAlign.right,
                                     style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
                             ],

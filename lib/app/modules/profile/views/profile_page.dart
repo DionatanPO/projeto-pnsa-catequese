@@ -46,11 +46,6 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       id: 'profile',
       builder: (_) {
         final profile = widget.vm.profile.value;
-        
-        // Proteção contra carregamento assíncrono
-        if (profile == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
 
         return Center(
           child: ConstrainedBox(
