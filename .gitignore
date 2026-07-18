@@ -44,3 +44,6 @@ app.*.map.json
 
 # Service account
 assets/drive-service-account.json
+
+# Google Drive OAuth config (contains sensitive keys)
+lib/app/core/services/drive_config.dart
