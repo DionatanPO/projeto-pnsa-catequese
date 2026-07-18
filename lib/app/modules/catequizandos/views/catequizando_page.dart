@@ -283,7 +283,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                   onPressed: uploading.value
                       ? null
                       : () async {
-                          const maxBytes = 1048576;
+                          const maxBytes = 2097152;
                           final result = await FilePicker.platform.pickFiles(
                             type: FileType.custom,
                             allowedExtensions: ['pdf', 'doc', 'docx'],
@@ -299,7 +299,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                               return false;
                             }
                             if (f.size > maxBytes) {
-                              Get.snackbar('Arquivo muito grande', '${f.name} ultrapassa 1 MB.', snackPosition: SnackPosition.BOTTOM);
+                              Get.snackbar('Arquivo muito grande', '${f.name} ultrapassa 2 MB.', snackPosition: SnackPosition.BOTTOM);
                               return false;
                             }
                             return true;
@@ -426,7 +426,7 @@ void showDocumentosDialog(BuildContext context, CatequizandoViewModel vm,
                     }
                     return const Icon(Icons.cloud_upload_rounded);
                   }),
-                  label: Obx(() => Text(uploading.value ? 'Enviando...' : 'Adicionar documentos (PDF, Word — máx. 1 MB)')),
+                  label: Obx(() => Text(uploading.value ? 'Enviando...' : 'Adicionar documentos (PDF, Word — máx. 2 MB)')),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

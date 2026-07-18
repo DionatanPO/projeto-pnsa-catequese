@@ -40,7 +40,7 @@ class _CatequistaFormBottomSheetState extends State<CatequistaFormBottomSheet> {
   late final TextEditingController _estadoCtrl;
   late final TextEditingController _cepCtrl;
   late final GlobalKey<FormState> _formKey;
-  final _salvando = false.obs;
+  bool _salvando = false;
 
   late String _currentStatus;
   late bool _casado;
@@ -124,7 +124,7 @@ class _CatequistaFormBottomSheetState extends State<CatequistaFormBottomSheet> {
       return;
     }
 
-    _salvando.value = true;
+    setState(() => _salvando = true);
     try {
       final model = Catequista(
         id: widget.catequista?.id ?? '',
@@ -150,7 +150,7 @@ class _CatequistaFormBottomSheetState extends State<CatequistaFormBottomSheet> {
 
       if (context.mounted) Navigator.pop(context);
     } finally {
-      _salvando.value = false;
+      if (mounted) setState(() => _salvando = false);
     }
   }
 
@@ -557,7 +557,7 @@ class _CatequistaFormBottomSheetState extends State<CatequistaFormBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: _salvando.value ? null : () => Navigator.pop(context),
+            onPressed: _salvando ? null : () => Navigator.pop(context),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -566,15 +566,15 @@ class _CatequistaFormBottomSheetState extends State<CatequistaFormBottomSheet> {
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
-            onPressed: _salvando.value ? null : _save,
+            onPressed: _salvando ? null : _save,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: _salvando.value
+            icon: _salvando
                 ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
                 : Icon(_isEditing ? Icons.save_rounded : Icons.check_rounded, size: 18),
-            label: Text(_salvando.value ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
+            label: Text(_salvando ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
           ),
         ],
       ),

@@ -919,7 +919,7 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
           child: FilledButton.icon(
             onPressed: () => _selecionarTodosDocumentos(),
             icon: Icon(Icons.cloud_upload_rounded),
-            label: Text('Adicionar documentações'),
+            label: Text('Adicionar documentos (PDF, Word — máx. 2 MB)'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1012,11 +1012,28 @@ class _CatequizandoWizardPageState extends State<CatequizandoWizardPage> {
       return;
     }
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
       allowMultiple: true,
     );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _arquivosAnexados.addAll(result.files));
+    if (result == null || result.files.isEmpty) return;
+
+    const maxBytes = 2097152;
+    final extOk = {'pdf', 'doc', 'docx'};
+    final validFiles = result.files.where((f) {
+      final ext = (f.extension ?? '').toLowerCase();
+      if (!extOk.contains(ext)) {
+        Get.snackbar('Formato inválido', '${f.name} não é PDF ou Word.', snackPosition: SnackPosition.BOTTOM);
+        return false;
+      }
+      if (f.size > maxBytes) {
+        Get.snackbar('Arquivo muito grande', '${f.name} ultrapassa 2 MB.', snackPosition: SnackPosition.BOTTOM);
+        return false;
+      }
+      return true;
+    }).toList();
+    if (validFiles.isNotEmpty) {
+      setState(() => _arquivosAnexados.addAll(validFiles));
     }
   }
 

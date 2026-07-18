@@ -36,7 +36,7 @@ class _TurmaFormBottomSheetState extends State<TurmaFormBottomSheet> {
   late final TextEditingController _localSalaCtrl;
   late final TextEditingController _observacoesCtrl;
   late final GlobalKey<FormState> _formKey;
-  final _salvando = false.obs;
+  bool _salvando = false;
 
   final List<String> _statusOptions = ['Ativa', 'Concluída', 'Suspensa'];
   final Set<String> _selectedCatequistas = {};
@@ -99,7 +99,7 @@ class _TurmaFormBottomSheetState extends State<TurmaFormBottomSheet> {
       return;
     }
 
-    _salvando.value = true;
+    setState(() => _salvando = true);
     try {
       final model = TurmaModel(
         id: widget.turma?.id ?? '',
@@ -130,7 +130,7 @@ class _TurmaFormBottomSheetState extends State<TurmaFormBottomSheet> {
 
       if (context.mounted) Navigator.pop(context);
     } finally {
-      _salvando.value = false;
+      if (mounted) setState(() => _salvando = false);
     }
   }
 
@@ -441,7 +441,7 @@ class _TurmaFormBottomSheetState extends State<TurmaFormBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: _salvando.value ? null : () => Navigator.pop(context),
+            onPressed: _salvando ? null : () => Navigator.pop(context),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -450,15 +450,15 @@ class _TurmaFormBottomSheetState extends State<TurmaFormBottomSheet> {
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
-            onPressed: _salvando.value ? null : _save,
+            onPressed: _salvando ? null : _save,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: _salvando.value
+            icon: _salvando
                 ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
                 : const Icon(Icons.save_rounded, size: 18),
-            label: Text(_salvando.value ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Criar Turma')),
+            label: Text(_salvando ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Criar Turma')),
           ),
         ],
       ),
