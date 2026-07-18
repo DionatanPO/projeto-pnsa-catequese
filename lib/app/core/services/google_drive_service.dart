@@ -127,10 +127,6 @@ class GoogleDriveService {
       throw Exception('Conta inválida! O sistema só aceita ${DriveConfig.allowedEmail}');
     }
 
-    // GIS na web precisa do requestScopes para liberar o access token real
-    final hasAccess = await _googleSignIn!.requestScopes(_scopes);
-    if (!hasAccess) throw Exception('Permissão do Google Drive foi negada.');
-
     final httpClient = await _googleSignIn!.authenticatedClient();
     if (httpClient == null) throw Exception('Falha ao obter cliente autenticado');
 
