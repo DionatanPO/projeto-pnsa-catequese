@@ -36,7 +36,7 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> ensureUserDocExists(String uid, String email) async {
+  Future<UserModel> ensureUserDocExists(String uid, String email) async {
     final existing = await _userService.getUser(uid);
     if (existing == null) {
       final newUser = UserModel(
@@ -46,14 +46,17 @@ class AuthController extends GetxController {
       );
       await _userService.createUser(newUser);
       firestoreUser.value = newUser;
+      return newUser;
     }
+    firestoreUser.value = existing;
+    return existing;
   }
 
   Future<void> login(String email, String password) async {
     await _authService.loginWithEmail(email, password);
   }
 
-  void logout() async {
+  Future<void> logout() async {
     await _authService.logout();
     await Get.find<GoogleDriveService>().signOut();
     firestoreUser.value = null;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../viewmodels/profile_viewmodel.dart';
+import '../widgets/profile_edit_bottom_sheet.dart';
 
 class ProfilePage extends StatefulWidget {
   final ProfileViewModel vm;
@@ -62,6 +63,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                     children: [
                       _ProfileHeaderCard(
                         theme: theme,
+                        vm: widget.vm,
                         name: profile.name,
                         email: profile.email,
                         role: profile.role,
@@ -88,12 +90,14 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
 /// Cartão de destaque com avatar, gradiente refinado e ação de editar.
 class _ProfileHeaderCard extends StatelessWidget {
   final ThemeData theme;
+  final ProfileViewModel vm;
   final String name;
   final String email;
   final String role;
 
   const _ProfileHeaderCard({
     required this.theme,
+    required this.vm,
     required this.name,
     required this.email,
     required this.role,
@@ -156,10 +160,7 @@ class _ProfileHeaderCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  // TODO: Implementar navegação para edição de perfil
-                  // Get.toNamed('/edit-profile');
-                },
+                onTap: () => ProfileEditBottomSheet.show(context, vm),
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

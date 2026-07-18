@@ -1,8 +1,13 @@
 import 'package:get/get.dart';
 import '../../../core/controllers/auth_controller.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/services/user_service.dart';
 import '../models/profile_model.dart';
 
 class ProfileViewModel extends GetxController {
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+
   final Rx<ProfileModel> profile = ProfileModel(
     name: '---',
     email: '---',
@@ -35,6 +40,32 @@ class ProfileViewModel extends GetxController {
       default:
         return 'Catequista';
     }
+  }
+
+  Future<bool> checkEmailExists(String email) async {
+    return await _authService.checkEmailExists(email);
+  }
+
+  Future<void> updateProfile({
+    required String nome,
+    String? email,
+    String? newPassword,
+  }) async {
+    final uid = Get.find<AuthController>().user.value?.uid;
+    if (uid == null) throw Exception('Usuário não autenticado');
+
+    if (newPassword != null) {
+      await _authService.updateAuthPassword(newPassword);
+    }
+
+    if (email != null) {
+      await _authService.updateAuthEmail(email);
+    }
+
+    await _userService.updateUser(uid, {
+      'nome': nome,
+      if (email != null) 'email': email,
+    });
   }
 
   void logout() {

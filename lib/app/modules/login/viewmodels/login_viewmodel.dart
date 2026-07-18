@@ -55,7 +55,21 @@ class LoginViewModel extends GetxController {
     try {
       await _authController.login(email, password);
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      await _authController.ensureUserDocExists(uid, email);
+      final user = await _authController.ensureUserDocExists(uid, email);
+
+      if (!user.ativo) {
+        await _authController.logout();
+        isLoading.value = false;
+        Get.snackbar(
+          'Conta inativa',
+          'Sua conta está inativa. Procure um coordenador para mais informações.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.shade700,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
       isLoading.value = false;
       passwordController.clear();
       emailController.clear();

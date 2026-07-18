@@ -45,6 +45,7 @@ dependencies:
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
   http: ^1.2.2
+  cloud_functions: ^5.3.5
   flutter_secure_storage: ^10.3.1
   url_launcher: ^6.3.1
   google_sign_in: ^6.2.2

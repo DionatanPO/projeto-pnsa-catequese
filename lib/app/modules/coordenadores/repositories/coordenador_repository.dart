@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/user_service.dart';
 import '../models/coordenador_model.dart';
 
 class CoordenadorRepository {
   final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
 
   Future<List<Coordenador>> getAll() async {
     final snapshot = await FirebaseFirestore.instance
@@ -22,8 +24,13 @@ class CoordenadorRepository {
   }
 
   Future<void> add(Coordenador coordenador) async {
+    final uid = await _authService.createAccount(
+      coordenador.email,
+      AuthService.defaultPassword,
+    );
+
     final user = UserModel(
-      id: '',
+      id: uid,
       nome: coordenador.nome,
       email: coordenador.email,
       telefone: coordenador.telefone,
@@ -31,7 +38,7 @@ class CoordenadorRepository {
       role: 'coordenador',
       ativo: coordenador.status == 'Ativo',
     );
-    await FirebaseFirestore.instance.collection('users').add(user.toMap());
+    await _userService.createUser(user);
   }
 
   Future<void> update(Coordenador coordenador) async {
@@ -46,6 +53,10 @@ class CoordenadorRepository {
 
   Future<void> remove(String id) async {
     await _userService.updateUser(id, {'ativo': false});
+  }
+
+  Future<void> resetPassword(String email) async {
+    await _authService.resetPassword(email);
   }
 
   Coordenador _toCoordenador(UserModel user) {

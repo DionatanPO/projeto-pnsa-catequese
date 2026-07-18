@@ -46,4 +46,8 @@ class CoordenadorViewModel extends GetxController {
     await _repository.remove(id);
     await _loadData();
   }
+
+  Future<void> resetPassword(String email) async {
+    await _repository.resetPassword(email);
+  }
 }

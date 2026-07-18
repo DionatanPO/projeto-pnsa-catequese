@@ -201,13 +201,35 @@ class _ConfiguracaoDrivePageState extends State<ConfiguracaoDrivePage> {
   }
 
   Future<void> _conectar() async {
+    // Inicia a requisição de login ANTES do setState. Isso garante que o
+    // navegador identifique a ação como um clique direto do usuário e
+    // reduz as chances do bloqueador de pop-ups agir.
+    final future = _driveService.signIn();
+    
     setState(() => _connecting = true);
+    
     try {
-      await _driveService.signIn();
+      await future;
     } catch (e) {
-      Get.snackbar('Erro', 'Falha ao conectar: $e');
+      final erroStr = e.toString().toLowerCase();
+      if (erroStr.contains('popup_blocked_by_browser') || erroStr.contains('popup_closed_by_user')) {
+        Get.dialog(
+          AlertDialog(
+            title: const Text('Pop-up Bloqueado'),
+            content: const Text('O navegador bloqueou a janela do Google ou ela foi fechada.\n\nPor favor, permita os pop-ups para este site (ícone na barra de endereços do navegador) e tente novamente.'),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Get.snackbar('Erro', 'Falha ao conectar: $e');
+      }
     } finally {
-      setState(() => _connecting = false);
+      if (mounted) setState(() => _connecting = false);
     }
   }
 

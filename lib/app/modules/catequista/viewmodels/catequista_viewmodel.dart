@@ -22,14 +22,15 @@ class CatequistaViewModel extends GetxController {
   }
 
   Future<void> _loadData() async {
-    final results = await Future.wait([
-      _repository.getAll(),
-      FirebaseFirestore.instance.collection('turmas').count().get(),
-      FirebaseFirestore.instance.collection('catequizandos').count().get(),
-    ]);
-    final list = results[0] as List<Catequista>;
-    final totalTurmas = (results[1] as AggregateQuerySnapshot).count ?? 0;
-    final totalCatequizandos = (results[2] as AggregateQuerySnapshot).count ?? 0;
+    final list = await _repository.getAll().catchError((_) => <Catequista>[]);
+    final totalTurmas = await FirebaseFirestore.instance
+        .collection('turmas').count().get()
+        .then((r) => r.count ?? 0)
+        .catchError((_) => 0);
+    final totalCatequizandos = await FirebaseFirestore.instance
+        .collection('catequizandos').count().get()
+        .then((r) => r.count ?? 0)
+        .catchError((_) => 0);
     data.value = CatequistaModel(
       totalTurmas: totalTurmas,
       totalCatequizandos: totalCatequizandos,

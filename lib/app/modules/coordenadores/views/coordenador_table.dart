@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/coordenador_model.dart';
 import '../viewmodels/coordenador_viewmodel.dart';
+import '../widgets/coordenador_reset_senha_bottom_sheet.dart';
 
 class CoordenadorTable extends StatefulWidget {
   final List<Coordenador> coordenadores;
@@ -231,6 +232,8 @@ class _CoordenadorTableState extends State<CoordenadorTable> {
                       switch (v) {
                         case 'edit':
                           widget.onEdit(c);
+                        case 'reset':
+                          CoordenadorResetSenhaBottomSheet.show(context, widget.vm, c);
                         case 'delete':
                           Get.dialog(
                             AlertDialog(
@@ -269,6 +272,7 @@ class _CoordenadorTableState extends State<CoordenadorTable> {
                     },
                     itemBuilder: (_) => [
                       PopupMenuItem(value: 'edit', child: _menuItem(Icons.edit_outlined, 'Editar', colors.primary)),
+                      PopupMenuItem(value: 'reset', child: _menuItem(Icons.key_rounded, 'Redefinir Senha', colors.tertiary)),
                       PopupMenuItem(value: 'delete', child: _menuItem(Icons.delete_outline_rounded, 'Excluir', colors.error)),
                     ],
                   ),

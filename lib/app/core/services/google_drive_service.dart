@@ -106,8 +106,21 @@ class GoogleDriveService {
       clientId: DriveConfig.webClientId,
       scopes: _scopes,
     );
-    final account = await _googleSignIn!.signIn();
-    if (account == null) throw Exception('Login cancelado pelo usuário');
+    
+    GoogleSignInAccount? account;
+    try {
+      account = await _googleSignIn!.signIn();
+    } catch (e) {
+      // Reseta a instância caso o usuário feche o pop-up ou seja bloqueado
+      // Isso ajuda a evitar que o navegador bloqueie a próxima tentativa
+      _googleSignIn = null;
+      rethrow;
+    }
+    
+    if (account == null) {
+      _googleSignIn = null;
+      throw Exception('Login cancelado pelo usuário');
+    }
 
     if (account.email != DriveConfig.allowedEmail) {
       await _googleSignIn!.signOut();

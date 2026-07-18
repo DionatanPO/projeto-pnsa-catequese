@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:get/get.dart';
@@ -34,7 +35,7 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
   late final TextEditingController _telefoneCtrl;
   late final TextEditingController _areaCtrl;
   late final GlobalKey<FormState> _formKey;
-  final _salvando = false.obs;
+  bool _salvando = false;
 
   late String _currentStatus;
   late final MaskTextInputFormatter _phoneMask;
@@ -71,8 +72,9 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailCtrl.text.trim();
+    final editingOther = widget.coordenador?.id ?? '';
     final existe = widget.vm.data.value.coordenadores.any(
-      (c) => c.email.toLowerCase() == email.toLowerCase() && c.id != widget.coordenador?.id,
+      (c) => c.email.toLowerCase() == email.toLowerCase() && c.id != editingOther,
     );
     if (existe) {
       Get.dialog(AlertDialog(
@@ -84,12 +86,12 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
       return;
     }
 
-    _salvando.value = true;
+    setState(() => _salvando = true);
     try {
       final model = Coordenador(
-        id: widget.coordenador?.id ?? '',
+        id: editingOther,
         nome: _nomeCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
+        email: email,
         telefone: _telefoneCtrl.text.trim(),
         area: _areaCtrl.text.trim(),
         status: _currentStatus,
@@ -101,9 +103,34 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
         await widget.vm.addCoordenador(model);
       }
 
-      if (context.mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'email-already-in-use') {
+        Get.dialog(AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Conta já existente'),
+          content: Text('O e-mail "$email" já possui uma conta no sistema.'),
+          actions: [TextButton(onPressed: () => Get.back(), child: const Text('Ok'))],
+        ));
+      } else {
+        Get.dialog(AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Erro ao cadastrar'),
+          content: Text(e.message ?? 'Erro desconhecido'),
+          actions: [TextButton(onPressed: () => Get.back(), child: const Text('Ok'))],
+        ));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Get.dialog(AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Erro ao cadastrar'),
+        content: Text(e.toString()),
+        actions: [TextButton(onPressed: () => Get.back(), child: const Text('Ok'))],
+      ));
     } finally {
-      _salvando.value = false;
+      setState(() => _salvando = false);
     }
   }
 
@@ -338,7 +365,7 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
-            onPressed: _salvando.value ? null : () => Navigator.pop(context),
+            onPressed: _salvando ? null : () => Navigator.pop(context),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -347,15 +374,15 @@ class _CoordenadorFormBottomSheetState extends State<CoordenadorFormBottomSheet>
           ),
           const SizedBox(width: 12),
           FilledButton.icon(
-            onPressed: _salvando.value ? null : _save,
+            onPressed: _salvando ? null : _save,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: _salvando.value
+            icon: _salvando
                 ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
                 : Icon(_isEditing ? Icons.save_rounded : Icons.check_rounded, size: 18),
-            label: Text(_salvando.value ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
+            label: Text(_salvando ? 'Salvando...' : (_isEditing ? 'Salvar Alterações' : 'Cadastrar')),
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../viewmodels/coordenador_viewmodel.dart';
@@ -100,10 +101,48 @@ class _CoordenadorFormState extends State<CoordenadorForm> {
       } else {
         await widget.vm.addCoordenador(model);
       }
-      
+
       if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      // Opcional: Adicionar tratamento de erro visual aqui se necessário
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'email-already-in-use') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Conta já existente'),
+            content: Text('O e-mail "$email" já possui uma conta no sistema.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Ok')),
+            ],
+          ),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Erro ao cadastrar'),
+            content: Text(e.message ?? 'Erro desconhecido'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Ok')),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Erro ao cadastrar'),
+          content: Text(e.toString()),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Ok')),
+          ],
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
