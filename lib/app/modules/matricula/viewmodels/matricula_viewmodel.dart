@@ -29,6 +29,16 @@ class MatriculaViewModel extends GetxController {
     return turma?.nome;
   }
 
+  String? getTurmaAtualId(String catequizandoId) {
+    final ativa = _repository.getAtivaDoCatequizando(catequizandoId);
+    return ativa?.turmaId;
+  }
+
+  DateTime? getDataInicioMatriculaAtual(String catequizandoId) {
+    final ativa = _repository.getAtivaDoCatequizando(catequizandoId);
+    return ativa?.dataMatricula;
+  }
+
   int? mesesNaTurmaAtual(String catequizandoId) {
     final ativa = _repository.getAtivaDoCatequizando(catequizandoId);
     if (ativa == null) return null;

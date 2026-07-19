@@ -32,6 +32,7 @@ class CatequizandoCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onDocumentos;
+  final VoidCallback onFrequencia;
   final VoidCallback onExportar;
 
   const CatequizandoCard({
@@ -44,6 +45,7 @@ class CatequizandoCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onDocumentos,
+    required this.onFrequencia,
     required this.onExportar,
   });
 
@@ -208,6 +210,7 @@ class CatequizandoCard extends StatelessWidget {
                     switch (value) {
                       case 'historico': onHistorico(); break;
                       case 'editar': onEdit(); break;
+                      case 'frequencia': onFrequencia(); break;
                       case 'exportar': onExportar(); break;
                       case 'documentos': onDocumentos(); break;
                       case 'excluir': onDelete(); break;
@@ -266,6 +269,7 @@ class CatequizandoTable extends StatefulWidget {
   final void Function(Catequizando) onEdit;
   final void Function(Catequizando) onDelete;
   final void Function(Catequizando) onDocumentos;
+  final void Function(Catequizando) onFrequencia;
   final void Function(Catequizando) onExportar;
 
   const CatequizandoTable({
@@ -279,6 +283,7 @@ class CatequizandoTable extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onDocumentos,
+    required this.onFrequencia,
     required this.onExportar,
   });
 
@@ -501,6 +506,7 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                           switch (value) {
                             case 'historico': widget.onHistorico(a); break;
                             case 'editar': widget.onEdit(a); break;
+                            case 'frequencia': widget.onFrequencia(a); break;
                             case 'exportar': widget.onExportar(a); break;
                             case 'documentos': widget.onDocumentos(a); break;
                             case 'excluir': widget.onDelete(a); break;
@@ -510,13 +516,14 @@ class _CatequizandoTableState extends State<CatequizandoTable> {
                           PopupMenuItem(value: 'historico', child: _menuItem(Icons.history_rounded, 'Histórico', colors.tertiary)),
                           PopupMenuItem(value: 'editar', child: _menuItem(Icons.edit_outlined, 'Editar', colors.primary)),
                           const PopupMenuDivider(),
+                          PopupMenuItem(value: 'frequencia', child: _menuItem(Icons.bar_chart_rounded, 'Frequência', Colors.green.shade600)),
                           PopupMenuItem(value: 'exportar', child: _menuItem(Icons.download_rounded, 'Exportar Dados', colors.primary)),
                           PopupMenuItem(value: 'documentos', child: _menuItem(Icons.folder_outlined, 'Documentos', colors.tertiary)),
                           const PopupMenuDivider(),
                           PopupMenuItem(value: 'excluir', child: _menuItem(Icons.delete_outline_rounded, 'Excluir', colors.error)),
                         ],
-                      ),
-                    ),
+                ),
+              ),
                   ],
                 );
               },

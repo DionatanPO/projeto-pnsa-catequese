@@ -16,6 +16,8 @@ import '../../turma/models/turma_model.dart';
 import '../../../core/utils/certificate_generator.dart';
 import 'catequizando_table.dart';
 import '../widgets/editar_catequizando_bottom_sheet.dart';
+import '../widgets/frequencia_bottom_sheet.dart';
+import '../../encontros/viewmodels/encontros_viewmodel.dart';
 import '../../configuracao/views/configuracao_drive_page.dart';
 
 void showHistoricoDialog(BuildContext context, Catequizando catequizando, MatriculaViewModel matriculaVm, List<TurmaModel> turmas) {
@@ -737,11 +739,13 @@ class CatequizandoPage extends StatelessWidget {
   final CatequizandoViewModel vm;
   final List<TurmaModel> turmas;
   final MatriculaViewModel matriculaVm;
+  final EncontrosViewModel encontrosVm;
   const CatequizandoPage({
     super.key,
     required this.vm,
     this.turmas = const [],
     required this.matriculaVm,
+    required this.encontrosVm,
   });
 
   @override
@@ -954,6 +958,8 @@ class CatequizandoPage extends StatelessWidget {
                             },
                             onDocumentos: () => showDocumentosDialog(
                                 context, vm, catequizando: a),
+                            onFrequencia: () => showFrequenciaBottomSheet(
+                                context, aluno: a, encontrosVm: encontrosVm, matriculaVm: matriculaVm, turmas: turmas),
                             onExportar: () => _showExportDialog(context, a, matriculaVm, turmas),
                           );
                         },
@@ -1007,6 +1013,8 @@ class CatequizandoPage extends StatelessWidget {
                       },
                       onDocumentos: (a) => showDocumentosDialog(
                           context, vm, catequizando: a),
+                      onFrequencia: (a) => showFrequenciaBottomSheet(
+                          context, aluno: a, encontrosVm: encontrosVm, matriculaVm: matriculaVm, turmas: turmas),
                       onExportar: (a) => _showExportDialog(context, a, matriculaVm, turmas),
                     ),
                   if (total > 1) CatequizandoPagination(vm: vm, theme: theme),

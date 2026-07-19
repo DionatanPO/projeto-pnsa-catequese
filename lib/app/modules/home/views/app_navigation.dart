@@ -2,18 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/controllers/auth_controller.dart';
 import '../viewmodels/home_viewmodel.dart';
-import '../../catequista/models/catequista_model.dart';
-import '../../catequista/viewmodels/catequista_viewmodel.dart';
-
-int _birthdayCount(List<Catequista> list) {
-  final mes = DateTime.now().month;
-  return list.where((c) {
-    final parts = c.dataNascimento.split('/');
-    if (parts.length != 3) return false;
-    return int.tryParse(parts[1]) == mes;
-  }).length;
-}
-
 const menuLabels = [
   'Início', 'Catequistas', 'Turmas', 'Catequizandos', 'Encontros',
   'Avisos', 'Relatórios', 'Coordenadores', 'Perfil', 'Sobre', 'Config. Drive',
@@ -198,7 +186,7 @@ class AppSideMenu extends StatelessWidget {
             ),
           ),
             child: Obx(() {
-              final count = _birthdayCount(Get.find<CatequistaViewModel>().data.value.catequistas);
+              final count = vm.avisosCount;
               return NavigationRail(
               selectedIndex: visualSelected,
               onDestinationSelected: (i) =>
@@ -293,7 +281,7 @@ class AppDrawer extends StatelessWidget {
                   for (final i in vm.visibleIndices)
                     if (i == 5)
                       Obx(() {
-                        final count = _birthdayCount(Get.find<CatequistaViewModel>().data.value.catequistas);
+                        final count = vm.avisosCount;
                         return AppDrawerItem(
                           icon: i == vm.selectedIndex
                               ? (getSelectedIcon(i) ?? menuIcons[i])

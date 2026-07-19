@@ -77,4 +77,59 @@ class HomeViewModel extends GetxController {
   }
 
   void increment() => counter.value++;
+
+  int get avisosCount {
+    final mesAtual = DateTime.now().month;
+    final catequistas = catequistaVm.data.value.catequistas;
+    final birthdays = catequistas.where((c) {
+      final parts = c.dataNascimento.split('/');
+      if (parts.length != 3) return false;
+      return int.tryParse(parts[1]) == mesAtual;
+    }).length;
+
+    final alunos = catequizandoVm.catequizandos
+        .where((a) => a.status == 'Em Andamento')
+        .toList();
+
+    if (alunos.isEmpty) return birthdays;
+
+    final Map<String, List<String>> alunosPorTurma = {};
+    for (final a in alunos) {
+      final turmaId = matriculaVm.getTurmaAtualId(a.id);
+      if (turmaId != null) {
+        alunosPorTurma.putIfAbsent(turmaId, () => []).add(a.id);
+      }
+    }
+
+    int baixaFrequencia = 0;
+
+    for (final entry in alunosPorTurma.entries) {
+      final turmaId = entry.key;
+      final alunoIds = entry.value;
+      final encontros = encontrosVm.encontrosDaTurma(turmaId);
+
+      if (encontros.isEmpty) continue;
+
+      for (final alunoId in alunoIds) {
+        int presentes = 0;
+        int totalChamadas = 0;
+
+        for (final e in encontros) {
+          final chamadas = encontrosVm.chamadaRepo.getByEncontro(e.id);
+          final c = chamadas.firstWhereOrNull((c) => c.catequizandoId == alunoId);
+          if (c != null) {
+            totalChamadas++;
+            if (c.presente) presentes++;
+          }
+        }
+
+        if (totalChamadas > 0) {
+          final freq = (presentes / totalChamadas) * 100;
+          if (freq < 75) baixaFrequencia++;
+        }
+      }
+    }
+
+    return birthdays + baixaFrequencia;
+  }
 }

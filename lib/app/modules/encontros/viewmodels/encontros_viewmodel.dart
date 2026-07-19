@@ -298,17 +298,15 @@ class EncontrosViewModel extends GetxController {
     return c?.presente;
   }
 
-  Future<void> salvarFrequencias(String turmaId, DateTime data, List<Chamada> chamadas, {String descricao = ''}) async {
-    final encontro = await _repository.criarOuObterEncontro(turmaId, data);
-    if (descricao.isNotEmpty && encontro.descricao != descricao) {
-      await _repository.update(Encontro(
-        id: encontro.id,
-        turmaId: turmaId,
-        data: data,
-        descricao: descricao,
-      ));
+  Future<void> salvarFrequencias(String turmaId, DateTime data, List<Chamada> chamadas, {String descricao = '', String? encontroId}) async {
+    late final String eid;
+    if (encontroId != null) {
+      eid = encontroId;
+    } else {
+      final encontro = await _repository.criarOuObterEncontro(turmaId, data);
+      eid = encontro.id;
     }
-    await chamadaRepo.salvarEncontro(encontro.id, chamadas);
+    await chamadaRepo.salvarEncontro(eid, chamadas);
     await _loadData();
     _rebuildItems();
     update(['encontros']);

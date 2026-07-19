@@ -325,24 +325,45 @@ class _EncontroCard extends StatelessWidget {
                               onSelected: (v) {
                                 if (v == 'edit') showEditarEncontroDialog(context, e, item.turmaNome, encontrosVm);
                                 if (v == 'delete') {
+                                  bool deleting = false;
                                   Get.dialog(
-                                    AlertDialog(
-                                      title: const Text('Excluir Encontro'),
-                                      content: Text('Deseja excluir o encontro de '
-                                          '${e.data.day.toString().padLeft(2, '0')}/'
-                                          '${e.data.month.toString().padLeft(2, '0')}/'
-                                          '${e.data.year}?'),
-                                      actions: [
-                                        TextButton(onPressed: () => Get.back(), child: const Text('Cancelar')),
-                                        FilledButton(
-                                          onPressed: () async {
-                                            await encontrosVm.removerEncontro(e);
-                                            Get.back();
-                                          },
-                                          style: FilledButton.styleFrom(backgroundColor: colorScheme.error),
-                                          child: const Text('Excluir'),
-                                        ),
-                                      ],
+                                    StatefulBuilder(
+                                      builder: (ctx, setDialogState) => AlertDialog(
+                                        title: const Text('Excluir Encontro'),
+                                        content: Text('Deseja excluir o encontro de '
+                                            '${e.data.day.toString().padLeft(2, '0')}/'
+                                            '${e.data.month.toString().padLeft(2, '0')}/'
+                                            '${e.data.year}?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: deleting ? null : () => Get.back(),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: deleting
+                                                ? null
+                                                : () async {
+                                                    setDialogState(() => deleting = true);
+                                                    try {
+                                                      await encontrosVm.removerEncontro(e);
+                                                      if (ctx.mounted) Navigator.of(ctx).pop();
+                                                    } finally {
+                                                      setDialogState(() => deleting = false);
+                                                    }
+                                                  },
+                                            style: FilledButton.styleFrom(backgroundColor: colorScheme.error),
+                                            child: deleting
+                                                ? SizedBox(
+                                                    width: 18, height: 18,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: colorScheme.onError,
+                                                    ),
+                                                  )
+                                                : const Text('Excluir'),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 }

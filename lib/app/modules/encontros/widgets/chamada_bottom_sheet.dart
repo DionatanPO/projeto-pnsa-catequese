@@ -45,7 +45,7 @@ class ChamadaBottomSheet extends StatefulWidget {
 class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
   final _searchCtrl = TextEditingController();
   final _presencas = <String, bool>{};
-  final _salvando = false.obs;
+  bool _salvando = false;
   Timer? _debounce;
 
   List<Catequizando> get _catequizandos {
@@ -91,7 +91,7 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
   String _fmt(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Future<void> _salvar() async {
-    _salvando.value = true;
+    setState(() => _salvando = true);
     try {
       final chamadas = _presencas.entries
           .map((e) => Chamada(id: '', encontroId: '', catequizandoId: e.key, presente: e.value))
@@ -101,10 +101,11 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
         widget.encontro.data,
         chamadas,
         descricao: widget.encontro.descricao,
+        encontroId: widget.encontro.id,
       );
       if (context.mounted) Navigator.pop(context);
     } finally {
-      _salvando.value = false;
+      setState(() => _salvando = false);
     }
   }
 
@@ -291,7 +292,7 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
                 return _CatequizandoCard(
                   catequizando: c,
                   presente: presente,
-                  saving: _salvando.value,
+                  saving: _salvando,
                   onToggle: () {
                     setState(() => _presencas[c.id] = !presente);
                   },
@@ -327,7 +328,7 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextButton(
-                onPressed: _salvando.value ? null : () => Navigator.pop(context),
+                onPressed: _salvando ? null : () => Navigator.pop(context),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -336,15 +337,15 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                onPressed: _salvando.value ? null : _salvar,
+                onPressed: _salvando ? null : _salvar,
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: _salvando.value
+                icon: _salvando
                     ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
                     : const Icon(Icons.save_rounded, size: 18),
-                label: Text(_salvando.value ? 'Salvando...' : 'Salvar Chamada'),
+                label: Text(_salvando ? 'Salvando...' : 'Salvar Chamada'),
               ),
             ],
           );
@@ -360,7 +361,7 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _salvando.value ? null : () => Navigator.pop(context),
+                      onPressed: _salvando ? null : () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -370,15 +371,15 @@ class _ChamadaBottomSheetState extends State<ChamadaBottomSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: _salvando.value ? null : _salvar,
+                        onPressed: _salvando ? null : _salvar,
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        icon: _salvando.value
+                        icon: _salvando
                             ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary))
                             : const Icon(Icons.save_rounded, size: 18),
-                        label: Text(_salvando.value ? 'Salvando...' : 'Salvar'),
+                        label: Text(_salvando ? 'Salvando...' : 'Salvar'),
                       ),
                     ),
                   ],
